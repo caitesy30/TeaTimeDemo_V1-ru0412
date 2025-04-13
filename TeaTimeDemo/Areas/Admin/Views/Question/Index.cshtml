@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "問題列表";
+}
+
+<h1>問題列表</h1>
+
+<div class="row pt-4 pb-3">
+    <div class="col-6">
+        <h2 class="text-primary">問題列表</h2>
+    </div>
+
+    <div class="col-6 text-end">
+        <!-- 新增問題按鈕 -->
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 新增問題
+        </a>
+
+        <!-- 回收筒按鈕 -->
+        <a asp-action="RecycleBin" class="btn btn-warning">
+            <i class="bi bi-trash"></i> 回收筒
+        </a>
+
+        <!-- 重新配置排序按鈕 -->
+        <form asp-action="ReconfigureSortOrder" method="post" style="display:inline">
+            @Html.AntiForgeryToken() <!-- 防偽標籤 -->
+            <button type="submit" class="btn btn-info" onclick="return confirm('您確定要重新配置所有問題的排序嗎？');">
+                <i class="bi bi-arrow-repeat"></i> 重新配置排序
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- 問題列表的 DataTable -->
+<table id="tblData" class="table table-bordered table-striped nowrap" style="width:100%">
+    <thead>
+        <tr>
+            <th style="width: 5%;">ID</th>
+            <th style="width: 10%;">問卷ID</th>
+            <th style="width: 15%;">問卷標題</th>
+            <th style="width: 25%;">問題文本</th>
+            <th style="width: 10%;">答案類型</th>
+            <th style="width: 10%;">排序順序</th>
+            <th style="width: 15%;">創建時間</th>
+            <th style="width: 15%;">完成時間</th>
+            <th style="width: 30%;">操作</th> <!-- 調整為 30% -->
+        </tr>
+    </thead>
+</table>
+
+@section Scripts {
+    <!-- 引入自訂的 JavaScript 檔案 -->
+    <script src="~/js/question.js" asp-append-version="true"></script>
+}

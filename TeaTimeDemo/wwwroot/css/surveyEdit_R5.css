@@ -1,0 +1,614 @@
+﻿/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+#AutoScreen *
+/**/
+:not( table
+/**/
+):not( .TailBar
+/**/
+):not( .TailBar *
+/**/
+):not( tbody
+/**/
+):not( tr
+/**/
+):not( td
+/**/
+):not( input
+/**/
+):not( .ModuleBlock_group
+/**/
+):not( .settingAreaContainer
+/**/
+):not( .settingAreaContainer *
+/**/
+):not( .textBox
+/**/
+):not( .textBox *
+/*):not(
+    .tableGrid*/
+):not( .ModuleBlock
+/**/
+):not( .ModuleBlock_inner
+/**/
+):not( .table_Field
+/**/
+):not( .SurvryBar
+/**/
+):not( .SurvryBar *
+/**/
+):not( .Survey_Inner ) {
+    display: block;
+    width: auto;
+    /*width: 100%;*/
+    height: auto;
+    /*width: 100%;
+    height: 100%;*/
+}
+
+input {
+    /*box-shadow: 0 0 3px 3px red;*/
+
+}
+
+
+/*=================================================================================*/
+.settingAreaContainer{
+    display: flex;
+    width: 100%;
+}
+
+
+/*=====[字體大小]=====*/
+/*.ModuleBlock * {
+    font-size: 8px;
+}*/
+/*=====[ModuleBlock]=====*/
+.tableListGrid > tr > td > .table_Field > .ModuleBlock,
+.tableListGrid > tbody > tr > td > .table_Field > .ModuleBlock {
+    outline: 0px solid darkslategrey;
+    outline-offset: -1px;
+}
+
+/*background-color: transparent;*/
+.tableListGrid > tr > td > .table_Field > .ModuleBlock,
+.tableListGrid > tbody > tr > td > .table_Field > .ModuleBlock {
+    outline: 0px solid darkslategrey;
+    outline-offset: -1px;
+}
+
+
+
+
+.ModuleBlock {
+    display: flex;
+    height: auto;
+    width: 100%;
+    width: calc( 100% - 2px );
+
+   
+    /* overflow :clip;*/
+}
+textarea {
+    font-size: 8px; 
+    line-height:1.25;
+    box-sizing: border-box;
+    padding:1.5px;
+    border-width:1px;
+}
+
+
+
+.ModuleBlock .ModuleBlock_inner {
+    /*flex: 1;*/
+    min-height: 1px;
+    /*width: calc( 100% - 2px );*/
+    width: 100%;
+
+
+    /*height: 100%;*/
+    background-color: whitesmoke;
+    /*margin: 2px;*/
+    /*===[display 設定]===*/
+    /*display: flex;*/
+    /*flex-direction: column;*/
+    /*justify-content: center;*/
+    /*align-items: center;*/
+    /*===[border 設定]===*/
+    border-width: 1px;
+    /*border-style: dashed;*/
+    border-style: solid;
+    border-color: lightgray;
+    border-radius: 4px;
+    /*===[overflow 設定]===*/
+    overflow: clip;
+    margin: 2px;
+}
+
+    .ModuleBlock .InnerStyle01 {
+        border: none;
+        margin: 0px;
+        width: 100%;
+        overflow: unset;
+    }
+
+
+
+
+
+
+
+/*=====[textBox]=====*/
+/* 未選中狀態 */
+.ModuleBlock input[type="checkbox"],
+.ModuleBlock input[type="radio"] {
+    margin-left: 1px;
+    width: 10px;
+    height: 10px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    /*===[滑鼠 設定]===*/
+    cursor: pointer; /* 设置鼠标指针为手形 */
+
+    vertical-align: top; /* 對齊左上角 */
+}
+
+.ModuleBlock .textBox {
+    position: relative;
+    justify-content: flex-start; /* 確保內容從頂部開始 */
+    flex-wrap: wrap;
+    /*width: calc( 100% - 2px );*/
+    width: 100%;
+
+    /*display: inline-flex;*/
+    /*flex-direction: Row;*/ /* 垂直排列 checkbox 和 label */
+
+    background-color: rgba(125, 255, 215, 0.5);
+    background-color: #BDEDBD; /*綠*/
+    background-color: #E3E3E3;
+    background-color: #DAE4DE;
+    /*background-color: #F7EBD1;*/
+    /*background-color: #F2E2C6;*/
+    /*background-color: yellow;*/
+    text-align: left; /* 使內容水平靠左對齊 */
+    padding-top: 3px; /* 增加內邊距避免文字貼邊 */
+    padding-bottom: 1px; /* 增加內邊距避免文字貼邊 */
+    /*cursor: pointer;*/
+    min-height: 5px;
+    /*break-after: page;*/
+    display: flex /*!important*/;
+
+    align-items: flex-start;
+    /*align-items: center;*/
+    align-content: flex-start;
+    
+}
+
+.ModuleBlock .textBox * {
+    display: inline-block;
+    color: #000000; 
+    /* 字體顏色設為黑色 */
+}
+
+.ModuleBlock .highlightDifferences * {
+    color: white !important;
+    background-color: blue;
+}
+
+.ModuleBlock label,
+.ModuleBlock .fakeLabels {
+    flex-grow: 1;
+    margin-left: 2px;
+    margin-right: 2px;
+    /*background-color: yellow;*/
+    white-space: normal; /* 允許文字換行 */
+    word-wrap: break-word; /* 避免長字串溢出 */
+    line-height: 1.5; /* 設置行高使內容間距更加美觀 */
+    min-width: 15px;
+    font-size: 8px;
+    /*字體大小------------------------------------------------------------------------------------------------------------------------------------------------------*/
+    /*font-size: 5px;*/
+    font-weight: normal;
+    /*===[滑鼠 設定]===*/
+    /*cursor: pointer;*/
+    /*-------------*/
+    width : 100%;
+    /*display: flex*/
+}
+.ModuleBlock .textBox > label,
+.ModuleBlock .textBox > .fakeLabels {
+    /*display: flex;*/
+}
+    .ModuleBlock .textBox > label > div,
+    .ModuleBlock .textBox > label > div > div,
+    .ModuleBlock .textBox > .fakeLabels > div,
+    .ModuleBlock .textBox > .fakeLabels > div > div {
+        /*flex: 1;*/
+    }
+
+
+    .ModuleBlock .textBox > label > div,
+    .ModuleBlock .textBox > .fakeLabels > div {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+
+    .InGridCanRemoveModuleBlockName .textBox {
+        background-color: #ff8870;
+    }
+
+
+    .ModuleBlock P {
+        /*background-color: white;*/
+    }
+
+
+
+    /*=====[table]=====*/
+
+/*.ModuleBlock table {
+   
+    table-layout: fixed;
+    width: calc(100% - 4px);
+    margin-top: 3px;
+    margin-bottom: 3px;*/ /*=========================================================*/
+    /*===[去除單元格間距]===*/
+    /* 讓表格的邊框不合併，這樣才能設定間距 */
+    /*border-collapse: collapse;
+    
+}*/
+.ModuleBlock table {
+    table-layout: fixed;
+    width: calc(100% - 4px);
+    margin: 4px auto; /* ⬅️ 這樣就左右置中了 */
+
+    border-collapse: collapse;
+}
+
+
+.ModuleBlock .tableStyle01 {
+    border: none;
+    margin: 0px;
+  /*  margin-right: -2px;
+    margin-left: -2px;*/
+    width: 100%;
+    overflow: unset;
+    /*flex:1;*/
+}
+
+.ModuleBlock .tableStyle_list_01 {
+    border: none;
+    margin: 0px;
+    /*  margin-right: -2px;
+    margin-left: -2px;*/
+    width: 100%;
+    overflow: unset;
+    flex: 1;
+}
+
+
+
+
+    .ModuleBlock .tableStyle01 > tr > td > .table_Field,
+    .ModuleBlock .tableStyle01 > tbody > tr > td > .table_Field
+    .ModuleBlock .tableStyle_list_01 > tr > td > .table_Field,
+    .ModuleBlock .tableStyle_list_01 > tbody > tr > td > .table_Field {
+        /*        border: 2px solid darkslategrey;
+        border-left: none;
+        border-right: none;*/
+        outline: 2px solid darkslategrey;
+        /*outline-offset: 2px;*/
+        /*  border-left: none;
+        border-right: none;*/
+        border: none;
+        /*overflow:visible;*/
+    }
+
+
+    /* 影藏 */
+.ModuleBlock .tableStyle_hide > tr > td > .table_Field,
+.ModuleBlock .tableStyle_hide > tbody > tr > td > .table_Field {
+    /*        border: 2px solid darkslategrey;
+        border-left: none;
+        border-right: none;*/
+    outline: 0px solid darkslategrey !important;
+    /*outline-offset: 2px;*/
+    /*  border-left: none;
+        border-right: none;*/
+    /*border: none;*/
+}
+
+
+.ModuleBlock .tableStyle01,
+.ModuleBlock .tableStyle01 {
+    margin: 0px;
+    /*width: 100%;*/
+    
+}
+
+
+
+/*.ModuleBlock th,*/
+.ModuleBlock td {
+    /*border-width: 2px;*/
+    /*border-color: rgba(255, 0, 0, 0.5);*/
+    /*flex-grow: 1;*/
+    /*width: auto;*/
+    height: 20px; /*=========================================================*/
+    /*border: 2px solid darkslategrey;*/
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    vertical-align: middle;
+    /*cursor: copy;*/
+}
+.ModuleBlock tr td {
+        text-align: center; /* 水平居中 */
+        vertical-align: middle; /* 垂直居中 */
+
+        /*background-color: greenyellow;*/
+        background-color: transparent;  
+        /*outline: 2px solid rgba(255, 0, 0, 0.5);
+        outline-offset: -1px;*/
+        /*outline: 2px solid red;*/
+    }
+.tableGrid {
+    display: block;
+    /*width: calc(100% - 5px);*/
+    /*width:50%;*/
+}
+td {
+    /*outline: 2px solid red;*/
+    /*outline-offset: -1px;*/
+}
+
+
+.table_Field {
+    padding: 0px;
+    /*min-height: 100%;*/
+    /*max-height: 100%;*/
+
+    min-height: 100%;
+    height: auto;
+    flex-grow: 1;
+    /*height: auto;*/
+    background-color: whitesmoke;
+    pointer-events: auto;
+    outline: 2px solid darkslategrey;
+    outline-offset: -1px;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
+    position: relative;
+}
+    /*------------------------------------------------------------------------------------------------------------------*/
+    .tableList > tr > td > .table_Field,
+    .tableList > tbody > tr > td > .table_Field {
+        /*padding: 0px;*/
+        padding-bottom: 0px;
+        outline: none;
+        /*border: 1px dashed #51bdb4;*/
+        /*border-radius: 5px;*/
+        /* 圓角效果 */
+    }
+    .tableList tr td,
+    .tableList > tbody > tr > td {
+        border: 0px solid darkslategrey;
+        border: none;
+        background-color: transparent;
+        /*移除背景色，設為透明*/
+        /*border-radius: 10px;*/ /* 圓角效果 */
+    }
+
+
+
+    .ModuleBlock tr td {
+        word-break: break-word !important;
+    }
+
+    /*=====[HoldBox]=====*/
+    .HoldBox {
+        /*margin: 6px;*/
+        padding: 6px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        /*background-color: red;*/
+    }
+    .HoldBox .HoldBoxInner {
+            width: 100%;
+            border-width: 1px;
+            border-style: dashed;
+            border-color: lightgray;
+            background-color: #84e9f0;
+            border-radius: 5px;
+            /*=====*/
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+     }
+
+
+
+
+/*/////////////////////////////////////////////////////////////////////////////////////*/
+
+
+.BeforeAfterAddScope {
+    height :40px; 
+    background-color: palevioletred;
+    width: 100%;
+}
+
+
+#followMouse {
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 1);
+    color: white;
+    text-align: center;
+    line-height: 50px;
+    position: absolute;
+    pointer-events: none; /* 防止物件阻擋滑鼠事件 */
+    font-family: Arial, sans-serif;
+    line-height: 1.2;
+    border-radius: 5px; /* 圓角 */
+    top: 0;
+    left: 0;
+    display: none;
+}
+/* 全螢幕的Svg */
+#arrowSvg {
+    background-color: rgba(224, 255, 255, 0);
+    position: absolute;
+    /* position: fixed; */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+}
+
+
+#BlockPenel {
+    padding: 0px;
+    padding-top: 20px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin: auto;
+    padding-bottom: 250px;
+    /*display: inline-flex;*/
+    display: flex;
+    min-width: 100%;
+    width: auto;
+    background-color: darkcyan;
+}
+#AutoScreenBlock {
+    /*transform-origin: top left;*/
+
+    /*background-color: cadetblue;*/
+    /*background-color:blue;*/
+    position: relative;
+}
+#AutoScreen {
+    display: flex;
+    /*display: none;*/
+    /* min-width: 20cm;
+    max-width: 20cm;*/
+    transform: scale(1);
+    width: 20cm;
+    /*background-color: lightblue;*/
+    /*background-color: #F0F8F8;*/
+    background-color: white;
+    box-sizing: border-box;
+    transform-origin: top left;
+    min-height: 0px;
+    height: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    /*opacity: 0.2;*/
+    /*overflow: hidden;*/
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.container {
+    /*background-color: magenta;*/
+    max-width: 100%;
+    padding: 0px;
+}
+
+
+
+
+.ModuleBlock .TextBoxStyle01 {
+    margin: 0px;
+    width: calc( 100% - 2px );
+
+    padding-top: 0px;
+    padding-bottom: 0px;
+    min-Height: 0px;
+}
+
+/*#AutoScreen * {
+    display: block ;*/
+/* height: 100% !important;
+    width: 100% !important;*/
+/*}*/
+
+.PageBreakBefore {
+    background-color:magenta;
+}
+
+.PageBreakAfter {
+    background-color: magenta;
+}
+
+@media print {
+
+    .PageBreakBefore {
+        page-break-before: always;
+    }
+
+    .PageBreakAfter {
+        page-break-after: always;
+    }
+
+    .ModuleBlock {
+     
+        page-break-inside: avoid;
+    }
+
+    #BlockPenel {
+        padding: 0px;
+        display: flex; /* 使用 Flexbox 布局 */
+        justify-content: center; /* 水平居中 */
+        background-color: transparent;
+    }
+  
+    #followMouse {
+        display: none;
+    }
+    #arrowSvg {
+        display: none;
+    }
+    .displayId {
+        display: none;
+    }
+ 
+   
+    .tooltip {
+        display: none;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+ 
+
+ 
+}
+
+/* auto
+   avoid
+   inherit
+   initial
+   revert
+   revert-layer
+   unset     
+*/

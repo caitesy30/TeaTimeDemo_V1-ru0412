@@ -1,0 +1,35 @@
+﻿@model List<TeaTimeDemo.Models.UserPointBalance>
+
+<h2>我的錢包</h2>
+<table>
+    <thead>
+        <tr>
+            <th>點數名稱</th>
+            <th>餘額</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Point.PointName</td>
+                <td>@item.Balance</td>
+                <td>
+                    <!-- 加點範例 -->
+                    <form asp-action="UpdateBalance" method="post" style="display:inline;">
+                        <input type="hidden" name="pointId" value="@item.PointId" />
+                        <input type="hidden" name="amount" value="10" />
+                        <button type="submit">+10</button>
+                    </form>
+                    <!-- 扣點範例 -->
+                    <form asp-action="UpdateBalance" method="post" style="display:inline;">
+                        <input type="hidden" name="pointId" value="@item.PointId" />
+                        <input type="hidden" name="amount" value="-5" />
+                        <button type="submit">-5</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

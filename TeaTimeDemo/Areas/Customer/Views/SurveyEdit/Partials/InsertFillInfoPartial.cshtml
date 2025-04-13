@@ -1,0 +1,41 @@
+﻿<!--SurveyEditController的Partials\InsertFillInfoPartial-->
+@model TeaTimeDemo.Models.AnswersData.ViewModels.SurveyEditIndexVM
+@using System.Text.Encodings.Web
+
+
+<!-- 插入填空表單區域 -->
+@* <div class="insert-fill-section ms-3" style="flex: 2; display: none;"> *@
+    <div class="insert-fill-section" style="display:none; border-right:1px solid #ccc; padding-right:10px;">
+    <h5>插入填空</h5>
+    <form id="insertFillForm">
+
+        <!-- 範例：在正則表達式欄位上面加一個下拉選單 -->
+        <div class="mb-3">
+            <label for="predefinedRegexSelect" class="form-label">常用正則範本</label>
+            <select id="predefinedRegexSelect" class="form-select">
+                <option value="">-- 選擇常用正則 --</option>
+                <option value="1">工號 (e.g. 22503)</option>
+                <option value="2">料號 (e.g. A58G100)</option>
+                <option value="3">日期 (e.g. 2023-08-15)</option>
+                <option value="4">姓名 (中英數混合，至少 2 碼)</option>
+                <option value="5">漲縮 (e.g. 1.00015, 數字或小數)</option>
+                <option value="6">顏色 (e.g. 紅色、藍色)</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="fillRegex" class="form-label">正則表達式</label>
+            <input type="text" class="form-control" id="fillRegex" placeholder="輸入正則表達式">
+        </div>
+        <div class="mb-3">
+            <label for="fillPrompt" class="form-label">提示文字</label>
+            <input type="text" class="form-control" id="fillPrompt" placeholder="輸入提示文字">
+        </div>
+        <div class="mb-3">
+            <label for="fillSize" class="form-label">填空大小</label>
+            <input type="number" class="form-control" id="fillSize" placeholder="輸入填空的寬度，例如200">
+        </div>
+        <button type="button" class="btn btn-primary mt-3" id="confirmInsertFillBtn">確認插入</button>
+        <button type="button" class="btn btn-secondary mt-3 ms-2" id="cancelInsertFillBtn">取消</button>
+    </form>
+</div>

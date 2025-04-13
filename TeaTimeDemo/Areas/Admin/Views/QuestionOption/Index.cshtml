@@ -1,0 +1,84 @@
+﻿<!-- Areas/Admin/Views/QuestionOption/Index.cshtml -->
+@{
+    ViewData["Title"] = "問題選項列表";
+}
+
+<div class="container-fluid">
+
+
+    <!-- 顯示 TempData 的錯誤訊息 -->
+    @if (TempData["ERROR"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ERROR"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- 顯示 TempData 的成功訊息 -->
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row pt-4 pb-3">
+        <div class="col-6">
+            <h2 class="text-primary">問題選項列表</h2>
+        </div>
+
+
+        <div class="col-6 text-end">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 新增選項
+            </a>
+            <a asp-action="RecycleBin" class="btn btn-warning">
+                <i class="bi bi-trash"></i> 回收筒
+            </a>
+            <!-- 新增重新配置排序的按鍵 -->
+            <form asp-action="ReconfigureSortOrder" method="post" style="display:inline">
+                @Html.AntiForgeryToken() <!-- 防偽標籤 -->
+                <button type="submit" class="btn btn-info" onclick="return confirm('您確定要重新配置所有選項的排序嗎？');">
+                    <i class="bi bi-arrow-repeat"></i> 重新配置排序
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 問題選項的 DataTable -->
+    <table id="tblData" class="table table-bordered table-striped nowrap" style="width:100%">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>問題ID</th>
+                <th>問卷ID</th>
+                <th>選項文本</th>
+                <th>排序順序</th>
+                <th>創建時間</th>
+                <th>更新時間</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+
+</div>
+
+@section Scripts
+{
+    <!-- 引入 questionoption.js -->
+    <script src="~/js/questionoption.js" asp-append-version="true"></script>
+
+    <script>
+        // 顯示進度條的模態框（如果有需要）
+        function showProgressModal() {
+            document.getElementById("progressModal").style.display = "block";
+        }
+
+        // 隱藏進度條的模態框
+        function hideProgressModal() {
+            document.getElementById("progressModal").style.display = "none";
+        }
+    </script>
+}

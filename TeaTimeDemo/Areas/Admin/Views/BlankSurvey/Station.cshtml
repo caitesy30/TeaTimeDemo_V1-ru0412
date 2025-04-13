@@ -1,0 +1,130 @@
+﻿@model BlankSurveyVM
+<div class="container">
+    <div class="row pt-4 pb-3">
+        <div class="col-6">
+            <h2 class="text-primary">Notes空白表單編輯分類</h2>
+        </div>
+        <div class="col-6 text-end">
+            <button type="button" class="btn btn-success" onclick="ToggleSelectLayerForm()">
+                <i class="bi bi-plus-circle"></i> 新增已有流程
+            </button>
+            <button type="button" class="btn btn-success" onclick="ToggleForm()">
+                <i class="bi bi-plus-circle"></i> 新增新流程
+            </button>
+        </div>
+    </div>
+    
+    <div class="row pt-4 pb-3">
+        
+        <form id="selectLayer" method="post" asp-action="AddSelectLayer" style="display: none;">
+            <input asp-for="Category.Id" hidden />
+            <div class="row pb-3">
+                <div class="col-md-6">
+                    <label for="layerSelect" class="form-label"></label>
+                    <select id="layerSelect" class="form-select" name="SelectedLayerId">
+                        <option value="">選取現有流程</option>
+                        @foreach (var layer in Model.LayerList)
+                        {
+                            <option value="@layer.Id">@layer.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">加入</button>
+                </div>
+            </div>
+        </form>
+        <div class="row pb-3" id="NewPageSection" style="display: none;">
+            <div class="col-md-12">
+                <form id="LayerForm" method="post" asp-action="AddLayer">
+                    <input asp-for="Category.Id" hidden />
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="name" class="form-label">流程名稱</label>
+                            <input type="text" class="form-control" name="Layer.Name" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="order" class="form-label">顯示順序</label>
+                            <input type="number" class="form-control" name="Layer.Order" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="order" class="form-label">描述</label>
+                            <input type="number" class="form-control" name="Layer.Description">
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success w-100">
+                                新增
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+    
+    
+    
+    <div class="table-responsive">
+        @*可滾動的*@
+        <form id="pageGroup" method="post" enctype="multipart/form-data" asp-action="NotesUpsert">
+            <input asp-for="Category.Id" hidden />
+            <input asp-for="Category.ImageUrl" hidden />
+            <div class="row pb-3">
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="Name" class="form-label">Notes名稱</label>
+                            <input type="text" class="form-control"
+                                   name="Category.Name" value="@Model.Category.Name" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="Order" class="form-label">顯示順序</label>
+                            <input type="number" class="form-control"
+                                   name="Category.DisplayOrder" value="@Model.Category.DisplayOrder" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="ImageUrl" class="form-label">選取圖片</label>
+                            <input type="file" class="form-control" name="file" value="@Model.Category.ImageUrl" />
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button type="submit" asp-action="NotesUpsert" class="btn btn-primary btn-lg">
+                                更新
+                            </button>
+                            <div class="img-container" style="width: 100%; position: relative">
+                                <img src="@Model.Category.ImageUrl" 
+                                style="max-width: 100%; height: auto; border-radius: 5px; border: 1px solid #bbb9b9" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <table id="LtblData" class="table table-bordered table-striped" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>流程名稱</th>
+                        <th>顯示順序</th>
+                        <th>描述</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </form>
+    </div>
+    <div class="col-2">
+        <a asp-controller="BlankSurvey"
+           asp-action="Index"
+           class="btn btn-secondary w-100">
+            <i class="bi bi-emoji-smile"></i>
+            返回上一層
+        </a>
+    </div>
+</div>
+
+
+@section Scripts {
+    
+    <script src="~/js/blanksurvey.js" asp-append-version="true"></script>
+}

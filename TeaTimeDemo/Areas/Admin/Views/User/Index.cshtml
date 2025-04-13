@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "使用者管理";
+}
+
+<h1 class="pt-4">使用者管理</h1>
+
+<div class="row pt-4 pb-3">
+    <div class="col-6">
+        <h2 class="text-primary">
+            使用者清單
+        </h2>
+    </div>
+
+    <div class="col-6 text-end">
+        <!-- 修改後的新增使用者連結 -->
+        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i>新增使用者
+        </a>
+        <a asp-action="ExportToExcel" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> 匯出 Excel
+        </a>
+
+        <!-- 匯入 Excel 按鈕，顯示檔案選擇器 -->
+        <form asp-action="ImportExcel" method="post" enctype="multipart/form-data" class="d-inline">
+            <input type="file" name="file" class="form-control-file d-inline" required />
+            <button type="submit" class="btn btn-info">
+                <i class="bi bi-file-earmark-arrow-up"></i> 匯入 Excel
+            </button>
+        </form>
+
+
+    </div>
+</div>
+
+<table id="tblUserData" class="table table-bordered table-striped" style="width: 100%">
+    <thead>
+        <tr>
+            <th>姓名</th>
+            <th>工號</th>
+            <th>廠區</th>
+            <th>分機</th>
+            <th></th>
+        </tr>
+    </thead>
+</table>
+
+@section Scripts
+{
+    <script src="~/js/user.js" asp-append-version="true"></script>
+}

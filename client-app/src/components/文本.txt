@@ -1,0 +1,2419 @@
+$(document).ready(function () {
+
+
+        // 在窗口大小变化时调整缩放
+        window.addEventListener('resize', adjustScale);
+
+        // 初始时应用一次调整
+        adjustScale();
+
+    }
+);
+
+// 转换 20cm 为像素
+const cmToPx = 37.795; // 1cm = 37.795px，取决于屏幕 DPI
+
+function adjustScale() {
+    // 获取屏幕宽度
+    const screenWidth = window.innerWidth;
+
+    // 计算 20cm 的像素宽度
+    const targetWidthPx = 20 * cmToPx;
+
+    // 计算缩放比例
+    let scaleRatio = screenWidth / targetWidthPx / 2;
+
+    if (scaleRatio < 1) { scaleRatio = 1; console.log(scaleRatio); }
+
+
+    // 获取 AutoScreen 元素并应用缩放
+    const autoScreen = document.getElementById('AutoScreen');
+    autoScreen.style.transform = `scale(${scaleRatio})`;
+}=============================================================== @model TeaTimeDemo.Models.AnswersData.ViewModels.SurveyEditIndexVM
+
+<!-- 如果是需要將 CSS 放在 head 中，應該使用 Styles.Render -->
+<head>
+    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
+    <link rel="stylesheet" href="~/css/surveyEdit_R5.css" asp-append-version="true" />
+
+</head>
+
+
+<div id="Print">
+    <div id="AutoScreen">
+         @Html.Raw(Model.MceHtml)
+    </div>
+</div>
+
+
+
+<!-- 編輯文本的模態視窗 -->
+<div class="modal fade" id="editTextModal" tabindex="-1" aria-labelledby="editTextModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTextModalLabel">編輯文本</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 編輯器 -->
+                <textarea id="textEditor" class="form-control" rows="10"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveTextBtn" class="btn btn-primary">保存變更</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@* <button type="button" onclick="resetShowView()">重置</button> *@
+
+
+@* no-print *@
+
+<div class="no-print">
+
+
+    @* <button type="button" onclick="resetShowView()">重置</button> *@
+
+    @* <button type="button" onclick="showContentToP()">showContentToP</button> *@
+
+    @* <div>
+    <p id="ShowViewP">
+    @Model.MceHtml
+
+    </p>
+    </div> *@
+
+    @* <div id="ShowView">
+    </div> *@
+
+
+
+    <button type="button" onclick="addModuleBlock()">新增模塊</button>
+    <div id="testDiv">
+    <br>
+    <input type="text" id="ModuleBlockIdInput" class="form-control" placeholder="Enter Product ID">
+    <br>
+    <button type="button" class="bi bi-plus-square" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value, 'Add','Row', 'Head' )">新增行-頭</button>
+    <button type="button" class="bi bi-trash" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value,'Remove','Row', 'Head' )">刪除行-頭</button>
+
+    <br>
+    <button type="button" class="bi bi-plus-square" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value, 'Add','Row', 'Feet' )">新增行-尾</button>
+    <button type="button" class="bi bi-trash" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value,'Remove','Row', 'Feet' )">刪除行-尾</button>
+    <br>
+    <br>
+    <button type="button" class="bi bi-plus-square" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value, 'Add','Column', 'Head' )">新增列-頭</button>
+    <button type="button" class="bi bi-trash" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value,'Remove','Column', 'Head' )">刪除列-頭</button>
+    <br>
+    <button type="button" class="bi bi-plus-square" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value, 'Add','Column', 'Feet' )">新增列-尾</button>
+    <button type="button" class="bi bi-trash" onclick="SetModuleBlockSGrid(document.getElementById('ModuleBlockIdInput').value,'Remove','Column', 'Feet' )">刪除列-尾</button>
+    <br>
+
+
+    </div>
+        <div id="followMouse">FollowMouse
+    
+    </div>
+
+    <i class="bi bi-gear" style="font-size:14px;"></i>
+    <i class="bi bi-trash" style="font-size:14px;"></i>
+    <i class="bi bi-plus-square" style="font-size:14px;"></i>
+    <i class="fa-solid fa-bars" style="font-size:14px;"></i>
+</div>
+
+
+
+
+
+
+
+
+<svg id="arrowSvg">
+    <line id="arrow" x1="0" y1="0" x2="0" y2="0" stroke="lightgray" stroke-width="1" marker-end="url(#arrowhead)" />
+    <defs>
+        <marker id="arrowhead" markerWidth="7" markerHeight="8" refX="7" refY="4" orient="auto">
+            <polygon points="0 0,7 4, 0 8" fill="lightgray" />
+        </marker>
+    </defs>
+</svg>
+
+
+
+
+@section Scripts {
+
+@* 
+    <script src="https://kit.fontawesome.com/81cb28ac0f.js"
+            crossorigin="anonymous"></script> *@
+
+    <!-- 這裡放的是腳本，通常不是放 CSS -->
+    var LabelTextEditActionObj;
+
+    <script src="~/js/SurveyEditer.js" asp-append-version="true"></script>
+    <script src="~/js/AutoScreen.js" asp-append-version="true"></script>
+    <script src="~/js/LabelTextEdit.js" asp-append-version="true"></script>
+}=============================================================== 
+$(document).ready(function () {
+    // 定義一個命名空間 LabelTextEdit
+    LabelTextEditActionObj = {
+        LabelTextEditAction: LabelTextEdit // 將 LabelTextEdit 綁定到命名空間
+    };
+
+    // 測試調用
+   LabelTextEditActionObj.LabelTextEditAction();
+});
+var _labelElement;
+var divElement;
+function LabelTextEdit(labelElement) {
+
+    _labelElement = labelElement;
+    if (_labelElement) {
+       
+        // 檢查 <label> 內是否已包含 <div>
+        divElement = _labelElement.querySelector("div");
+
+        if (!divElement) {
+
+            divElement = document.createElement("div");
+            _labelElement.appendChild(divElement);
+
+            divElement = _labelElement.querySelector("div");
+        } 
+        openEditModal();
+        setDivElementInnerHTML("<div>測試</div>");
+        
+
+    } else {
+        console.error("labelElement 為空或未定義");
+    }
+}
+
+function setDivElementInnerHTML(HtmlText) {
+    // 檢查 divElement 和 _labelElement 是否存在
+    if (!divElement || !_labelElement) {
+        console.error("divElement 或 _labelElement 未定義");
+        return; // 結束函式執行
+    }
+
+    try {
+        // 將 divElement 暫時移除，避免被清空
+        var tempDiv = divElement; // 儲存 divElement 的參考
+        _labelElement.removeChild(divElement); // 從 _labelElement 暫時移除 divElement
+
+        // 清空 _labelElement 的內容
+        _labelElement.innerText = "";
+
+        // 如果 HtmlText 是有效的字串，設定 divElement 的內容
+        if (HtmlText && typeof HtmlText === "string" && HtmlText.trim() !== "") {
+            console.log("設定內容:", HtmlText.trim());
+            tempDiv.innerHTML = HtmlText.trim(); // 設定 divElement 的 HTML
+        } else {
+            // 如果 HtmlText 是無效，顯示預設提示
+            _labelElement.innerText = "請編輯文字"; // 顯示提示文字
+            tempDiv.innerHTML = ""; // 清空 divElement 的內容
+        }
+
+        // 將 divElement 加回 _labelElement
+        _labelElement.appendChild(tempDiv);
+    } catch (error) {
+        // 捕捉錯誤並記錄到控制台
+        console.error("設定 divElement.innerHTML 時發生錯誤:", error);
+    }
+}
+
+/////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////
+
+// 開啟編輯模態視窗的函式
+function openEditModal() {
+    //// 設定當前編輯的模塊 ID
+    //$("#editTextModal").data('moduleId', moduleId);
+
+    //// 從前端獲取當前模塊的文本內容
+    //const currentText = $(`#${moduleId} .textBox textarea`).val() || $(`#${moduleId} .textBox`).text();
+    //$("#textEditor").val(currentText); // 將內容填充到編輯器中
+
+    //// 顯示模態視窗
+    var editModal = new bootstrap.Modal(document.getElementById('editTextModal'), {
+        keyboard: false
+    });
+    editModal.show();
+}
+
+// 在編輯器中插入不同類型的內容
+function insertTextAtCursor(type) {
+    const editor = document.getElementById("textEditor");
+    const cursorPos = editor.selectionStart; // 獲取滑鼠光標的位置
+    const textBefore = editor.value.substring(0, cursorPos); // 滑鼠光標前的文字
+    const textAfter = editor.value.substring(cursorPos, editor.value.length); // 滑鼠光標後的文字
+
+    if (type === "text") {
+        const newText = "新增文字"; // 新增的文字
+        editor.value = textBefore + newText + textAfter; // 插入文字
+        editor.selectionStart = cursorPos + newText.length; // 更新滑鼠光標位置
+        editor.selectionEnd = cursorPos + newText.length;
+    } else if (type === "fill") {
+        const newFill = "[填空]"; // 新增的填空標記
+        editor.value = textBefore + newFill + textAfter; // 插入填空
+        editor.selectionStart = cursorPos + newFill.length; // 更新滑鼠光標位置
+        editor.selectionEnd = cursorPos + newFill.length;
+    } else if (type === "image") {
+        const newImage = "<插圖>"; // 新增的插圖標記
+        editor.value = textBefore + newImage + textAfter; // 插入插圖
+        editor.selectionStart = cursorPos + newImage.length; // 更新滑鼠光標位置
+        editor.selectionEnd = cursorPos + newImage.length;
+    }
+}
+
+// 保存文本編輯的變更
+function saveTextChanges() {
+    const moduleId = $("#editTextModal").data('moduleId'); // 獲取當前編輯的模塊 ID
+    const updatedText = $("#textEditor").val(); // 獲取編輯器中的更新文本
+
+    // 將更新的文本設置回模塊
+    $(`#${moduleId} .textBox`).text(updatedText);
+
+    // 關閉模態視窗
+    var editModalEl = document.getElementById('editTextModal');
+    var editModal = bootstrap.Modal.getInstance(editModalEl);
+    editModal.hide();
+
+    // 發送 AJAX 請求將更新的文本保存到後端
+    $.ajax({
+        url: '/Customer/SurveyEdit/UpdateModuleText', // 確保這個路由是正確的
+        type: 'POST',
+        data: {
+            moduleId: moduleId,
+            textContent: updatedText
+        },
+        success: function (response) {
+            ShowView("文本已保存。");
+        },
+        error: function (error) {
+            ShowView("保存文本時發生錯誤。");
+        }
+    });
+}
+
+// 新增編輯模態視窗的保存按鈕事件
+$(document).on('click', '#saveTextBtn', function () {
+    saveTextChanges();
+});=============================================================== // AnswerController.cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TeaTimeDemo.DataAccess.Repository.IRepository;
+using TeaTimeDemo.Models.AnswersData;
+using TeaTimeDemo.Models.AnswersData.ViewModels;
+
+namespace TeaTimeDemo.Controllers
+{
+    [Area("Customer")] // 指定區域為 Customer
+    [Authorize] // 確保只有登入的使用者能夠存取
+    public class SurveyEditController : Controller
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public SurveyEditController(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        // 顯示所有已發布的問卷
+        public IActionResult Index()
+        {
+
+            SurveyEditIndexVM SurveyEditIndexVM = new SurveyEditIndexVM();
+
+            ModuleBlock moduleBlock1 = new ModuleBlock { Id = 1, SurveyId = "Survey1" };
+            ModuleBlock moduleBlock2 = new ModuleBlock { Id = 2, SurveyId = "Survey1" };
+            ModuleBlock moduleBlock3 = new ModuleBlock { Id = 3, SurveyId = "Survey1" };
+            ModuleBlock moduleBlock4 = new ModuleBlock { Id = 4, SurveyId = "Survey1" };
+            ModuleBlock moduleBlock5 = new ModuleBlock { Id = 5, SurveyId = "Survey1" };
+            ModuleBlock moduleBlock6 = new ModuleBlock { Id = 6, SurveyId = "Survey1" };
+
+            moduleBlock1.TextContent = "測試模塊1";
+            moduleBlock2.TextContent = "測試模塊2";
+            moduleBlock3.TextContent = "測試模塊3";
+            moduleBlock4.TextContent = "測試模塊4";
+            moduleBlock5.TextContent = "測試模塊5";
+            moduleBlock6.TextContent = "測試模塊6";
+
+
+            moduleBlock1.CheakBoxData.IsCheakBoxMode = true;
+            moduleBlock2.CheakBoxData.IsCheakBoxMode = true;
+            moduleBlock3.CheakBoxData.IsCheakBoxMode = true;
+            moduleBlock4.CheakBoxData.IsCheakBoxMode = true;
+            moduleBlock5.CheakBoxData.IsCheakBoxMode = true;
+            moduleBlock6.CheakBoxData.IsCheakBoxMode = true;
+
+            moduleBlock1.CheakBoxData.LayerParentId = "測試模塊1";
+            moduleBlock2.CheakBoxData.LayerParentId = "測試模塊2";
+            moduleBlock3.CheakBoxData.LayerParentId = "測試模塊3";
+            moduleBlock4.CheakBoxData.LayerParentId = "測試模塊4";
+            moduleBlock5.CheakBoxData.LayerParentId = "測試模塊5";
+            moduleBlock6.CheakBoxData.LayerParentId = "測試模塊6";
+
+
+            moduleBlock1._ModuleBlockS = new List<ModuleBlock>[2, 3];
+            moduleBlock1.InitModuleBlockS();
+
+
+            moduleBlock2._ModuleBlockS = new List<ModuleBlock>[2, 3];
+            moduleBlock2.InitModuleBlockS();
+
+
+            moduleBlock3._ModuleBlockS = new List<ModuleBlock>[2, 3];
+            moduleBlock3.InitModuleBlockS();
+
+            moduleBlock5._ModuleBlockS = new List<ModuleBlock>[2, 3];
+            moduleBlock5.InitModuleBlockS();
+
+
+
+            moduleBlock1._ModuleBlockS[0, 0].Add(moduleBlock2);
+            moduleBlock1._ModuleBlockS[0, 1].Add(moduleBlock5);
+            moduleBlock1._ModuleBlockS[1, 2].Add(moduleBlock4);
+            moduleBlock1._ModuleBlockS[1, 2].Add(moduleBlock6);
+            moduleBlock2._ModuleBlockS[0, 0].Add(moduleBlock3);
+
+
+
+            SurveyEditIndexVM.MceHtml = moduleBlock1.GetBlockHtml();
+
+            return View(SurveyEditIndexVM);
+        }
+
+        [HttpPost]
+        public IActionResult UpdateModuleText(int moduleId, string textContent)
+        {
+            // 從存取層獲取對應的 ModuleBlock
+            ModuleBlock module = _unitOfWork.ModuleBlock.GetFirstOrDefault(m => m.Id == moduleId);
+            if (module == null)
+            {
+                return NotFound(new { message = "找不到對應的模塊。" });
+            }
+
+            // 更新文本內容
+            module.TextContent = textContent;
+
+            // 保存變更
+            _unitOfWork.Save();
+
+            return Ok(new { message = "文本內容已成功更新。" });
+        }
+
+
+    }
+
+
+
+}============================================================= 
+$(document).ready(function () {
+
+
+        SetAllModuleBlock();
+        InitAddBox();
+
+        initSetMouseFollow();
+        ShowView("這是一段動態文字 ShowView 測試");
+
+        initModuleBlockId();
+        initLabelTextClick();
+        update();
+    }
+);
+
+
+
+
+function initLabelTextClick()
+{
+
+    // 遍歷所有 class="ModuleBlock" 的 label
+    $('.ModuleBlock label').each(function () {
+        // 綁定點擊事件，執行 LabelTextEditAction
+        $(this).on('dblclick', function () {
+            LabelTextEditActionObj.LabelTextEditAction(this); // 傳入當前點擊的 label
+        });
+    });
+}
+
+
+function update() {
+    updateMousePos();
+    updateFollowElementPos();
+    DrawArrow();
+
+    // 请求下一帧
+    requestAnimationFrame(update);
+}
+
+// 更新滑鼠跟隨元素的位置
+function updateFollowElementPos() {
+
+    SetFollowElementPos();
+
+}
+
+// 更新滑鼠位置
+function updateMousePos() {
+
+    RealMouseX = mouseX;
+    RealMouseY = mouseY + window.scrollY;
+}
+
+
+function updateFollowElementPos() {
+
+    SetFollowElementPos();
+
+}
+
+// 繪製箭頭，指向滑鼠位置
+let arrow = document.getElementById("arrow");
+
+function DrawArrow()
+{
+    // 設定箭頭的起點和終點
+    //arrow.setAttribute("x1", window.innerWidth / 2);
+    //arrow.setAttribute("y1", window.innerHeight / 2);
+    arrow.setAttribute("x1", window.innerWidth);
+    arrow.setAttribute("y1", window.innerHeight);
+    arrow.setAttribute("x2", (RealMouseX) );
+    arrow.setAttribute("y2", (RealMouseY ) );
+}
+
+
+let RealMouseX;
+
+let RealMouseY;
+
+
+// 初始化鼠标位置
+let mouseX = window.innerWidth / 2; // 初始为窗口中心
+let mouseY = window.innerHeight / 2;
+// 獲取跟隨滑鼠的元素
+const followElement = document.getElementById('followMouse');;
+
+function initSetMouseFollow()
+{
+
+    //followElement = document.getElementById('followMouse');
+
+    followElement.setAttribute("draggable", "false");
+
+    // 當拖動開始時隱藏跟隨元素
+    document.addEventListener('dragstart', (event) => {
+        console.log("hidden");
+        followElement.style.visibility = "hidden";
+
+    }, true);
+
+
+    document.addEventListener('scroll', () => {
+       
+
+        
+    });
+
+    // 當拖動進行時更新滑鼠位置並顯示跟隨元素
+    document.addEventListener('drag', (event) => {
+
+
+        if (event.clientX !== 0 && event.clientY !== 0) {
+
+            //mouseX = event.pageX;
+            //mouseY = event.pageY;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+            followElement.style.visibility = "visible";
+            
+        } 
+     
+    }, true);
+
+    //// 監聽滑鼠移動事件
+    document.addEventListener('mousemove', (event) => {
+        //mouseX = event.pageX;
+        //mouseY = event.pageY;
+
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+        
+    }, true);
+
+    
+   
+
+}
+
+// 設置跟隨元素的文字內容
+function SetFollowElementStr(str) {
+    followElement.innerText = str;
+}
+
+// 設置跟隨元素的位置
+function SetFollowElementPos() {
+    // 獲取視窗的寬度和高度
+    //const viewportWidth = window.innerWidth;
+    //const viewportHeight = window.innerHeight;
+    const viewportWidth = document.documentElement.scrollWidth;
+    const viewportHeight = document.documentElement.scrollHeight;
+
+
+    // 獲取 followElement 的寬度和高度
+    const elementWidth = followElement.offsetWidth;
+    const elementHeight = followElement.offsetHeight;
+
+    // 計算真正的 X 和 Y 位置
+    let finalX = RealMouseX;
+    let finalY = RealMouseY;
+
+    // 如果 followElement 會超出右邊邊界，調整 X 位置
+    if (RealMouseX + elementWidth > viewportWidth) {
+        finalX = viewportWidth - elementWidth; // 修正右邊邊界
+    }
+
+    // 如果 followElement 會超出底部邊界，調整 Y 位置
+    if (RealMouseY + elementHeight > viewportHeight) {
+        finalY = viewportHeight - elementHeight; // 修正底部邊界
+    }
+
+    // 更新 followElement 的位置
+    followElement.style.left = `${finalX}px`;
+    followElement.style.top = `${finalY}px`;
+}
+//////////////////////////////////////////////////////////////////////
+
+// 初始化新增框 (AddBox)
+const AddBox=document.createElement("div");
+function InitAddBox()
+{
+    
+    AddBox.classList.add("AddBox");  // 為占位符設置樣式
+
+    AddBox.textContent = "+"; // 可選，添加一些標識內容
+
+    document.getElementById("AutoScreen").appendChild(AddBox);
+    
+    AddBox.style.display = 'none';
+
+
+    // 設定 dragover 事件，允許放置
+    AddBox.addEventListener("dragover", (event) => {
+
+        event.preventDefault();  // 必須調用 preventDefault 來允許放置
+        event.stopPropagation();
+    });
+
+    // 阻止鼠標移動事件傳遞
+    AddBox.addEventListener("mousemove", (event) => {
+
+         event.stopPropagation();
+        }
+    );
+
+    // 設定 drop 事件，處理放置邏輯
+    AddBox.addEventListener("drop", (event) => {
+        dropAddBox(event);
+    });
+}
+
+// 開啟新增框
+function OpenAddBox() {
+   
+    if (AddBox.style.display !== 'flex') { // 檢查當前狀態是否為 'flex'
+        AddBox.style.display = 'flex';
+        console.log("AddBox 已打開。");
+    } else {
+        console.log("AddBox 已經是打開狀態，無需重複操作。");
+    }
+}
+
+// 關閉新增框
+function CloseAddBox() {
+    if (AddBox.style.display !== 'none') { // 檢查當前狀態是否為 'none'
+        AddBox.style.display = 'none';
+        console.log("AddBox 已關閉。");
+    } else {
+        console.log("AddBox 已經是關閉狀態，無需重複操作。");
+    }
+}
+
+// 將新增框設置在目標元素內
+function SetAddBoxIn(Target) {
+    if (!Target.contains(AddBox)) { // 检查 AddBox 是否已经是 Target 的子元素
+        Target.appendChild(AddBox);
+      //  console.log("AddBox 已成功添加到目标位置中。");
+    } else if (Target.lastElementChild !== AddBox) { // 检查 AddBox 是否是最后一个子元素
+        Target.appendChild(AddBox); // 如果不是最后一个，将其移动到最后
+        //console.log("AddBox 已被移动到目标位置的最后一个位置。");
+    } else {
+
+        //console.log("AddBox 已经是目标位置的最后一个子元素。");
+    } 
+}
+
+// 將新增框設置在目標元素之後
+function SetAddBoxAfter(Target) {
+    //OpenAddBox();
+    if (Target.parentNode && Target.nextSibling !== AddBox /*&& Target.nextSibling !== DraggedBlock*/) { // 检查 AddBox 是否在目标之后
+
+        Target.parentNode.insertBefore(AddBox, Target.nextSibling);
+
+
+    } else {
+        console.log("AddBox 已经在目标位置之后。");
+        //setAddBoxotNotError();
+        //setAddBoxError();
+    }
+
+    if (!DraggedBlock.contains(Target.parentNode)) {
+        //可以的位置
+        setAddBoxotNotError();
+    }
+    else {
+        setAddBoxError();
+        //不能的位置
+    }
+ 
+}
+
+// 將新增框設置在目標元素之前
+function SetAddBoxBefore(Target) {
+    //OpenAddBox();
+    if (Target.parentNode && Target.previousSibling !== AddBox /*&& Target.previousSibling !== DraggedBlock*/) { // 检查 AddBox 是否在目标之前
+
+        Target.parentNode.insertBefore(AddBox, Target);
+
+       
+        
+    } else {
+        console.log("AddBox 已经在目标位置之前。");
+        //setAddBoxotNotError();
+        //setAddBoxError();
+    }
+
+    if (!DraggedBlock.contains(Target.parentNode)) {
+
+        //可以的位置
+        setAddBoxotNotError();
+
+    }
+    else {
+        setAddBoxError();
+        //不能的位置
+    }
+   
+}
+
+function setAddBoxError() {
+
+    CloseAddBox();
+    AddBox.style.backgroundColor = "#f1948a";
+    AddBox.innerText = "X";
+    AddBox.style.color = "#ffffff";
+}
+function setAddBoxotNotError() {
+    OpenAddBox();
+    AddBox.style.backgroundColor = "#d1f2eb ";
+    AddBox.innerText = "+";
+    AddBox.style.color = "";
+}
+function trySetAddBoxIn(target) {
+    
+    if (!DraggedBlock.contains(target)) {
+
+        //可以的位置
+        setAddBoxotNotError();
+
+    }
+    else
+    {
+        setAddBoxError();
+        //不能的位置
+    }
+
+    SetAddBoxIn(target);
+}
+
+// 處理新增框的放置事件
+function dropAddBox(event) {
+
+    console.log("dropAddBox");
+    
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (AddBox.style.display === 'none') { // 检查当前状态是否为 'none'
+        
+        console.log("AddBox 已关闭。");
+        REsetDraggedBlock();
+        return;
+    }
+
+    
+
+    if (DraggedBlock && DraggedBlock !== event.target) {
+
+        swapElements(AddBox, DraggedBlock);
+        
+        
+        CloseAddBox();
+        console.log("交換位置");
+    }
+    else {
+        console.log("不交換位置");
+    }
+    REsetDraggedBlock();
+}
+
+function checkShowAddBox() {
+
+    
+}
+
+
+var DraggedBlock;
+
+function setDraggedBlock(target)
+{
+    
+    if (target.classList.contains("ModuleBlock"))
+    {
+        REsetDraggedBlock();
+        DraggedBlock = target;
+        
+        DraggedBlock.style.opacity = 0.3;
+        
+    }
+}
+
+function REsetDraggedBlock() {
+    if (DraggedBlock) {
+
+        DraggedBlock.style.visibility = 'visible';
+        DraggedBlock.style.opacity = 1;
+        DraggedBlock = null
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// 初始化顯示視圖，將段落元素添加到 ShowView 容器中
+const newParagraph = document.createElement("p");;
+function InitShowView() {
+    const div = document.getElementById("ShowView");
+    div.appendChild(newParagraph); // 將 <p> 插入到 ShowView 中
+
+} 
+// 重置顯示視圖，清空段落內容
+function resetShowView(str) {
+    newParagraph.textContent = '';
+}
+
+// 顯示內容到段落，新增文字
+function ShowView(str) {
+    newParagraph.textContent += `[${str}]`;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function SetMouseText(str) {
+    SetFollowElementStr(str);
+}
+
+/////////////////////////////////////////////////////////////////////
+
+function SetDiv() {
+    //const targetTagName = "LABEL";
+    const targetTagName = "DIV";
+    const targets = document.querySelectorAll(targetTagName);
+
+    targets.forEach(target => {
+
+        if (target.id != "ShowView") {
+
+            target.addEventListener("mouseover",
+                (event) => {
+                    if (event.target.tagName === targetTagName) {
+                        ShowView(`${target.id} 滑鼠移入`);
+                    }
+                    event.stopPropagation();
+                }
+            );
+
+            target.addEventListener("mouseout",
+                (event) => {
+                    if (event.target.tagName === targetTagName) {
+                        ShowView(`${target.id} 滑鼠移出`);
+                    }
+                    event.stopPropagation();
+                }
+            );
+            //"${div.textContent}"
+        }
+    });
+}
+
+
+///////////////////////////////////////////////////////////////
+
+function SetModuleBlock(targetId)
+{
+    const targetClassName = "ModuleBlock"; 
+    const target = document.getElementById(targetId);  // 使用类选择器
+
+
+    target.setAttribute("draggable", "true");
+
+
+    //dragStart
+    target.addEventListener("dragstart", (event) => {
+
+
+        if (event.target.classList.contains(targetClassName)) {
+
+
+            
+            event.stopPropagation();
+            // 将当前拖动元素的引用存储到事件的 dataTransfer 中
+            //event.dataTransfer.setData("innerHTML", target.outerHTML);
+           
+            setDraggedBlock(target);
+            SetMouseText(`${target.id} 抓取`);
+            console.log(`${target.id} 抓取`);
+
+            // 设置透明影像，避免显示拖动元素的图片
+            const emptyImage = new Image();
+            emptyImage.src = ""; // 使用空白图像
+            event.dataTransfer.setDragImage(emptyImage, 0, 0);
+
+        }
+
+    });
+    target.addEventListener('dragend', () => {
+        REsetDraggedBlock();
+        CloseAddBox();
+    });
+    target.addEventListener("dragover", (event) => {
+        event.preventDefault();  // 阻止默认行为，允许放置
+
+        trackMousePosition(event, target); 
+        event.stopPropagation();
+    });
+
+    //////////////////////////////////////////////////////////////////
+    //drop
+    target.addEventListener("drop", (event) => {
+
+        dropAddBox(event);
+       
+    });
+
+
+
+    //  target.addEventListener("mousemove", (event) => {
+    //  
+    //          trackMousePosition(event, target);  event.stopPropagation();
+    //      }
+    //  );
+
+    //mouseover 和 mouseout
+    target.addEventListener("mouseover", (event) => {
+        if (event.target.classList.contains(targetClassName)) {  // 检查是否包含该类
+
+            SetMouseText(`${target.id} mouseover`);
+           
+        }
+        event.stopPropagation();
+    });
+
+    target.addEventListener("mouseout", (event) => {
+        if (event.target.classList.contains(targetClassName)) {  // 检查是否包含该类
+            SetMouseText(`${target.id} mouseout`);
+        }
+        event.stopPropagation();
+    });
+
+
+    //dragenter 和 dragleave
+
+    target.addEventListener("dragenter",
+        (event) => {
+
+          
+            event.stopPropagation();
+        }
+    );
+
+
+    target.addEventListener("dragleave",
+        (event) => {
+            if (event.target.classList.contains(targetClassName)) {
+
+
+                if (event.target.placeholder) {
+                    // 删除占位符元素
+                    event.target.placeholder.remove();
+                    event.target.placeholder = null;  // 清空占位符引用
+                }
+
+                SetMouseText(`${target.id} dragleave`);
+            }
+            event.stopPropagation();
+        }
+    );
+
+
+    SetAllLabel(target.id);
+    SetAllTable_Field(target.id);
+}
+function SetAllModuleBlock() {
+
+    const targetClassName = "ModuleBlock";  // 修改为目标类名
+    const targets = document.querySelectorAll(`.${targetClassName}`);  // 使用类选择器
+
+    targets.forEach(target => {
+        SetModuleBlock(target.id);
+    });
+}
+
+//////////////////////////////////////////////////////////////////
+
+
+function SetAllLabel(targetid) {
+
+
+
+    const targetDiv = document.getElementById(targetid);
+    var elements = targetDiv.querySelectorAll(`label`);
+    //var elements = document.querySelectorAll(`#${targetid} .table_Field`);
+    elements.forEach(function (element) {
+        
+        // SetTable_Field(element); // 輸出每個 Table_Field 元素的文本內容
+        
+       
+    });
+}
+
+
+function SetAllTable_Field(targetid) {
+
+    
+
+    const targetDiv = document.getElementById(targetid);
+    var elements = targetDiv.querySelectorAll(`.table_Field`);
+    //var elements = document.querySelectorAll(`#${targetid} .table_Field`);
+    elements.forEach(function (element) {
+
+        SetTable_Field(element); // 輸出每個 Table_Field 元素的文本內容
+    });
+}
+
+function SetTable_Field(target) {
+
+
+    target.addEventListener("mousemove", (event) => {
+
+            //SetAddBoxIn(target);
+            event.stopPropagation();
+        }
+    );
+
+    // 設定 dragenter 事件
+    target.addEventListener("dragenter", (event) => {
+
+        //target.style.backgroundColor = "lightgreen";  // 設定背景顏色
+        //console.log("設定背景顏色");
+        event.preventDefault(); // 必須調用 preventDefault 來允許放置
+        event.stopPropagation();
+    });
+
+    // 設定 dragleave 事件，恢復背景顏色
+    target.addEventListener("dragleave", (event) => {
+
+       // target.style.backgroundColor = "";  // 恢復背景顏色
+        event.stopPropagation();
+    });
+
+    // 設定 dragover 事件，防止元素被拖動時的默認行為（如禁止拖放）
+    target.addEventListener("dragover", (event) => {
+
+        event.preventDefault();  // 阻止默认行为，允许放置
+
+        event.stopPropagation();
+        if (target.children.length === 0 || target.lastElementChild !== DraggedBlock)
+        {
+            //trySetAddBoxIn(target);
+        }
+        trySetAddBoxIn(target);
+       
+
+    });
+
+    // 設定 drop 事件，處理放置邏輯
+    target.addEventListener("drop", (event) => {
+        //target.style.backgroundColor = "";  // 恢復背景顏色
+
+
+        dropAddBox(event);
+
+        event.stopPropagation();
+    });
+
+
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+function showContentToP()
+{
+    const contentContainer = document.getElementById("AutoScreen");
+    const updatedHtml = contentContainer.innerHTML;
+
+    const ShowViewP = document.getElementById("ShowViewP");
+    ShowViewP.innerText = updatedHtml;
+
+    
+}
+
+
+
+//////////////////////////////////////////////////////////////////
+let ModuleBlockId = 0;
+function initModuleBlockId()
+{
+    //ModuleBlockId
+    const targetClassName = "ModuleBlock";  // 修改为目标类名
+    const targets = document.querySelectorAll(`.${targetClassName}`);  // 使用类选择器
+
+    targets.forEach(target => {
+        const str = target.id;
+        const numberStr = str.match(/\d+/)[0]; // 提取数字部分
+
+        const number = Number(numberStr);
+        if (number > ModuleBlockId) {
+            ModuleBlockId = number;
+        }
+    });
+
+    //alert(ModuleBlockId);
+}
+
+function getModuleBlockId() {
+    return ModuleBlockId;
+}
+function ModuleBlockIdStart() {
+    ModuleBlockId++;
+}
+
+function addModuleBlock() {
+
+    ModuleBlockIdStart();
+
+    //===  創建新的 ModuleBlock 元素 =====================================
+    var newModuleBlock = document.createElement("div");
+    newModuleBlock.id = getModuleBlockId();
+    newModuleBlock.classList.add("ModuleBlock");
+    newModuleBlock.setAttribute("draggable", "false");
+    //============================================================
+
+    //===  創建 Setting 元素 =====================================
+    var ModuleSetting = document.createElement("div");
+    ModuleSetting.classList.add("ModuleSetting");
+    ModuleSetting.classList.add("bi");
+    ModuleSetting.classList.add("bi-gear");
+
+    // 隱藏元素 保留佔位
+    //ModuleSetting.style.visibility = 'hidden';
+    //ModuleSetting.style.visibility = 'visible';
+
+    // 隱藏元素，並移除佔位
+    ModuleSetting.style.display = 'none';
+    //ModuleSetting.style.display = 'block';
+
+    // 隱藏元素，使其完全透明 但是還能互動
+    //ModuleSetting.style.opacity = 0;
+    //ModuleSetting.style.opacity = '1';
+
+
+    //-----
+    newModuleBlock.appendChild(ModuleSetting);
+    //============================================================
+
+
+    
+    //===  創建 textBox 元素 =====================================
+    var textBox = document.createElement("div");
+    textBox.classList.add("textBox");
+
+    //---  創建 checkbox ---------------------------------------
+    var inputCheckbox = document.createElement("input");
+    inputCheckbox.id = `Opt_${getModuleBlockId()}`;
+    inputCheckbox.name = `Q_測試模塊${getModuleBlockId()}`;
+    inputCheckbox.type = "checkbox";
+    inputCheckbox.value = `${getModuleBlockId()}`;
+    inputCheckbox.required = true;
+    //inputCheckbox.style.display = 'none';
+    //---  創建 label ---------------------------------------
+    var label = document.createElement("label");
+    //label.id = `label_${getModuleBlockId()}`;
+
+  
+    label.setAttribute("for", `Opt_${getModuleBlockId()}`);
+    label.textContent = `測試\n模塊${getModuleBlockId()}`;
+    //label.innerHTML = `測試<br><br><br>模塊${getModuleBlockId()}`;
+    //label.style.display = 'none';
+    // 將 checkbox 和 label 添加到 textBox 中
+    textBox.appendChild(inputCheckbox);
+    textBox.appendChild(label);
+
+    $(label).on('dblclick', function () {
+        // 傳入當前點擊的 label 到 LabelTextEditActionObj
+        LabelTextEditActionObj.LabelTextEditAction(this);
+    });
+
+    //-----
+    newModuleBlock.appendChild(textBox);
+    //============================================================
+    var Ntable = document.createElement("table");
+    Ntable.classList.add("tableList");
+    var Ntr = document.createElement("tr");
+  
+    var Ntd = document.createElement("td");
+
+    var _Field = create_Field();
+ 
+
+    //_Field.style.background = "red";
+
+
+    Ntd.appendChild(_Field);
+    //Ntr.appendChild(Ntd);
+    Ntable.appendChild(Ntd);
+    newModuleBlock.appendChild(Ntable);
+
+
+    //===  創建 table 元素 =====================================
+    
+    var table = document.createElement("table");
+    table.classList.add("tableGrid");
+    // 添加兩行空的 <td> 元素
+    for (var i = 0; i < 2; i++) {
+        var tr = document.createElement("tr");
+        for (var j = 0; j < 3; j++) {
+
+
+            var _Field = create_Field();
+
+            var td = document.createElement("td");
+
+            td.appendChild(_Field);
+
+            tr.appendChild(td);
+        }
+        //tbody.appendChild(tr);
+        table.appendChild(tr);
+    }
+
+    //-----
+    newModuleBlock.appendChild(table);
+    //============================================================
+
+
+
+    // 將新的 ModuleBlock 添加到 AutoScreen 中
+    document.getElementById("AutoScreen").appendChild(newModuleBlock);
+
+
+
+
+
+    SetModuleBlock(newModuleBlock.id);
+
+    ViewToTarget(newModuleBlock.id);
+
+
+    // 向表格添加一行表头
+    //SetModuleBlockSGrid(newModuleBlock.id, "Add", "Row", "Head");
+
+    // 向表格移除一列
+    //SetModuleBlockSGrid(newModuleBlock.id,"Remove", "Column", "Feet");
+
+}
+
+
+function ViewToTarget(targetId)
+{
+
+    document.getElementById(targetId).scrollIntoView({
+        behavior: "smooth",   // 平滑滾動
+        block: "start"        // 滾動到頂部
+    });
+
+
+    //var element = document.getElementById(targetId);
+    //// 獲取元素的距離頂部的高度
+    //var elementTop = element.offsetTop;
+    //// 使用 scrollTo 滾動到元素並加上偏移量
+    //window.scrollTo({
+    //    top: elementTop - 100,  // 偏移 50px
+    //    behavior: "smooth"     // 平滑滾動
+    //});
+}
+///////////////////////////////////////////////////////////////
+
+
+function SetModuleBlockSGrid(targetId, AddOrRemove, RowOrColumn, HeadOrFeet) {
+    // 获取目标模块块
+    const moduleBlock = document.getElementById(targetId);
+
+    if (!moduleBlock) {
+        console.log("无法找到目标模块块" + targetId);
+        return;
+    }
+
+    // 获取该模块块中的表格元素
+    const table = moduleBlock.querySelector("table.tableGrid");
+
+    if (!table) {
+        console.error("目标模块块中没有表格");
+        return;
+    }
+
+    const rowCount = table.rows.length;
+    const colCount = table.rows.length > 0 ? table.rows[0].cells.length : 0;
+
+    console.log(`rowCount ${rowCount}    colCount${colCount}`);
+    // 检查表格是否小于 2x2，防止删除后表格变得过小
+    if (AddOrRemove === "Remove" &&
+        ((colCount <= 2 && RowOrColumn === "Column")
+        || (rowCount <= 2 && RowOrColumn === "Row"))
+    ) {
+        console.log("无法删除，表格必须保持至少为 2x2");
+        return;
+    }
+
+    // 添加或移除行
+    if (RowOrColumn === "Row") {
+        if (AddOrRemove === "Add") {
+            const newRow = table.insertRow(HeadOrFeet === "Head" ? 0 : table.rows.length); // 插入行（头部或尾部）
+
+            // 动态生成单元格，确保与现有列数一致
+            for (let i = 0; i < colCount; i++) {
+                const newCell = newRow.insertCell();
+                var _Field = create_Field();
+                newCell.appendChild(_Field);
+            }
+        } else if (AddOrRemove === "Remove" && table.rows.length > 0) {
+            table.deleteRow(HeadOrFeet === "Head" ? 0 : table.rows.length - 1); // 删除行（头部或尾部）
+        }
+    }
+
+    // 添加或移除列
+    if (RowOrColumn === "Column") {
+        if (AddOrRemove === "Add") {
+            for (let i = 0; i < table.rows.length; i++) {
+                const newCell = table.rows[i].insertCell(HeadOrFeet === "Head" ? 0 : table.rows[i].cells.length); // 插入列（头部或尾部）
+                var _Field = create_Field();
+                newCell.appendChild(_Field);
+            }
+        } else if (AddOrRemove === "Remove" && table.rows.length > 0 && table.rows[0].cells.length > 0) {
+            for (let i = 0; i < table.rows.length; i++) {
+                table.rows[i].deleteCell(HeadOrFeet === "Head" ? 0 : table.rows[i].cells.length - 1); // 删除列（头部或尾部）
+            }
+        }
+    }
+}
+///////////////////////////////////////////////////////////////
+
+function swapElements(div1, div2) {
+
+    if (!div1 || !div2) {
+        console.log("无法找到其中一个元素");
+        return;
+    }
+
+    // 检查是否会引发循环嵌套
+    if (div1.contains(div2) || div2.contains(div1)) {
+        console.log("不能交换，因为其中一个元素是另一个元素的子节点");
+        return;
+    }
+
+    // 获取父节点
+    const parent1 = div1.parentNode;
+    const parent2 = div2.parentNode;
+
+    if (!parent1 || !parent2) {
+        console.log("无法找到元素的父节点");
+        return;
+    }
+
+    // 克隆节点
+    const placeholder1 = document.createElement("div");
+    const placeholder2 = document.createElement("div");
+
+    // 用占位符替代原位置
+    parent1.replaceChild(placeholder1, div1);
+    parent2.replaceChild(placeholder2, div2);
+
+    // 交换位置
+    parent1.replaceChild(div2, placeholder1);
+    parent2.replaceChild(div1, placeholder2);
+
+    console.log("交換位置 結束");
+}
+
+function swapDivs(id1, id2) {
+    const div1 = document.getElementById(id1);
+    const div2 = document.getElementById(id2);
+    swapElements(div1, div2)
+}
+
+///////////////////////////////////////////////////////////////
+
+//暫時取消設置
+function trackMousePosition(event, targetDiv) {
+
+
+    if (DraggedBlock === targetDiv) {
+        console.log("DraggedBlock === targetDiv");
+        //return;
+    }
+
+    const rect = targetDiv.getBoundingClientRect(); // 获取目标DIV的位置信息
+    const mouseY = event.clientY; // 鼠标的Y坐标
+    const divMidY = rect.top + rect.height / 2; // 目标DIV的垂直中点
+    
+    if (mouseY < divMidY) {
+        // 鼠标在目标DIV的上半部分
+        
+        SetAddBoxBefore(targetDiv);
+        console.log("鼠标在"+ targetDiv.id+"上半部分");
+    } else {
+        // 鼠标在目标DIV的下半部分
+        SetAddBoxAfter(targetDiv);
+        console.log("鼠标在" + targetDiv.id +"下半部分");
+    }
+}
+
+///////////////////////////////////////////////////////////////
+
+function create_Field() {
+    let emptyDiv = document.createElement("div");
+    emptyDiv.className = "table_Field"; // 添加样式类
+    //emptyDiv.id = `${aboveOrBelow}_${Target_id}`;
+    //emptyDiv.textContent = "+"; // 可选，添加一些标识内容
+    SetTable_Field(emptyDiv);
+
+    return emptyDiv;
+
+}================================================================= 
+@using TeaTimeDemo.Resources
+@using Microsoft.AspNetCore.Identity
+@using TeaTimeDemo.Models
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head class="no-print">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TeaTimeDemo</title>
+
+    <!-- Bootstrap and site CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/TeaTimeDemo.styles.css" asp-append-version="true" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="~/lib/bootstrap-icons-1.11.3/font/bootstrap-icons.css" asp-append-version="true" />
+
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="~/lib/build/toastr.min.css" asp-append-version="true" />
+
+    <!-- DataTables and SweetAlert CSS -->
+    <link rel="stylesheet" href="~/lib/DataTables/datatables.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/package/dist/sweetalert2.min.css" asp-append-version="true" />
+
+    <!--Select2 下拉式選單-->
+    <link rel="stylesheet" href="~/lib/select2/select2.css" asp-append-version="true" />
+
+
+    <!--i18next-->
+    <link rel="stylesheet" href="~/lib/i18next/i18next.js" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/i18next/i18nextBrowserLanguageDetector.js" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/i18next/jquery-i18next.js" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true" />
+
+    <style>
+        /* 功能視窗樣式 */
+        #functionWindow {
+            width: 150px;
+            height: auto;
+            cursor: move; /* 顯示拖動手勢 */
+            z-index: 1050; /* 確保在其他元素之上 */
+        }
+
+        /* 主編輯視窗和功能視窗的佈局調整 */
+        #mainEditor {
+            margin-bottom: 20px;
+        }
+
+        #functionWindow button {
+            width: 100%;
+        }
+    </style>
+
+</head>
+<body>
+    <header class="no-print">   
+        <!-- 導覽列開始 -->
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">       
+
+            <div class="container-fluid">
+
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-i18n="Notes 自動化">Notes 自動化</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <!-- 導覽項目容器 -->
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <!-- 左側導覽連結 -->
+                    <ul class="navbar-nav flex-grow-1 ">
+                        <!-- 首頁連結 -->
+                        <li class="nav-item">
+
+
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Home" asp-action="Index" data-i18n="首頁">首頁</a>
+
+                        </li>
+                        <!-- Notes管理連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Admin" asp-controller="Order" asp-action="Index" data-i18n="Notes管理">Notes管理</a>
+                        </li>
+                        <!-- 填寫問卷連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="Index" data-i18n="填寫問卷">填寫問卷</a>
+                        </li>
+                        <!-- Notes空白表單編輯分類連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="PageGroup" asp-action="Index" data-i18n="Notes空白表單編輯分類">Notes空白表單編輯分類</a>
+                        </li>
+                        <!-- 查看已填問卷連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="AnsweredSurveyList" data-i18n="查看已填問卷">查看已填問卷</a>
+                        </li>
+                        <!-- 管理員或經理員的內容管理下拉選單 -->
+                        @if (User.IsInRole(SD.Role_Admin) || User.IsInRole(SD.Role_Manager))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" data-i18n="內容管理">內容管理</a>
+
+                                <div class="dropdown-menu">
+
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Category" asp-action="Index" data-i18n="類別">類別</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Product" asp-action="Index" data-i18n="產品">產品</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Store" asp-action="Index" data-i18n="分公司">分公司</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Station" asp-action="Index" data-i18n="站別">站別</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Survey" asp-action="Index" data-i18n="問卷">問卷</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="AdminAnswer" asp-action="Index" data-i18n="問卷管理">問卷管理</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Question" asp-action="Index" data-i18n="問題管理">問題管理</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionOption" asp-action="Index" data-i18n="選項管理">選項管理</a>
+
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="FillInBlank" asp-action="Index">填空題管理</a>
+
+                                    <!-- 內容管理下的圖片管理 -->
+
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionImage" asp-action="Index" data-i18n="圖片管理">圖片管理</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="User" asp-action="Index" data-i18n="使用者管理">使用者管理</a>
+
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="Index">問卷編輯-測試R5</a>
+
+
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register" data-i18n="建立使用者">建立使用者</a>
+                                </div>
+                            </li>
+                        }
+                        <!-- 購物車連結，包含圖示和文字 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Cart" asp-action="Index">
+                                <i class="bi bi-cart"></i> &nbsp;
+                            </a>
+
+
+                        </li>
+                       
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle"  href="#" id="navbarDropdown" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">
+                                <i class="bi bi-globe-americas"></i>
+                                <span id="current-language" data-i18n="語言切換"> </span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item language-option"  data-lang="en"  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a class="dropdown-item language-option"  data-lang="zh"  asp-controller="LangBase" asp-action="ChangeLanguage"asp-route-lang="ch-tw">繁體中文</a>
+                                <a class="dropdown-item language-option"  data-lang="th"  asp-controller="LangBase" asp-action="ChangeLanguage"asp-route-lang="th-th">ไทย</a>
+                               @* <a asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>*@
+                            </div>
+                        </li>
+                    </ul>                    
+                    
+                    <!-- 右側用戶相關選單 -->
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <!-- 用戶已登入時顯示的下拉選單 -->
+                            <li class="nav-item dropdown">
+                                <!-- 用戶名稱作為下拉選單的觸發器 -->
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @UserManager.GetUserName(User)
+                                </a>
+                                <!-- 下拉選單內容，右對齊 -->
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <!-- 更改密碼連結 -->
+                                    <li>
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/ChangePassword">更改密碼</a>
+                                    </li>
+                                    <!-- 帳戶設定連結 -->
+                                    <li>
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">帳戶設定</a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <!-- 登出表單 -->
+                                    <li>
+                                        <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" id="logoutForm" class="d-inline">
+                                            <button type="submit" class="dropdown-item">登出</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <!-- 用戶未登入時顯示的登入連結 -->
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">登入</a>
+                            </li>
+                            <!-- 用戶未登入時顯示的註冊連結 -->
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">註冊</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+
+
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+     
+
+            <!-- 顯示通知訊息 -->
+            <partial name="_Notification"/>
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted no-print" >
+        <div class="container">
+            &copy; 2024 - TeaTimeDemo <i class="bi bi-1-circle"></i>- <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- jQuery and Bootstrap JS -->   
+    <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>
+
+    
+    
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Site JS -->
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- DataTables and SweetAlert JS -->
+    <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
+    <script src="~/lib/package/dist/sweetalert2.min.js" asp-append-version="true"></script>
+
+    <!-- Toastr JS (correctly referenced) -->
+    <script src="~/lib/build/toastr.min.js" asp-append-version="true"></script>
+
+
+    <!--i18next-->
+    <script src="~/lib/i18next/i18next.js" asp-append-version="true"></script>
+    <script src="~/lib/i18next/i18nextBrowserLanguageDetector.js" asp-append-version="true"></script>
+    <script src="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true"></script>
+    <script src="~/lib/i18next/jquery-i18next.js" asp-append-version="true"></script>
+    <script src="~/js/i18n/i18n.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+
+
+</body>
+</html>========================================================= // DataAccess/Repository/IRepository/IModuleBlockRepository.cs
+using System;
+using System.Linq.Expressions;
+using TeaTimeDemo.Models.AnswersData;
+
+namespace TeaTimeDemo.DataAccess.Repository.IRepository
+{
+    public interface IModuleBlockRepository
+    {
+        ModuleBlock GetFirstOrDefault(Expression<Func<ModuleBlock, bool>> filter);
+        void Add(ModuleBlock moduleBlock); // 新增 Add 方法
+        void Update(ModuleBlock moduleBlock);
+        // 您可以根據需求添加更多方法
+    }
+}=============================================================== using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TeaTimeDemo.Models;
+
+namespace TeaTimeDemo.DataAccess.Repository.IRepository
+{
+    public interface IUnitOfWork : IDisposable
+    {
+        ICategoryRepository Category { get; }
+
+        IProductRepository Product { get; }
+
+        IStoreRepository Store { get; }
+
+        IShoppingCartRepository ShoppingCart { get; }
+
+        IApplicationUserRepository ApplicationUser { get; }
+
+        IOrderHeaderRepository OrderHeader { get; }
+
+        IOrderDetailRepository OrderDetail { get; }
+
+        IStationRepository Station { get; }
+
+        // 新增問卷相關的 Repository
+        ISurveyRepository Survey { get; }
+        IQuestionRepository Question { get; }
+        IAnswerRepository Answer { get; }
+        IAnswerOptionRepository AnswerOption { get; }
+        IQuestionImageRepository QuestionImage { get; }
+       // IRepository<QuestionImage> QuestionImage { get; }
+        IQuestionOptionRepository QuestionOption { get; }
+
+        IFillInBlankRepository FillInBlank { get; }
+
+        ISurveyGroupRepository SurveyGroup { get; }
+        ISurveyToGroupRepository SurveyToGroup { get; }
+        ILayerRepository Layer { get; }
+
+
+        //Answered
+        IAnsweredNotesRepository AnsweredNotes { get; }
+        IAnsweredProcessRepository AnsweredProcess{ get; }
+        IAnsweredPageRepository AnsweredPage { get; }
+        IAnsweredSurveyRepository AnsweredSurvey { get; }
+        ILanguageRepository Language { get; }
+
+        IModuleBlockRepository ModuleBlock { get; }
+
+
+        void Save();
+       // void DeleteEntity();
+
+        void SaveChanges();
+    }
+}============================================================== // DataAccess/Repository/ModuleBlockRepository.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using TeaTimeDemo.DataAccess.Repository.IRepository;
+using TeaTimeDemo.Models.AnswersData;
+
+namespace TeaTimeDemo.DataAccess.Repository
+{
+    public class ModuleBlockRepository : IModuleBlockRepository
+    {
+        // 模擬資料庫中的 ModuleBlocks
+        private readonly List<ModuleBlock> _moduleBlocks;
+
+        public ModuleBlockRepository()
+        {
+            _moduleBlocks = new List<ModuleBlock>();
+        }
+
+        public ModuleBlock GetFirstOrDefault(Expression<Func<ModuleBlock, bool>> filter)
+        {
+            return _moduleBlocks.AsQueryable().FirstOrDefault(filter);
+        }
+
+        public void Add(ModuleBlock moduleBlock)
+        {
+            _moduleBlocks.Add(moduleBlock);
+        }
+
+        public void Update(ModuleBlock moduleBlock)
+        {
+            var existingModule = _moduleBlocks.FirstOrDefault(m => m.Id == moduleBlock.Id);
+            if (existingModule != null)
+            {
+                existingModule.TextContent = moduleBlock.TextContent;
+                existingModule.CheakBoxData = moduleBlock.CheakBoxData;
+                // 更新其他屬性
+            }
+        }
+
+        // 其他方法根據需要實作
+    }
+}================================================================= using DocumentFormat.OpenXml.Office2010.Drawing;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TeaTimeDemo.DataAccess.Data;
+using TeaTimeDemo.DataAccess.Repository.IRepository;
+using TeaTimeDemo.Models;
+using System.Reflection;
+using DocumentFormat.OpenXml.Wordprocessing;
+
+namespace TeaTimeDemo.DataAccess.Repository
+{
+    public class UnitOfWork:IUnitOfWork
+    {
+        private ApplicationDbContext _db;
+
+
+        public ICategoryRepository Category { get; private set; }
+        public IProductRepository Product { get; private set; }
+        public IStoreRepository Store { get; private set; }
+        public IShoppingCartRepository ShoppingCart { get; private set; }
+
+        public IApplicationUserRepository ApplicationUser { get; private set; }
+
+        public IOrderHeaderRepository OrderHeader { get; private set; }
+
+        public IOrderDetailRepository OrderDetail { get; private set; }
+
+        public IStationRepository Station { get; private set; }
+
+        // 問卷相關的 Repository 實例
+        public ISurveyRepository Survey { get; private set; }
+        public IQuestionRepository Question { get; private set; }
+        public IAnswerRepository Answer { get; private set; }
+        public IAnswerOptionRepository AnswerOption { get; private set; }
+        public IQuestionImageRepository QuestionImage { get; private set; }       
+        public IQuestionOptionRepository QuestionOption { get; private set; }
+        public ISurveyGroupRepository SurveyGroup { get; private set; }
+        public ISurveyToGroupRepository SurveyToGroup { get; private set; }
+        public IFillInBlankRepository FillInBlank { get; private set; }        
+        public ILayerRepository Layer { get; private set; }
+
+        //Answered
+        public IAnsweredNotesRepository AnsweredNotes { get; private set; }
+        public IAnsweredProcessRepository AnsweredProcess { get; private set; }
+        public IAnsweredPageRepository AnsweredPage { get; private set; }
+        public IAnsweredSurveyRepository AnsweredSurvey { get; private set; }
+        public ILanguageRepository Language { get; private set; }
+
+        public IModuleBlockRepository ModuleBlock { get; private set; }
+
+
+        public UnitOfWork(ApplicationDbContext db)
+        {
+            _db = db;
+            Category = new CategoryRepository(_db);
+            Product = new ProductRepository(_db);
+            Store = new StoreRepository(_db);
+            ShoppingCart = new ShoppingCartRepository(_db);
+            ApplicationUser = new ApplicationUserRepository(_db);
+            OrderHeader = new OrderHeaderRepository(_db);
+            OrderDetail = new OrderDetailRepository(_db);
+            Station = new StationRepository(_db);
+
+            // 初始化問卷相關的 Repository
+            Survey = new SurveyRepository(_db);
+            Question = new QuestionRepository(_db);
+            Answer = new AnswerRepository(_db);
+            AnswerOption = new AnswerOptionRepository(_db);
+            QuestionImage = new QuestionImageRepository(_db);
+            QuestionOption = new QuestionOptionRepository(_db);            
+
+            SurveyToGroup = new SurveyToGroupRepository(_db);
+
+            SurveyGroup = new SurveyGroupRepository(_db);
+            FillInBlank = new FillInBlankRepository(_db);
+            Layer = new LayerRepository(_db);
+
+
+            // 初始化答題相關的 Repository
+            AnsweredNotes = new AnsweredNotesRepository(_db);
+            AnsweredProcess = new AnsweredProcessRepository(_db);
+            AnsweredPage = new AnsweredPageRepository(_db);
+            AnsweredSurvey = new AnsweredSurveyRepository(_db);
+
+            ModuleBlock = new ModuleBlockRepository();
+        }
+        public void Save()
+        {
+            _db.SaveChanges();
+        }
+
+        public void SaveChanges()
+        {
+            _db.SaveChanges();
+        }
+
+        /// <summary>
+        /// 異步保存變更
+        /// </summary>
+        /// <returns>保存變更的 Task</returns>
+        public async Task SaveAsync()
+        {
+            await _db.SaveChangesAsync();
+        }
+
+        // Dispose 方法，當不再需要 UnitOfWork 時釋放資源
+        public void Dispose()
+        {
+            _db.Dispose();
+        }
+
+
+        public int GetFieldNamedId<T>(T instance)
+        {
+            // 獲取類型 T 的所有字段
+            var field = typeof(T).GetField("Id", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+
+            if (field != null)
+            {
+                if(field.FieldType == typeof(int))
+                {
+                    return (int)field.GetValue(instance);
+                }
+                // 返回該字段的值（針對實例字段需要提供 instance）
+            }
+
+            throw new InvalidOperationException($"Field '_A' not found in type {typeof(T)}.");
+        }
+
+        public void DeleteEntity<T>(int id) where T : class
+        {
+            //Repository<T>
+            // var repository = UnitOfWork.GetRepository<T>();
+
+            var repository = getClass<Repository<T>>();
+
+            var stationToBeDeleted = repository.Get(u => GetFieldNamedId(u) == id);
+            if (stationToBeDeleted == null)
+            {
+                return;// Json(new { success = false, Message = "刪除失敗" });
+            } 
+        
+
+            repository.Remove(stationToBeDeleted);
+            Save();
+        }
+        public T getClass<T>()
+        {
+            // 獲取所有字段
+            var fields = this.GetType()
+                             .GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+
+            // 遍歷字段，找到匹配的類型
+            foreach (var field in fields)
+            {
+                if (field.FieldType == typeof(T))
+                {
+                    return (T)field.GetValue(this);
+                }
+            }
+
+            // 如果找不到匹配類型，拋出異常
+            throw new InvalidOperationException($"Type {typeof(T)} is not supported.");
+        }
+
+    }
+}================================================================ using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Presentation;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
+using HtmlAgilityPack;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
+using System.Numerics;
+using System.Reflection.Emit;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+
+namespace TeaTimeDemo.Models.AnswersData
+{
+
+	#region 模塊 : [母模組] ModuleBlock
+
+    public class ModuleBlock
+    {
+
+        public  ModuleBlock()
+        {
+            InitModuleBlockS();
+
+        }
+
+
+        public int Id { get; set; }
+
+        public string SurveyId { get; set; } //在哪一個問卷底下
+
+        //隸屬於
+        public string LayerParentId { get; set; } //在哪一個id框架底下
+
+		#region # 框架位置
+		public string PositionParentId { get; set; } //在哪一個id框架底下
+        public int OrderRow { get; set; } //位置 行
+        public int OrderColumn { get; set; } //位置 列
+        public int OrderCount { get; set; } //位置 第幾個
+        #endregion
+
+
+        #region #選項內容
+
+        public CheakBoxModule CheakBoxData = new CheakBoxModule();
+
+        #endregion
+
+
+        #region # 文本內容
+        public string TextContent { get; set; } //在哪一個id框架底下
+		public Dictionary<int, List<FillModule>> FillData = new Dictionary<int, List<FillModule>>();
+        public Dictionary<int, List<ImageModule>> ImageData = new Dictionary<int, List<ImageModule>>();
+        #endregion
+
+
+        #region  # 表格欄位
+        public List<ModuleBlock>[,] ModuleBlockS { get { return _ModuleBlockS; } }
+        public List<ModuleBlock>[,] _ModuleBlockS /*= new List<ModuleBlock>[1, 1]*/;
+        #endregion
+
+
+        public void InitModuleBlockS()
+        {
+            if(_ModuleBlockS==null)
+            {
+                return;
+            }
+            for (int i = 0; i < _ModuleBlockS.GetLength(0); i++)
+            {
+                for (int j = 0; j < _ModuleBlockS.GetLength(1); j++)
+                {
+                    _ModuleBlockS[i, j] = new List<ModuleBlock>();
+                }
+            }
+        }
+
+
+        #region  # 表格欄位設定
+
+        /// <o name="AddOrRemove">新增 (true) 或刪除 (false)。
+        /// <o name="RowOrColumn">操作行 (true) 或列 (false)。
+        /// <o name="HeadOrFeet">對頭部 (true) 或尾部 (false) 進行操作。
+        public void SetModuleBlockSGrid(bool AddOrRemove, bool RowOrColumn, bool HeadOrFeet)
+        {
+            int rows = _ModuleBlockS.GetLength(0);
+            int cols = _ModuleBlockS.GetLength(1);
+
+            if (RowOrColumn) // 行操作
+            {
+                if (AddOrRemove) // 新增
+                {
+                    List<ModuleBlock>[,] newArray = new List<ModuleBlock>[rows + 1, cols];
+                    for (int i = 0; i < rows; i++)
+                    {
+                        for (int j = 0; j < cols; j++)
+                        {
+                            newArray[HeadOrFeet ? i + 1 : i, j] = _ModuleBlockS[i, j];
+                        }
+                    }
+                    // 新增行
+                    for (int j = 0; j < cols; j++)
+                    {
+                        newArray[HeadOrFeet ? 0 : rows, j] = new List<ModuleBlock>();
+                    }
+                    _ModuleBlockS = newArray;
+                }
+                else if (rows > 1) // 刪除
+                {
+                    List<ModuleBlock>[,] newArray = new List<ModuleBlock>[rows - 1, cols];
+                    for (int i = 0; i < rows - 1; i++)
+                    {
+                        for (int j = 0; j < cols; j++)
+                        {
+                            newArray[i, j] = _ModuleBlockS[HeadOrFeet ? i + 1 : i, j];
+                        }
+                    }
+                    _ModuleBlockS = newArray;
+                }
+            }
+            else // 列操作
+            {
+                if (AddOrRemove) // 新增
+                {
+                    List<ModuleBlock>[,] newArray = new List<ModuleBlock>[rows, cols + 1];
+                    for (int i = 0; i < rows; i++)
+                    {
+                        for (int j = 0; j < cols; j++)
+                        {
+                            newArray[i, HeadOrFeet ? j + 1 : j] = _ModuleBlockS[i, j];
+                        }
+                    }
+                    // 新增列
+                    for (int i = 0; i < rows; i++)
+                    {
+                        newArray[i, HeadOrFeet ? 0 : cols] = new List<ModuleBlock>();
+                    }
+                    _ModuleBlockS = newArray;
+                }
+                else if (cols > 1) // 刪除
+                {
+                    List<ModuleBlock>[,] newArray = new List<ModuleBlock>[rows, cols - 1];
+                    for (int i = 0; i < rows; i++)
+                    {
+                        for (int j = 0; j < cols - 1; j++)
+                        {
+                            newArray[i, j] = _ModuleBlockS[i, HeadOrFeet ? j + 1 : j];
+                        }
+                    }
+                    _ModuleBlockS = newArray;
+                }
+            }
+        }
+        #endregion
+
+      
+        public string GetBlockHtml()
+        {
+            string safeId = System.Net.WebUtility.HtmlEncode(Id.ToString());
+            StringBuilder result = new StringBuilder();
+
+            result.Append($"<div id=\"{safeId}\"   class=\"ModuleBlock\"   draggable=\"true\">");
+            result.Append("<div class=\"textBox\">");
+            result.Append(OptionHtml());
+            result.Append(GetLabelHtml());
+            result.Append("</div>");
+            result.Append(GetTableHtml(ModuleBlockS));
+            result.Append("</div>");
+
+            return result.ToString();
+        }
+        private string GetLabelHtml()
+        {
+            string safeId = System.Net.WebUtility.HtmlEncode(Id.ToString());
+            // 設定 option focus 並生成 label
+            string labelHtml = $"<label id=\"label_{safeId}\"";
+            labelHtml += SetOptionFocus();
+            labelHtml += TextContent;
+            labelHtml += "</label>";
+
+            return labelHtml;
+        }
+        string OptName { get { return _CheckBoxName(); } }
+        string Q_name { get { return _QuestionName(); } }
+
+
+        string SetOptionFocus()
+        {
+
+            //如果是選項
+            if (CheakBoxData.IsCheakBoxMode && !string.IsNullOrWhiteSpace(CheakBoxData.LayerParentId))
+            {
+                return OptionFocusHtml();
+            }
+            else {
+
+                return ">";
+            }
+            
+        }
+
+
+        string _CheckBoxName()
+        {
+            return $"Opt_{Id}";
+        }
+
+        string _QuestionName()
+        {
+            return $"Q_{CheakBoxData.LayerParentId}";
+        }
+
+
+        string OptionFocusHtml()
+        {
+
+            string Result = $"for=\"{OptName}\">";
+
+            return Result;
+        }
+
+        string OptionHtml()
+        {
+            //如果是選項
+            if (CheakBoxData.IsCheakBoxMode && !string.IsNullOrWhiteSpace(CheakBoxData.LayerParentId))
+            {
+                string OptionType = CheakBoxData.IsRadio ? "radio" : "checkbox";
+
+                string Result = $"<input id=\"{OptName}\" name=\"{Q_name}\" required=\" \" type=\"checkbox\" value=\"{Id}\">";
+
+                return Result;
+            }
+            else
+            {
+                return "";
+            }
+        }
+        string GetTableHtml(List<ModuleBlock>[,] tableData)
+        {
+            StringBuilder html = new StringBuilder();
+
+            // 開始表格
+            html.AppendLine("<table>");
+
+            // 生成表格的內容 (tbody)
+            //html.AppendLine("<tbody>");
+            if(tableData==null)
+            {
+                return "";
+            }
+            for (int i = 0; i < tableData.GetLength(0); i++)  // 遍歷行
+            {
+                html.AppendLine("<tr>");
+                for (int j = 0; j < tableData.GetLength(1); j++)  // 遍歷列
+                {
+                    if(tableData[i, j]!=null)
+                    {
+                        // html.AppendLine("<td class=\"ModuleBlock\" draggable=\"true\">");
+                        html.AppendLine("<td>");
+                        html.AppendLine("<div class=\"table_Field\">");
+                        for (int k = 0; k < tableData[i, j].Count; k++)  // 遍歷列
+                        {
+                           
+                            html.AppendLine($"{tableData[i, j][k].GetBlockHtml()}");  // 取得每個單元格的值
+                          
+                        }
+                        html.AppendLine("</div>");
+                        html.AppendLine("</td>");
+                    }
+             
+                }
+                html.AppendLine("</tr>");
+            }
+
+
+            //html.AppendLine("</tbody>");
+
+            // 結束表格
+            html.AppendLine("</table>");
+
+            return html.ToString();
+        }
+
+
+    }
+
+    #endregion
+
+
+
+	public class ImageModule
+	{
+        // 圖片大小
+        public int LocWidth { get; set; }
+        public int LocHeight { get; set; }
+        // 圖片大小
+        public int Width { get; set; }
+        public int Height { get; set; }
+
+    }
+
+    public class FillModule
+    {
+        // 填空長度
+        public int Length { get; set; }
+
+        // 填空位置（可以是字符位置索引，也可以是其他標識）
+        public int Position { get; set; }
+
+        // 可選：填空的標籤或提示 (例如：「請輸入姓名」)
+        public string Placeholder { get; set; }
+
+        // 可選：用來初始化填空內容
+        public string Answer { get; set; }
+
+        public FillRule FillRule { get; set; }
+    }
+
+    public class FillRule
+    {
+        // 填空長度限制
+        public int MaxLength { get; set; }
+
+        // 是否為必填
+        public bool Required { get; set; }
+
+        // 填空的格式，使用正則表達式驗證填空
+        public string Pattern { get; set; }
+
+        // 預設值
+        public string DefaultValue { get; set; }
+
+        // 構造函數
+        public FillRule(int maxLength, bool required = true, string pattern = "", string defaultValue = "")
+        {
+            MaxLength = maxLength;
+            Required = required;
+            Pattern = pattern;
+            DefaultValue = defaultValue;
+        }
+
+        // 檢查填空內容是否符合規則
+        public bool ValidateAnswer(string answer)
+        {
+            if (Required && string.IsNullOrWhiteSpace(answer)) return false; // 必填項判斷
+            if (answer.Length > MaxLength) return false; // 長度限制
+            if (!string.IsNullOrEmpty(Pattern) && !Regex.IsMatch(answer, Pattern)) return false; // 格式驗證
+            return true;
+        }
+    }
+
+    public class CheakBoxModule
+    {
+
+        // 是否是選項框
+        public bool IsCheakBoxMode { get; set; }
+
+        //隸屬於
+        public string LayerParentId { get; set; } //在哪一個id框架底下
+
+        // 是否為必填
+        public bool IsRadio { get; set; }
+
+    }
+
+
+
+
+
+    #region  [模塊功能]
+    //	模塊功能 : 每個模塊裡面都可以放字?  還是只有標題模塊 跟 問題模塊可以?
+    //	編輯文字 : 粗細 斜體 字體顏色-背景顏色(3種 (限制避免版面混亂) )
+    //	編輯填空 : 防呆表達式 文字長度 提示 插入位置  (選項模塊)
+    //	編輯圖片 : 原始比例 調整比例 大小 文字提示 插入位置
+    //	簡/詳答題 : 提示 簡答 詳答 字元長度
+    #endregion
+
+    // ModuleBlock模組方塊
+    public enum ModuleType
+	{
+		[Display(Name = "無")]
+		None = 0,
+		[Display(Name = "標題或描述")]
+		Title =1,     // 標題(編輯文字/編輯填空/編輯圖片) 多個問題 圖片或是表格  //不能放選項
+
+		[Display(Name = "表格")]
+		Table = 2,     // 可以放多個標題 多個問題 圖片或是表格  //不能放選項
+
+		[Display(Name = "問題")] //唯一有選項功能的 不可以放問題造成無線迴圈 (流程圖例外)  >>QuestionModuleType.SingleChoiceFlow
+		Question = 3,  // 問題(編輯文字/編輯填空/編輯圖片) 可放入多個選項 圖片或是表格
+
+		[Display(Name = "選項")]  //選項模塊 由 父親類別製造 由父親定義是單選還是複選
+		Option = 4,
+	}
+
+	// 問題類型
+	public enum QuestionModuleType
+	{
+		[Display(Name = "簡/詳答題")]
+		OpenEnded = 0,  // 簡答題與詳答題 唯一
+
+        [Display(Name = "填空題")]
+		FillInTheBlank = 1,  // 單純填空題 沒有選項  唯一
+
+		[Display(Name = "單選題")]
+		SingleChoice = 2,    // 單選題 可混合填空   可以多個
+
+		[Display(Name = "複選題")]
+		MultipleChoice = 3,   // 複選題 可混合填空  可以多個
+    }
+
+
+}
+
+
+
+
+
+
+
+//<div>
+
+//  <input id="Opt_8" name="Q_5" required=" " type="checkbox" value="8">     <<複選
+//  <input id = "Opt_8" name = "Q_5" required = " "type ="radio" value ="8" >   <<單選
+//  <label for= "Opt_8" > 有前版(或相似料號) 料號：______________ 跳至(2) </label>
+
+//</div>
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+
+//    <table>
+//        <thead>
+//            <tr>
+//                <th>  [ModuleBlock]  </th>
+//                <th>  [ModuleBlock]  </th>
+//                <th>  [ModuleBlock]  </th>
+//            </tr>
+//        </thead>
+//        <tbody>
+//            <tr>
+//                <td>  [ModuleBlock]  </td>
+//                <td>  [ModuleBlock]  </td>
+//                <td>  [ModuleBlock]  </td>
+//            </tr>
+//            <tr>
+//                <td>  [ModuleBlock]  </td>
+//                <td>  [ModuleBlock]  </td>
+//                <td>  [ModuleBlock]  </td>
+//            </tr>
+//            <tr>
+//                <td>  [ModuleBlock]  </td>
+//                <td>  [ModuleBlock]  </td>
+//                <td>  [ModuleBlock]  </td>
+//            </tr>
+//        </tbody>
+//    </table>=========================================================以上是我的程式 

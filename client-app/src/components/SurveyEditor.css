@@ -1,0 +1,34 @@
+/* client-app/src/components/SurveyEditor.css */
+
+.survey-editor {
+  padding: 20px;
+}
+
+.survey-info {
+  margin-bottom: 20px;
+}
+
+.question-item {
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.option-list {
+  margin-top: 10px;
+}
+
+.option-item {
+  border: 1px dashed #aaa;
+  padding: 10px;
+  margin-bottom: 5px;
+  background-color: #fff;
+}

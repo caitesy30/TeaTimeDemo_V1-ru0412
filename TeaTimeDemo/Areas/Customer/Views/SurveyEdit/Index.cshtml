@@ -1,0 +1,414 @@
+﻿@* index.cshtml *@
+@* @model TeaTimeDemo.Models.AnswersData.ViewModels.SurveyEditIndexVM *@
+
+<!-- 如果是需要將 CSS 放在 head 中，應該使用 Styles.Render -->
+<head>
+    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
+    <link rel="stylesheet" href="~/css/surveyEdit_R5.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/labletext_CT.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/panelStyle.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/switchStyle.css" asp-append-version="true" />
+</head>
+
+
+<div id="BlockPenel">
+  
+     <div id="AutoScreenBlock">
+        <div id="AutoScreen">
+            @* @Html.Raw(Model.MceHtml) *@
+         
+        </div>
+    </div>
+
+</div>
+<div class="floating-panel no-print">
+    <button title="新增模塊" onclick="ModuleBlockCreatMgr.addModuleBlock(true)" data-bs-toggle="tooltip"><i class="bi bi-plus-circle"></i></button>
+    <button title="顯示ID" data-bs-toggle="tooltip" id="showIdBtn">
+        <i class="bi bi-eye"></i>
+    </button>
+    <button title="預覽列印" onclick="window.print()" data-bs-toggle="tooltip"><i class="bi bi-printer"></i></button>
+    <button title="儲存" data-bs-toggle="tooltip" id="savePage"><i class="bi bi-floppy2-fill"></i></button>
+    <!-- 修改：原來直接觸發匯入方法的按鈕改為觸發 Offcanvas -->
+    <button title="匯入" data-bs-toggle="offcanvas" data-bs-target="#importExportOffcanvas" >
+        <i class="bi bi-upload"></i>
+    </button>
+    <button title="編輯" data-bs-toggle="tooltip" id="edit"><i class="bi bi-pencil-square"></i></button>
+    <button title="新增圖片" id="imageButton" data-bs-target="#imageUploadCanvas" data-bs-toggle="offcanvas">
+        <i class="bi bi-image"></i>
+    </button>
+    <button title="復原刪除" data-bs-toggle="tooltip" id="undo">
+        <i class="bi bi-arrow-counterclockwise"></i>
+    </button>
+    <button title="調整模式" data-bs-toggle="tooltip" id="resizeMode" data-resize="false">
+        <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+
+    <!-- 在此插入下拉選單 -->
+    <div id="dropdown-container" class="ms-3"></div>
+
+    <!-- 隱藏的檔案上傳控制項，注意加上 name="file" -->
+    <input type="file"
+           id="importFileInput"
+           name="file"
+           style="display: none;"
+           accept=".xlsx,.xls"
+           onchange="savePageToDatabaseMgr.triggerFileUpload(this)">
+</div>
+
+<!-- 新增：匯入/匯出 Offcanvas 區塊 -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="importExportOffcanvas" aria-labelledby="importExportOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 id="importExportOffcanvasLabel">匯入 / 匯出</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="關閉"></button>
+    </div>
+    <div class="offcanvas-body">
+
+
+        <p>請選擇您要進行的操作：</p>
+        <div class="d-grid gap-3">
+            <!-- 匯入按鈕 -->
+            <button class="btn btn-primary" onclick="ModuleBlockSettingBarMgr.importTxtAndProcess()">
+                <i class="bi bi-upload"></i> 匯入
+            </button>
+            <!-- 匯出按鈕 -->
+            <button class="btn btn-success" onclick="ModuleBlockSettingBarMgr.exportModulesToTxt()">
+                <i class="bi bi-download"></i> 匯出
+            </button>
+
+            <!-- (★) 新增「儲存網頁」按鈕 → 觸發前端的 savePageToDatabase() -->
+            <button class="btn btn-warning" onclick="savePageToDatabaseMgr.savePageToDatabase()">
+                <i class="bi bi-file-earmark-check"></i> 儲存網頁
+            </button>
+
+            <!-- (★) 新增「載入Notes」按鈕，用 JS 生成對應的 Modal -->
+            <button class="btn btn-info" onclick="savePageToDatabaseMgr.openLoadNotesModal()">
+                <i class="bi bi-file-earmark-text"></i> 載入Notes
+            </button>
+
+            <!-- (★) 新增「修改Notes」按鈕 -->
+            <button class="btn btn-secondary" onclick="savePageToDatabaseMgr.updateOriginalNotes()">
+                <i class="bi bi-pencil-square"></i> 修改Notes
+            </button>
+
+            <!-- 新增切換編輯功能的按鈕 -->
+            <button id="toggleEditModalBtn" class="btn btn-pink" onclick="savePageToDatabaseMgr.toggleEditModal()">切換編輯功能（開/關）</button>
+        </div>
+
+        <hr />
+
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="imageUploadCanvas" aria-labelledby="imageUploadCanvasLabel">
+    <div class="offcanvas-header">
+        <h5 id="imageUploadCanvasLabel">上傳圖片</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="imageUploadForm" asp-action="UploadImage" asp-controller="SurveyEdit" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="imageFile" class="form-label">選擇圖片</label>
+                <input type="file" class="form-control" id="imageFile" accept="image/*" name="file">
+            </div>
+            <div id="imagePreview" class="text-center"></div>
+            
+            <button type="button" class="btn btn-primary mt-3" id="addImageButton">新增圖片</button>
+            <button type="submit">up</button>
+        </form>
+    </div>
+</div>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="htmlUploadCanvas" aria-labelledby="htmlUploadCanvasLabel">
+    <div class="offcanvas-header">
+        <h5 id="htmlUploadCanvasLabel">上傳檔案</h5>
+    </div>
+</div>
+
+
+<!-- 編輯文本的模態視窗（改為三分頁） -->
+<div class="modal fade" id="editTextModal" tabindex="-1" aria-labelledby="editTextModalLabel">
+    <div class="modal-dialog custom-modal-dialog modal-lg">
+        <div class="modal-content custom-modal-content">
+            <div class="modal-header border-0">
+                          
+
+                <!-- 分頁標籤 -->
+                <ul class="nav nav-tabs" id="editModalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active"
+                                id="edit-text-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#edit-text"
+                                type="button" role="tab"
+                                aria-controls="edit-text"
+                                aria-selected="true">
+                            編輯文本
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link"
+                                id="add-table-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#add-table"
+                                type="button" role="tab"
+                                aria-controls="add-table"
+                                aria-selected="false">
+                            新增表格
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link"
+                                id="add-image-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#add-image"
+                                type="button" role="tab"
+                                aria-controls="add-image"
+                                aria-selected="false">
+                            新增圖片
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- 顯示X關閉符號 -->
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+
+            </div>
+
+            <div class="modal-body custom-modal-body">
+              
+
+                <!-- 分頁內容 -->
+                <div class="tab-content p-3" id="editModalTabsContent">
+                    <!-- 編輯文本分頁 -->
+                    <div class="tab-pane fade show active"
+                         id="edit-text"
+                         role="tabpanel"
+                         aria-labelledby="edit-text-tab">
+                        <div class="d-flex flex-row align-items-start">
+                            <!-- 左邊/右邊都在這裡 -->
+                            <!-- 加載插入填空的模態視窗 -->
+                            <partial name="Partials/InsertFillInfoPartial" model="Model" />
+
+                            <textarea id="textEditor" class="form-control" style="height: 300px; flex: 1;"></textarea>
+                            <div class="d-flex flex-column ms-2">
+                                <!-- 與文本相關的功能按鈕 -->
+                                <button type="button" id="saveTextBtn" class="btn btn-primary btn-image-save me-2" data-bs-dismiss="modal" aria-label="保存變更" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-custom-class="custom-tooltip" data-bs-title="保存變更">
+                                    <span class="visually-hidden">保存變更</span>
+                                </button>
+                                <button type="button" id="LoadTextBtn" class="btn btn-primary btn-image-Load me-2" data-bs-dismiss="modal" aria-label="載入" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-custom-class="custom-tooltip" data-bs-title="載入">
+                                    <span class="visually-hidden">載入</span>
+                                </button>
+                                <button type="button" id="InsertFillBtn" class="btn btn-primary btn-image-InsertFill me-2" aria-label="插入填空" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-custom-class="custom-tooltip" data-bs-title="插入填空">
+                                    <span class="visually-hidden">插入填空</span>
+                                </button>
+                                <button type="button" id="DivBtn" class="btn btn-primary btn-image-Div me-2" aria-label="顯示切換" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-custom-class="custom-tooltip" data-bs-title="顯示切換">
+                                    <span class="visually-hidden">顯示切換</span>
+                                </button>
+
+                                <button type="button" class="btn btn-secondary btn-image-close" data-bs-dismiss="modal" aria-label="關閉" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-custom-class="custom-tooltip" data-bs-title="離開">
+                                    <span class="visually-hidden">關閉</span>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+
+                   
+
+                    <!-- 新增表格分頁 -->
+                    <div class="tab-pane fade"
+                         id="add-table"
+                         role="tabpanel"
+                         aria-labelledby="add-table-tab">
+                        <!-- 自行添加表格 UI，例如 rows, columns, styles... -->
+                        <p>在此新增表格建立介面</p>
+                    </div>
+
+                    <!-- 新增圖片分頁 -->
+                    <div class="tab-pane fade"
+                         id="add-image"
+                         role="tabpanel"
+                         aria-labelledby="add-image-tab">
+                        <!-- 自行添加圖片上傳或插入介面 -->
+                        <div id="print-options">
+                            <h2>列印選項</h2>
+                            <br><br>
+                            <label>
+                                字體大小：
+                                <select id="font-size-selector" data-default-size="16">
+                                    <option value="8">8px</option>
+                                    <option value="10">10px</option>
+                                    <option value="12">12px</option>
+                                    <option value="14">14px</option>
+                                    <option value="16" selected>16px</option>
+                                    <option value="18">18px</option>
+                                    <option value="20">20px</option>
+                                </select>
+                            </label>
+                            <br><br>
+                            <label>
+                                顯示圖片：
+                                <input type="checkbox" id="show-images" checked>
+                            </label>
+                            <br><br>
+                            <button id="preview-btn">預覽</button>
+                            <button id="print-btn">列印</button>
+                        </div>
+
+                        <div id="preview">
+                            <h2>列印預覽</h2>
+                            <p id="preview-content" data-font-size="16">這是將被列印的內容。</p>
+                            <img src="#" alt="預覽圖片" id="preview-image">
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+      
+        </div>
+    </div>
+</div>
+
+
+
+@* <button type="button" onclick="resetShowView()">重置</button> *@
+
+
+@* no-print *@
+
+<div class="no-print">
+
+
+    @* <button type="button" onclick="resetShowView()">重置</button> *@
+
+    @* <button type="button" onclick="showContentToP()">showContentToP</button> *@
+
+    @* <div>
+    <p id="ShowViewP">
+    @Model.MceHtml
+
+    </p>
+    </div> *@
+
+    @* <div id="ShowView">
+    </div> *@
+
+
+   @*
+    <label for="slider">調整數值：</label>
+    <input type="range" id="slider" min="0" max="14" value="10">
+    <p>目前值：<span id="sliderValue">10</span></p>
+   *@
+
+   
+    <button type="button" onclick="ModuleBlockCreatMgr.addModuleBlock(true)">新增模塊</button>
+    <button type="button" onclick="Test.testAction()">測試Class</button>
+    <button type="button" class="btn btn-info ms-2" id="testRegexBtn">測試驗證</button>
+ 
+ 
+    
+
+        
+
+    <i class="bi bi-gear" style="font-size:14px;"></i>
+    <i class="bi bi-trash" style="font-size:14px;"></i>
+    <i class="bi bi-plus-square" style="font-size:14px; "></i>
+    <i class="fa-solid fa-bars" style="font-size:14px;"></i>
+    <i class="tox-collection__item-icon" style="font-size:14px;"></i>
+
+</div>
+
+
+
+
+<div id="followMouse">
+    FollowMouse
+</div>
+
+
+<svg id="arrowSvg">
+    <line id="arrow" x1="0" y1="0" x2="0" y2="0" stroke="lightgray" stroke-width="1" marker-end="url(#arrowhead)" />
+    <defs>
+        <marker id="arrowhead" markerWidth="7" markerHeight="8" refX="7" refY="4" orient="auto">
+            <polygon points="0 0,7 4, 0 8" fill="lightgray" />
+        </marker>
+    </defs>
+</svg>
+
+<!-- (B) 這裡加上懸浮書本符號容器 (floatingBookContainer) -->
+<div id="floatingBookContainer"></div>
+
+
+@section Scripts {
+
+    <script>
+        // 監聽標籤切換事件
+        const tabs = document.getElementById('editModalTabs');
+        tabs.addEventListener('shown.bs.tab', (event) => {
+            console.log("切換");
+            // 可以訪問切換後的標籤和目標
+            console.log("目前切換到的標籤是：", event.target); // 切換到的按鈕
+            console.log("之前的標籤是：", event.relatedTarget);   // 之前的按鈕
+        });
+    </script>
+
+    @* 
+    <script src="https://kit.fontawesome.com/81cb28ac0f.js"
+            crossorigin="anonymous"></script> *@
+
+    <!-- 這裡放的是腳本，通常不是放 CSS -->
+
+    <script>
+        // 確保 JavaScript 代碼在 <script> 標籤內
+       
+
+                // 確保頁面 DOM 載入完成後再執行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 設定 toggleEditModalBtn 按鈕背景為粉紅色與文字為白色
+            var toggleBtn = document.getElementById("toggleEditModalBtn");
+            if (toggleBtn) {
+                toggleBtn.style.backgroundColor = "#ff69b4"; // 粉紅色
+                toggleBtn.style.color = "white";
+            }
+        });
+    </script>
+
+   
+
+
+    <script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
+    @*====================編輯文本================================================== *@   
+    <script src="~/js/ModuleBlockElementMgr.js" asp-append-version="true"></script>
+    <script src="~/js/SurveyEditer.js" asp-append-version="true"></script>
+    <script src="~/js/ModuleBlockEditMgr.js" asp-append-version="true"></script>
+    <script src="~/js/AutoScreen.js" asp-append-version="true"></script>
+    <script src="~/js/SwitchBtnEditor.js" asp-append-version="true"></script>
+    <script src="~/js/SurveyAnswerMode.js" asp-append-version="true"></script>
+    <script src="~/js/SurveyEditerModeMgr.js" asp-append-version="true"></script>
+        
+    
+    @*====================編輯文本================================================== *@   
+  
+    <script src="~/js/dialogTabEvents.js" asp-append-version="true"></script>
+
+
+    <script src="~/js/editorFunctions.js" asp-append-version="true"></script>
+    <script src="~/js/fillFunctions.js" asp-append-version="true"></script>
+    <script src="~/js/divFunctions.js" asp-append-version="true"></script>
+    <script src="~/js/loadAndSaveFunctions.js" asp-append-version="true"></script>
+    <script src="~/js/ModuleBlockSettingBarMgr.js" asp-append-version="true"></script>
+    <script src="~/js/LabelTextEdit.js" asp-append-version="true"></script>
+    @*====================編輯文本================================================== *@
+     <script src="~/js/surveyPanel.js" asp-append-version="true"></script>
+    <script src="~/js/savePageToDatabase.js" asp-append-version="true"></script>
+
+      <!-- (C) 最後：引用懸浮書本視窗 JS -->
+    <script src="~/js/floatingBookWindow.js" asp-append-version="true"></script>
+
+}
+
+
+
+
+

@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "回收筒 - 圖片管理";
+}
+
+<h2 class="text-primary"><i class="bi bi-trash"></i> 回收筒 - 圖片管理</h2>
+
+<!-- 顯示 TempData 的錯誤訊息 -->
+@if (TempData["ERROR"] != null)
+{
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ERROR"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+}
+
+<!-- 顯示 TempData 的成功訊息 -->
+@if (TempData["success"] != null)
+{
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+}
+
+<!-- 返回列表按鈕 -->
+<p>
+    <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+</p>
+
+<div style="overflow-x:auto;">
+    <table id="tblDeletedData" class="table table-bordered table-striped" style="width:100%;">
+        <thead>
+            <tr>
+                <th>圖片ID</th>
+                <th>圖片</th>
+                <th>圖片路徑</th>
+                <th>問卷ID</th>
+                <th>問題ID</th>
+                <th>選項ID</th>
+                <th>描述</th>
+                <th>寬度</th>
+                <th>高度</th>
+                <th>刪除時間</th>
+                <th>操作</th>
+                <th>圖片擴展名</th>
+                <th>圖片Base64_Part</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- 預覽用的懸浮容器 -->
+<div id="imagePreviewContainer" style="position:absolute; display:none; border:1px solid #ccc; background:#fff; padding:5px; z-index:999;">
+    <img id="imagePreview" src="" alt="預覽圖片" style="max-width:500px; max-height:500px;" />
+</div>
+
+@section Scripts {
+        <script src="~/js/questionImageRecycle.js" asp-append-version="true"></script>
+}

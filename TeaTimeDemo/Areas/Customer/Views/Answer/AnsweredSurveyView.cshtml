@@ -1,0 +1,17 @@
+﻿
+@* @model    TeaTimeDemo.Models.AnsweredSurvey *@
+@model  string
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Show HTML</title>
+</head>
+<body>
+    <h1>HTML Content</h1>
+    <div>
+        @Html.Raw(Model) <!-- 将传入的 HTML 字符串直接渲染 -->
+    </div>
+</body>
+</html>
+
+

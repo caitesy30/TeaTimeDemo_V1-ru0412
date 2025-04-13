@@ -1,0 +1,49 @@
+﻿@model TeaTimeDemo.Models.ViewModels.FillInBlankVM
+
+<form asp-action="@ViewData["Action"]" method="post">
+    @Html.AntiForgeryToken()
+
+    @if (ViewData["Action"].ToString() == "Edit")
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div class="form-group mb-3">
+        <label asp-for="BlankNumber" class="control-label"></label>
+        <input asp-for="BlankNumber" class="form-control" />
+        <span asp-validation-for="BlankNumber" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Placeholder" class="control-label"></label>
+        <input asp-for="Placeholder" class="form-control" />
+        <span asp-validation-for="Placeholder" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="RegexPattern" class="control-label"></label>
+        <input asp-for="RegexPattern" class="form-control" />
+        <span asp-validation-for="RegexPattern" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Length" class="control-label"></label>
+        <input asp-for="Length" class="form-control" />
+        <span asp-validation-for="Length" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Position" class="control-label"></label>
+        <input asp-for="Position" class="form-control" />
+        <span asp-validation-for="Position" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <input type="submit" value="保存" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">取消</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

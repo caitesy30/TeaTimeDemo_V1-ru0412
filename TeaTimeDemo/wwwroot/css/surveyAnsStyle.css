@@ -1,0 +1,397 @@
+﻿
+.Survey {
+    /*outline: 10px solid darkslategrey;*/
+    outline-offset: -1px;
+    background-color: white;
+    margin-block: 10px;
+    width: 100%;
+}
+
+#AutoScreen {
+    background-color: transparent;
+}
+
+.SurvryBar {
+    background-color: mediumturquoise;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+}
+
+/*===使用者上傳圖片的尾Bar=============================================================*/
+/* 尾Bar主容器 */
+.TailBar {
+    border-top: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 20px;
+}
+
+/* 第一列：文件編號與上傳按鈕 */
+.TailBarRow1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+   
+}
+    .TailBarRow1 > span {
+        width:100%;
+        border-radius: 5px;
+        padding: 5px;
+        padding-left: 8px;
+        padding-right: 8px;
+        color: white;
+        font-size: 12px;
+        text-align: center;
+        /*#80ab91   #839c8d   #8ead9b*/
+        background-color: #8ead9b;
+    }
+
+
+/* 第二列：圖片預覽區，置中對齊 */
+.TailBarRow2 {
+    margin-top: 10px;
+    text-align: center;
+    /*---------------*/
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: stretch;
+}
+
+/* 上傳圖片按鈕 */
+.UploadImageBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
+/* 圖片容器 */
+.UploadedImageContainer {
+    display: inline-block;
+    position: relative;
+    margin: 5px;
+    transition: box-shadow 0.2s;
+}
+
+    /* 當鼠標移入圖片容器時，顯示箭頭 */
+    .UploadedImageContainer:hover .ArrowContainer {
+        display: flex;
+    }
+
+/* 預設隱藏箭頭容器 */
+.ArrowContainer {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    flex-direction: column;
+}
+
+/* 箭頭按鈕 */
+.ArrowBtn {
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    transition: transform 0.2s, background 0.2s;
+    padding: 2px 4px;
+    margin: 1px;
+    border-radius: 3px;
+}
+
+/* 圖片容器選取狀態，顯示藍色邊框 */
+.UploadedImageContainer.selected {
+    border: 2px solid blue;
+}
+
+/* 四個角的調整手柄 */
+.resize-handle {
+    width: 10px;
+    height: 10px;
+    background: blue;
+    position: absolute;
+    z-index: 10;
+}
+
+/* 四個角手柄定位 */
+.handle-tl {
+    top: -5px;
+    left: -5px;
+    cursor: nwse-resize;
+}
+
+.handle-tr {
+    top: -5px;
+    right: -5px;
+    cursor: nesw-resize;
+}
+
+.handle-bl {
+    bottom: -5px;
+    left: -5px;
+    cursor: nesw-resize;
+}
+
+.handle-br {
+    bottom: -5px;
+    right: -5px;
+    cursor: nwse-resize;
+}
+
+
+/*===使用者填寫畫面的功能列=============================================================*/
+
+/* 功能列本身 */
+.documentMenuBar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+    transition: transform 0.3s; /* 若要滑動隱藏 */
+}
+
+
+    .documentMenuBar.hideBar {
+        transform: translateY(-100%);
+    }
+
+    /* 功能列內部的 ul */
+    .documentMenuBar > ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        width: 100%;
+        align-items: center;
+    }
+
+        /* 功能列的li */
+        .documentMenuBar > ul > li {
+            position: relative;
+            margin-right: 20px;
+            cursor: pointer;
+            padding: 0 10px;
+            line-height: 40px;
+        }
+
+            .documentMenuBar > ul > li ul {
+                position: absolute;
+                top: 40px; /* 下拉選單往下顯示 */
+                left: 0;
+                background-color: #fff;
+                border: 1px solid #ccc;
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: none;
+                min-width: 120px;
+                z-index: 99999;
+            }
+
+            .documentMenuBar > ul > li:hover ul {
+                display: block;
+            }
+
+            .documentMenuBar > ul > li ul li {
+                padding: 5px 10px;
+                white-space: nowrap;
+            }
+
+                .documentMenuBar > ul > li ul li:hover {
+                    background-color: #f2f2f2;
+                    color: #007bff;
+                }
+
+/* 功能列箭頭：靠最右邊 */
+.toggleArrowUp {
+    margin-left: auto;
+    margin-right: 10px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+    user-select: none;
+}
+
+/* 當功能列收合時隱藏 */
+.documentMenuBar.collapsed {
+    display: none; /* 或 transform: translateY(-100%); 均可 */
+}
+
+/*=== 隱藏區塊：當功能列收合後，使用者可在此區點擊以重新顯示 ===*/
+/* 釘選按鈕 */
+.pinBtn {
+    margin-left: auto; /* 讓它靠最右 (和箭頭一起) */
+    margin-right: 5px;
+    cursor: pointer;
+    font-size: 1.4em;
+    line-height: 40px; /* 與功能列高度一致 */
+}
+
+
+
+/* 雙箭頭區塊 .toggleArrowUp */
+.toggleArrowUp {
+    margin-right: 10px;
+    cursor: pointer;
+    font-size: 1.4em;
+    line-height: 40px;
+    user-select: none;
+}
+
+    /* 滑過箭頭時，顏色變化 (可自行調整) */
+    .toggleArrowUp:hover {
+        color: #007bff;
+    }
+
+/* 讓 .rightTools (釘選+雙箭頭) 靠最右 */
+.rightTools {
+    margin-left: auto; /* 推到最右 */
+    display: flex; /* 內部排在同一行 */
+    align-items: center;
+    gap: 10px; /* 圖示間距 */
+    margin-right: 10px; /* 與右側保持距離 */
+}
+
+/* 釘選按鈕與雙箭頭的共同屬性 */
+.pinBtn, .toggleArrowUp {
+    cursor: pointer;
+    font-size: 1.4em; /* 圖示大小 */
+    line-height: 40px; /* 與列高一致 */
+    user-select: none; /* 避免被選取 */
+    transition: transform 0.2s; /* 放大時的動畫 */
+}
+
+    /* 釘選或箭頭在 hover 時放大 1.25 倍 */
+    .pinBtn:hover, .toggleArrowUp:hover {
+        transform: scale(1.25);
+    }
+
+    /* 釘選後的樣式（可自行調整顏色） */
+    .pinBtn.pinned {
+        color: #808080;
+        font-weight: bold;
+    }
+
+/* 1.先指定你希望哪些元素有放大效果： */
+/*   下面示範了 pinBtn、toggleArrowUp、.documentMenuBar 裏頭的所有 li、以及整個文件內的 <button> */
+.pinBtn,
+.toggleArrowUp,
+.documentMenuBar ul li,
+.documentMenuBar ul li ul li,
+button {
+    transform-origin: left center; /* 或用 transform-origin: 0 50%; */
+    margin-left: 5px; /* 視需要微調，讓字不要太靠左 */
+
+    transition: transform 0.2s; /* 動畫時間，可自行調整 */
+    /* 若想讓文字游標變成手形 (cursor:pointer) 也可加上：cursor: pointer; */
+}
+
+    /* 2. 當滑鼠移到以上這些元素上時，放大 1.25 倍 */
+    .pinBtn:hover,
+    .toggleArrowUp:hover,
+    .documentMenuBar ul li:hover,
+    .documentMenuBar ul li ul li:hover,
+    button:hover {
+        transform: scale(1.25);
+    }
+
+
+/* 隱藏區 #documentMenuBarHiddenZone */
+#documentMenuBarHiddenZone {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background-color: transparent;
+    cursor: pointer;
+    z-index: 9998;
+    display: none; /* 預設隱藏 */
+}
+
+/* 收合後顯示這個隱藏區 */
+.documentMenuBarHidden {
+    display: block !important;
+}
+
+/* 新增：功能列按鈕點擊特效====================================== */
+.menu-click-effect {
+    animation: menuClickAnim 0.3s ease-out;
+}
+
+@keyframes menuClickAnim {
+    0% {
+        background-color: rgba(0, 123, 255, 0.5);
+        transform: scale(1);
+    }
+
+    50% {
+        background-color: rgba(0, 123, 255, 0.8);
+        transform: scale(1.05);
+    }
+
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+
+
+/*====================================================================*/
+
+
+
+@media print {
+    #BlockPenel {
+        padding: 0px;
+        display: flex; /* 使用 Flexbox 布局 */
+        justify-content: center; /* 水平居中 */
+        background-color: transparent;
+    }
+    .Survey {
+        page-break-after: always;
+    }
+
+
+
+
+    /*.ModuleBlock {
+        page-break-inside: avoid;*/ /* 避免分页切割 */
+    /*}*/
+
+    /*page-break-before: always;*/
+    /*page-break-after: always;*/
+    /*page-break-inside: auto;*/
+    /* avoid */
+
+    #followMouse {
+        display: none;
+    }
+
+    #arrowSvg {
+        display: none;
+    }
+
+    .displayId {
+        display: none;
+    }
+    
+    .tooltip {
+        display: none;
+    }
+   
+}

@@ -1,0 +1,35 @@
+﻿<!-- Index.cshtml -->
+@model IEnumerable<TeaTimeDemo.Models.Answer>
+
+<h2>問卷答案管理</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>使用者</th>
+            <th>問題</th>
+            <th>答案</th>
+            <th>時間</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var answer in Model)
+        {
+            <tr>
+                <td>@answer.ApplicationUser?.Name</td>
+                <td>@answer.Question?.QuestionText</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(answer.AnswerText))
+                    {
+                        @answer.AnswerText
+                    }
+                    else if (answer.SelectedOptions != null && answer.SelectedOptions.Any())
+                    {
+                        @string.Join(", ", answer.SelectedOptions.Select(o => o.QuestionOption.OptionText))
+                    }
+                </td>
+                <td>@answer.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            </tr>
+        }
+    </tbody>
+</table>

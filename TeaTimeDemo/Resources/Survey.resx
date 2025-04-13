@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+
+  <data name="_TeaTimeDemo">
+    <value>- TeaTimeDemo</value>
+  </data>
+  <data name="Notes_">
+    <value>Notes 自動化</value>
+  </data>
+  <data name="text_zbdgsf">
+    <value>首頁</value>
+  </data>
+  <data name="Notes">
+    <value>Notes管理</value>
+  </data>
+  <data name="text_u89l5">
+    <value>填寫問卷</value>
+  </data>
+  <data name="Notes">
+    <value>Notes空白表單編輯分類</value>
+  </data>
+  <data name="text_8626su">
+    <value>查看已填問卷</value>
+  </data>
+  <data name="text_2jthy">
+    <value>內容管理</value>
+  </data>
+  <data name="text_4p5mru">
+    <value>類別</value>
+  </data>
+  <data name="text_h4o0m2">
+    <value>產品</value>
+  </data>
+  <data name="text_6s7wan">
+    <value>分公司</value>
+  </data>
+  <data name="text_ubhwm">
+    <value>站別</value>
+  </data>
+  <data name="text_9w35hc">
+    <value>問卷</value>
+  </data>
+  <data name="text_qbug6">
+    <value>問卷管理</value>
+  </data>
+  <data name="text_ex5co8">
+    <value>問題管理</value>
+  </data>
+  <data name="text_nov80j">
+    <value>選項管理</value>
+  </data>
+  <data name="text_70r0f">
+    <value>填空題管理</value>
+  </data>
+  <data name="text_8vkshnt">
+    <value>圖片管理</value>
+  </data>
+  <data name="text_7l6x4n">
+    <value>使用者管理</value>
+  </data>
+  <data name="text_66ob9h">
+    <value>建立使用者</value>
+  </data>
+  <data name="English">
+    <value>English</value>
+  </data>
+  <data name="text_akhh8g">
+    <value>繁體中文</value>
+  </data>
+  <data name="text_uekua0n">
+    <value>ไทย</value>
+  </data>
+  <data name="helloallenhsugmailcom">
+    <value>helloallenhsu@gmail.com</value>
+  </data>
+  <data name="text_it75oq">
+    <value>更改密碼</value>
+  </data>
+  <data name="text_7r5rid">
+    <value>帳戶設定</value>
+  </data>
+  <data name="text_673qfm">
+    <value>登出</value>
+  </data>
+  <data name="Notes_">
+    <value>Notes 管理</value>
+  </data>
+  <data name="_Notes">
+    <value>新增 Notes</value>
+  </data>
+  <data name="_Excel">
+    <value>匯出 Excel</value>
+  </data>
+  <data name="_Excel">
+    <value>匯入 Excel</value>
+  </data>
+  <data name="text_gvu0q8">
+    <value>匯入新增資料</value>
+  </data>
+  <data name="text_6i5dm4">
+    <value>取代現有資料</value>
+  </data>
+  <data name="_">
+    <value>顯示 項結果</value>
+  </data>
+  <data name="text_10">
+    <value>10</value>
+  </data>
+  <data name="text_25">
+    <value>25</value>
+  </data>
+  <data name="text_50">
+    <value>50</value>
+  </data>
+  <data name="text_100">
+    <value>100</value>
+  </data>
+  <data name="text_2ovv3">
+    <value>搜尋:</value>
+  </data>
+  <data name="text_94rzig">
+    <value>問卷標題</value>
+  </data>
+  <data name="text_9whkon">
+    <value>描述</value>
+  </data>
+  <data name="text_pln3m">
+    <value>頁數</value>
+  </data>
+  <data name="text_ld24ap">
+    <value>發佈</value>
+  </data>
+  <data name="text_2d7jof">
+    <value>創立時間</value>
+  </data>
+  <data name="text_2vnm5g">
+    <value>完成時間</value>
+  </data>
+  <data name="text_vefpcg">
+    <value>建立人</value>
+  </data>
+  <data name="text_vr0suh">
+    <value>操作</value>
+  </data>
+  <data name="text_ls1dff">
+    <value>汽車板</value>
+  </data>
+  <data name="_">
+    <value>產品複製 製作：</value>
+  </data>
+  <data name="text_19">
+    <value>19</value>
+  </data>
+  <data name="TOOLINGPAGE3">
+    <value>TOOLING製作注意事項PAGE3</value>
+  </data>
+  <data name="text_3">
+    <value>3</value>
+  </data>
+  <data name="text_krntim">
+    <value>否</value>
+  </data>
+  <data name="text_20241202_094127">
+    <value>2024/12/02 09:41:27</value>
+  </data>
+  <data name="Administrator">
+    <value>Administrator</value>
+  </data>
+  <data name="text_f5s8h4">
+    <value>編輯</value>
+  </data>
+  <data name="text_6hbzbj">
+    <value>刪除</value>
+  </data>
+  <data name="Continental_sample_manufacture_checklist">
+    <value>Continental sample manufacture checklist</value>
+  </data>
+  <data name="text_2">
+    <value>2</value>
+  </data>
+  <data name="Continental_Notes">
+    <value>Continental 專用 Notes</value>
+  </data>
+  <data name="text_1">
+    <value>1</value>
+  </data>
+  <data name="text_20241202_094128">
+    <value>2024/12/02 09:41:28</value>
+  </data>
+  <data name="Continental_Notes">
+    <value>Continental 專用Notes</value>
+  </data>
+  <data name="CONTINENTAL">
+    <value>CONTINENTAL汽車板料號:</value>
+  </data>
+  <data name="text_20241202_094129">
+    <value>2024/12/02 09:41:29</value>
+  </data>
+  <data name="text_a72io">
+    <value>陳韻伶</value>
+  </data>
+  <data name="check_list">
+    <value>check list</value>
+  </data>
+  <data name="text_4">
+    <value>4</value>
+  </data>
+  <data name="Panel">
+    <value>產品Panel製作：</value>
+  </data>
+  <data name="text_5">
+    <value>5</value>
+  </data>
+  <data name="text_6">
+    <value>6</value>
+  </data>
+  <data name="text_7">
+    <value>7</value>
+  </data>
+  <data name="text_8">
+    <value>8</value>
+  </data>
+  <data name="text_9">
+    <value>9</value>
+  </data>
+  <data name="_1_10_176_">
+    <value>顯示第 1 至 10 項結果，共 176 項</value>
+  </data>
+  <data name="text_5tov1l">
+    <value>上頁</value>
+  </data>
+  <data name="text_1678qh">
+    <value>…</value>
+  </data>
+  <data name="text_18">
+    <value>18</value>
+  </data>
+  <data name="text_pyl2l">
+    <value>下頁</value>
+  </data>
+  <data name="text_en8bq">
+    <value>末頁</value>
+  </data>
+  <data name="_2024_TeaTimeDemo_">
+    <value>© 2024 - TeaTimeDemo -</value>
+  </data>
+  <data name="Privacy">
+    <value>Privacy</value>
+  </data>
+  <data name="function_showImportExport_documentgetElementByIdim">
+    <value>function showImportExport() {
+            document.getElementById(&apos;importExportSection&apos;).style.display = &apos;block&apos;;
+        }</value>
+  </data>
+  <data name="RESX">
+    <value>提取文本並下載RESX</value>
+  </data>
+</root>

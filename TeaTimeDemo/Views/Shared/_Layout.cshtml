@@ -1,0 +1,305 @@
+
+@using TeaTimeDemo.Resources
+@using Microsoft.AspNetCore.Identity
+@using TeaTimeDemo.Models
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head class="no-print">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TeaTimeDemo</title>
+
+    <!-- Bootstrap and site CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/TeaTimeDemo.styles.css" asp-append-version="true" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="~/lib/bootstrap-icons-1.11.3/font/bootstrap-icons.css" asp-append-version="true" />
+
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="~/lib/build/toastr.min.css" asp-append-version="true" />
+
+    <!-- DataTables and SweetAlert CSS -->
+    <link rel="stylesheet" href="~/lib/DataTables/datatables.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/package/dist/sweetalert2.min.css" asp-append-version="true" />
+
+    <!--Select2 下拉式選單-->
+    <link rel="stylesheet" href="~/lib/select2/select2.css" asp-append-version="true" />
+
+
+    <!-- i18next (註解掉) -->
+    @* 
+    <link rel="stylesheet" href="~/lib/i18next/i18next.js" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/i18next/i18nextBrowserLanguageDetector.js" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/i18next/jquery-i18next.js" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true" />
+     *@
+
+    <style>
+        /* 功能視窗樣式 */
+        #functionWindow {
+            width: 150px;
+            height: auto;
+            cursor: move; /* 顯示拖動手勢 */
+            z-index: 1050; /* 確保在其他元素之上 */
+        }
+
+        /* 主編輯視窗和功能視窗的佈局調整 */
+        #mainEditor {
+            margin-bottom: 20px;
+        }
+
+        #functionWindow button {
+            width: 100%;
+        }
+
+        /* Google Translate CSS (可選) */
+        .goog-te-gadget {
+            color: transparent;
+        }
+
+            .goog-te-gadget .goog-te-menu-value span {
+                color: #000; /* 設定翻譯文字的顏色 */
+            }
+    </style>
+
+    <!-- Google Translate 小工具的初始化腳本 -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'zh-TW',
+                includedLanguages: 'en,zh,th',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+    </script>
+    @* <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script> *@
+    <script>
+        (async function () {
+            try {
+                // 嘗試向 Google Translate 發出 HEAD / no-cors 請求
+                let response = await fetch('https://translate.google.com/translate_a/element.js', {
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+
+                // 如果成功(沒有拋出錯誤)，表示可能連得到外網 → 動態載入外部 Script
+                let script = document.createElement('script');
+                script.type = 'text/javascript';
+                // 這裡改用 'https://'，以避免部分瀏覽器報 Mixed Content
+                script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+                document.head.appendChild(script);
+            } catch (error) {
+                // 無法連線到 google（或被擋）就會進入 catch，不載入外部資源，避免卡住
+                console.warn("偵測到無法連線到 Google Translate，已略過外部翻譯資源。");
+            }
+        })();
+    </script>
+
+</head>
+
+<body>
+    <header class="no-print">   
+        <!-- 導覽列開始 -->
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">       
+
+            <div class="container-fluid">
+
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-i18n="Notes 自動化">Notes 自動化</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <!-- 導覽項目容器 -->
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <!-- 左側導覽連結 -->
+                    <ul class="navbar-nav flex-grow-1 ">
+                        <!-- 首頁連結 -->
+                        <li class="nav-item">
+
+
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Home" asp-action="Index" data-i18n="首頁">首頁</a>
+
+                        </li>
+                        <!-- Notes管理連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Admin" asp-controller="Order" asp-action="Index" data-i18n="Notes管理">Notes管理</a>
+                        </li>
+                        <!-- 填寫問卷連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="Index" data-i18n="填寫問卷">填寫問卷</a>
+                        </li>
+                        <!-- Notes空白表單編輯分類連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="PageGroup" asp-action="Index" data-i18n="Notes空白表單編輯分類">Notes空白表單編輯分類</a>
+                        </li>
+                        <!-- 查看已填問卷連結 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="AnsweredSurveyList" data-i18n="查看已填問卷">查看已填問卷</a>
+                        </li>
+                        <!-- 管理員或經理員的內容管理下拉選單 -->
+                        @if (User.IsInRole(SD.Role_Admin) || User.IsInRole(SD.Role_Manager))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" data-i18n="內容管理">內容管理</a>
+
+                                <div class="dropdown-menu">
+
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Category" asp-action="Index" data-i18n="類別">類別</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Product" asp-action="Index" data-i18n="產品">產品</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Store" asp-action="Index" data-i18n="分公司">分公司</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Station" asp-action="Index" data-i18n="站別">站別</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Survey" asp-action="Index" data-i18n="問卷">問卷</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="AdminAnswer" asp-action="Index" data-i18n="問卷管理">問卷管理</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Question" asp-action="Index" data-i18n="問題管理">問題管理</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionOption" asp-action="Index" data-i18n="選項管理">選項管理</a>
+
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="FillInBlank" asp-action="Index">填空題管理</a>
+
+                                    <!-- 內容管理下的圖片管理 -->
+
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionImage" asp-action="Index" data-i18n="圖片管理">圖片管理</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="User" asp-action="Index" data-i18n="使用者管理">使用者管理</a>
+
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="Index">問卷編輯-測試R5</a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyAns" asp-action="Index">問卷編輯-填寫畫面-測試</a>
+
+
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="TinyMCE">問卷編輯-編輯器</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="BlankSurvey" asp-action="index">公版編輯</a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Wallet" asp-action="Index">我的錢包</a>
+
+
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register" data-i18n="建立使用者">建立使用者</a>
+                                </div>
+                            </li>
+                        }
+                        <!-- 購物車連結，包含圖示和文字 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Cart" asp-action="Index">
+                                <i class="bi bi-cart"></i> &nbsp;
+                            </a>
+                        </li>                       
+                    </ul>
+
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown " style="display:none">
+                            <a class="nav-link dropdown-toggle"  href="#" id="navbarDropdown" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">
+                                <i class="bi bi-globe-americas"></i>
+                                <span id="current-language" data-i18n="語言切換"> </span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item language-option"  data-lang="en"  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a class="dropdown-item language-option"  data-lang="zh"  asp-controller="LangBase" asp-action="ChangeLanguage"asp-route-lang="ch-tw">繁體中文</a>
+                                <a class="dropdown-item language-option"  data-lang="th"  asp-controller="LangBase" asp-action="ChangeLanguage"asp-route-lang="th-th">ไทย</a>
+                               @* <a asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>*@
+                            </div>
+                        </li>
+
+                        <!-- Google Translate 小工具容器 -->
+                        <li class="nav-item">
+                            <div id="google_translate_element" style="margin-top:8px; margin-left:10px;"></div>
+                        </li>
+                    </ul>                    
+                    
+                    <!-- 右側用戶相關選單 -->
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <!-- 用戶已登入時顯示的下拉選單 -->
+                            <li class="nav-item dropdown">
+                                <!-- 用戶名稱作為下拉選單的觸發器 -->
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @UserManager.GetUserName(User)
+                                </a>
+                                <!-- 下拉選單內容，右對齊 -->
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <!-- 更改密碼連結 -->
+                                    <li>
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/ChangePassword">更改密碼</a>
+                                    </li>
+                                    <!-- 帳戶設定連結 -->
+                                    <li>
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">帳戶設定</a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <!-- 登出表單 -->
+                                    <li>
+                                        <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" id="logoutForm" class="d-inline">
+                                            <button type="submit" class="dropdown-item">登出</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <!-- 用戶未登入時顯示的登入連結 -->
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">登入</a>
+                            </li>
+                            <!-- 用戶未登入時顯示的註冊連結 -->
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">註冊</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">    
+
+            <!-- 顯示通知訊息 -->
+            <partial name="_Notification"/>
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted no-print" >
+        <div class="container">
+            &copy; 2024 - TeaTimeDemo <i class="bi bi-1-circle"></i><i class="bi bi-check2-square"></i>- <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- jQuery and Bootstrap JS -->   
+    <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>   
+    
+    <script src="~/lib/popper/popper.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Site JS -->
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- DataTables and SweetAlert JS -->
+    <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
+    <script src="~/lib/package/dist/sweetalert2.min.js" asp-append-version="true"></script>
+
+    <!-- Toastr JS (correctly referenced) -->
+    <script src="~/lib/build/toastr.min.js" asp-append-version="true"></script>
+    <script src="~/js/querySelection.js" asp-append-version="true"></script>
+
+
+    <!--i18next-->
+     @* 
+    <script src="~/lib/i18next/i18next.js" asp-append-version="true"></script>
+    <script src="~/lib/i18next/i18nextBrowserLanguageDetector.js" asp-append-version="true"></script>
+    <script src="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true"></script>
+    <script src="~/lib/i18next/jquery-i18next.js" asp-append-version="true"></script>
+    <script src="~/js/i18n/i18n.js" asp-append-version="true"></script>
+    *@
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,127 @@
+﻿@using Microsoft.AspNetCore.WebUtilities
+
+
+@model TeaTimeDemo.Models.AnswersData.ViewModels.AnsweredSurveyVM
+
+
+@{
+    ViewData["Title"] = "填寫問卷 - " + Model.SurveyView.Title;
+}
+
+<form asp-area="Customer" asp-controller="Answer" asp-action="SubmitSurvey" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="SurveyView.Id" />
+
+    <input asp-for="SurveyView.MceHtml" hidden />
+
+    <input type="hidden" id="MceHtml" name="MceHtml" value="@Model.SurveyView.MceHtml" />
+    @* <a href="#mybookmark"> test  </a> *@
+    @Html.Raw(@Model.SurveyView.MceHtml) <!-- 使用 MceHtml 渲染問卷內容 -->
+
+    <button type="button" onclick="ShowSelectedOptions()" style="display:none;">測試-顯示選擇選項</button>
+
+    <button type="button" onclick="TestUseSurveyModel()" style="display:none;">測試-顯示選擇資料</button>
+
+    <div id="confirmation-message" style="display: none; color: green;">成功调用 JavaScript 函数！</div>
+    <br>
+    <br>
+    <button type="button" onclick="TestShowAllSelectedOptions()">輔助功能[顯示作答結果]</button>
+    <br>
+    <button type="button" onclick="TestSetAllOptionValue(true)" style="display:none;">功能測試[AllOption-True]</button>
+    <button type="button" onclick="TestSetAllOptionValue(false)" style="display:none;">功能測試[AllOption-False]</button>
+    <br>
+    <button type="button" onclick="SetOptionChecked() ">輔助功能[快速作答]</button>
+    <button type="button" onclick="TestSetAllOptionValue_ByOption(false) ">輔助功能[快速取消作答]</button>
+
+    <br>
+    <br>
+    <br>
+
+
+    <br>
+    <br>
+
+    <div class="row mt-3">
+
+        <div class="col-2">
+            @* <button type="submit" class="btn btn-success w-100">提交問卷</button> *@
+            <button type="button" onclick="SubmitSelectedOptions_ajax_GetAnsweredSurveyData()" class="btn btn-success w-100">保存並填寫下一頁</button>
+        </div>
+
+        <div class="col-2">
+
+            <a asp-controller="Order"
+            asp-action="PageView"
+            asp-route-MtNum="@Model.MtNum"
+            asp-route-ProcessNum="@Model.ProcessNum"
+            asp-route-PageName="@Model.PageName"
+            class="btn btn-secondary w-100">
+                返回
+            </a>
+            @{
+                int targetSurvey = 0;
+                targetSurvey = (int)ViewData["SurveyId"];
+                int nextSurvey = targetSurvey+1;
+                int count = (int)ViewData["SurveyCount"];
+            }
+        </div>
+        <div class="col-2">
+            @if (User.IsInRole(SD.Role_Admin))
+            {
+                <a asp-controller="Order"
+                   asp-action="ServeyView"
+                   asp-route-SurveyId="@nextSurvey"
+                   asp-route-SurveyCount="@count"
+                   class="btn btn-info mx-2">
+                    審核修改完成
+                </a>
+            }
+        </div>
+    </div>
+
+
+    <div id="responseMessage" style="display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background-color: #4CAF50; color: white; padding: 20px; border-radius: 5px; z-index: 9999;">
+    </div>
+
+
+</form>
+
+
+
+@*=====[ 隱藏BTN ]=====*@
+
+<a id="submitBtn"
+   asp-area="Customer"
+   asp-controller="Answer"
+   asp-action="TestGet"
+   style="display:none;">
+    隱藏BTN
+</a>
+
+<a id="submitBtn"
+   style="display:none;">
+    隱藏BTN
+</a>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const SurveyModelId = '@Model.SurveyView.Id'; // 用引号包裹
+        let SurveyModelTitle = '@Model.SurveyView.Title'; // 用引号包裹
+
+        const UrlEncode_LocHtml = '@(System.Net.WebUtility.UrlEncode(@Model.SurveyView.MceHtml))';
+        const _LocHtml = @Html.Raw(Json.Serialize(Model.SurveyView.MceHtml));
+        const _MtNum = '@Model.MtNum';
+        const _ProcessNum = '@Model.ProcessNum';
+        const _PageName = '@Model.PageName';
+        const surveycount = '@ViewData["SurveyCount"]';
+    </script>
+
+
+    <!-- 引入外部 JavaScript 文件 -->
+    <script src="~/js/ReturnSurveyOptionsEditor.js" asp-append-version="true"></script>
+}
+

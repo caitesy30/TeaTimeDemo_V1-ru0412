@@ -1,0 +1,125 @@
+﻿@model TeaTimeDemo.Models.AnswersData.ViewModels.AnsweredProcessVM
+
+
+@{
+    var status = Context.Request.Query["status"];
+    var pending = "text-primary";
+    var processing = "text-primary";
+    var ready = "text-primary";
+    var completed = "text-primary";
+    var all = "text-primary";
+
+    switch (status)
+    {
+        case "Pending":
+            pending = "active text-white";
+            break;
+        case "Processing":
+            processing = "active text-white";
+            break;
+        case "Ready":
+            ready = "active text-white";
+            break;
+        case "Completed":
+            completed = "active text-white";
+            break;
+        default:
+            all = "active text-white";
+            break;
+    }
+}
+
+<div class="p-3">
+    <div class="d-flex justify-content-between pt-4">
+        <div class="pt-2">
+            <h2 class="text-primary">@Model.Title</h2>
+        </div>
+        <div class="p-2">
+            <ul class="list-group list-group-horizontal-sm">
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="Pending">
+
+                    <li class="list-group-item @pending">等待審核確認</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="Processing">
+                    <li class="list-group-item @processing">等待CAM確認</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="Ready">
+                    <li class="list-group-item @ready">等待QA確認</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="Completed">
+                    <li class="list-group-item @completed">已完成上傳備份</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="all">
+                    <li class="list-group-item @all">所有清單</li>
+                </a>
+            </ul>
+        </div>
+    </div>
+
+
+
+
+
+
+    <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+        <br>
+        <thead>
+            <tr class="align-middle">
+                <th>料號</th>
+                <th>PCB類別</th>
+                <th>流程名稱</th>
+                <th>頁別名稱</th>
+                <th>建立時間</th>
+                <th>操作</th>
+                <th>進度</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @foreach (var Page in @Model.AllPage)
+            {
+                var progress = @Model.ProcessingSurvey.FirstOrDefault(p => p.PageName == Page.PageName);
+                <tr class="align-middle">
+                    <td>@Page.MtNum</td>
+                    <td>@Model.Categorys.FirstOrDefault(c => c.Id == Page.PcbCategoryId).Name</td>
+                    <td>@Model.Layers.FirstOrDefault(c => c.Id == Page.ProcessCategoryId).Name</td>
+                    <td>@Page.PageName</td>
+                    <td>@Page.CreateTime</td>
+                    <td>
+                        <a asp-controller="Order"
+                           asp-action="PageView"
+                           asp-route-MtNum="@Page.MtNum"
+                           asp-route-ProcessNum="@Page.ProcessCategoryId"
+                           asp-route-PageName="@Page.PageName"
+                           class="btn btn-primary mx-2">
+							<i class="bi bi-pencil-square"></i>編輯
+                        </a>
+                    </td>
+                    <td>
+                            @progress.CompletedPages / @progress.TotalPages
+                    </td>
+                    <td></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="col-2">
+    <a asp-controller="Order"
+       asp-action="NotesView"
+       asp-route-MtNum="@Context.Request.Query["MtNum"]"
+       class="btn btn-secondary w-100">
+        <i class="bi bi-emoji-smile"></i>
+        返回上一層
+    </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/order.js" asp-append-version="true"></script>
+}

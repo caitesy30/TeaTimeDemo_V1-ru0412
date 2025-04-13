@@ -1,0 +1,347 @@
+﻿/********************************************/
+/* labletext_CT.css                          */
+/* 負責各種客製化樣式                       */
+/********************************************/
+
+/*=========== [自定義模態視窗寬度和高度] ===========*/
+.custom-modal-dialog {
+    max-width: 80%;
+    width: 805px;
+    transition: width 0.3s ease; /* 動畫可加 */
+}
+
+    .custom-modal-dialog.enlarged {
+        width: 1100px; /* 放大 */
+        max-width: 90%; /* 亦可改為 90% */
+    }
+
+.custom-modal-content {
+    height: 630px; /* 調整高度，例如600px */
+}
+
+.custom-modal-body {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start; /* 對齊到頂部 */
+    justify-content: flex-start; /* 根據需要調整 */
+    height: calc(100% - 60px); /* 減去標頭的高度 */
+    overflow-y: auto;
+}
+
+/*=========== [自定義按鈕背景圖片] ===========*/
+.btn-image-save,
+.btn-image-Load,
+.btn-image-InsertFill,
+.btn-image-Div,
+.btn-image-close {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 50px; /* 調整為合適的大小 */
+    height: 50px;
+    padding: 0;
+    border: none;
+    /*cursor: auto;*/
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-image-save {
+    background-image: url('/images/tools/save.png');
+}
+
+.btn-image-Load {
+    background-image: url('/images/tools/Load1.png');
+}
+
+.btn-image-InsertFill {
+    background-image: url('/images/tools/insert.png');
+}
+
+.btn-image-Div {
+    background-image: url('/images/tools/div.png');
+}
+
+.btn-image-close {
+    background-image: url('/images/tools/close.png');
+}
+
+    /* 懸停時放大按鈕並添加陰影 */
+    .btn-image-save:hover,
+    .btn-image-Load:hover,
+    .btn-image-InsertFill:hover,
+    .btn-image-Div:hover,
+    .btn-image-close:hover {
+        transform: scale(1.2); /* 放大1.2倍 */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 添加陰影效果 */
+    }
+
+.btn-purple {
+    background-color: #6f42c1; /* 紫色 */
+    color: white;
+}
+
+.btn-teal {
+    background-color: #20c997; /* 青色 */
+    color: white;
+}
+
+.btn-orange {
+    background-color: #fd7e14; /* 橘色 */
+    color: white;
+}
+
+.btn-pink {
+    background-color: #e83e8c; /* 粉色 */
+    color: white;
+}
+
+.btn-brown {
+    background-color: #795548; /* 棕色 */
+    color: white;
+}
+
+    /* 滑鼠懸停效果 */
+    .btn-purple:hover, .btn-teal:hover, .btn-orange:hover, .btn-pink:hover, .btn-brown:hover {
+        opacity: 0.8;
+    }
+
+
+
+/* 視覺上隱藏的文字 (協助輔助工具) */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/*=========== [自定義模態視窗背景] ===========*/
+/*#AutoScreen {
+    padding: 10px;
+    background-color: #F0F8F8;
+    box-sizing: border-box;
+    min-width: 20cm;
+    width: 20cm;
+    max-width: 20cm;
+    min-height: 50px;
+    transform: scale(2);
+    transform-origin: top left;
+}*/
+
+/*=========== [自定義填空欄位的樣式] ===========*/
+input[type="text"][pattern] {
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+/*=========== [插入填空表單區域樣式] ===========*/
+.insert-fill-section {
+    border-left: 1px solid #ccc;
+    padding-left: 20px;
+}
+
+    .insert-fill-section h5 {
+        margin-bottom: 15px;
+    }
+
+/*=========== [調整編輯器和插入填空表單區域的佈局] ===========*/
+.editor-section {
+    /* 視需求自行添加 */
+}
+
+/*=========== [自定義工具提示樣式] ===========*/
+.custom-tooltip {
+    --bs-tooltip-bg: #333333;
+    --bs-tooltip-color: #ffffff;
+    --bs-tooltip-border-color: #555555;
+    font-size: 14px;
+    padding: 8px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+    .custom-tooltip .tooltip-arrow {
+        color: #333333;
+    }
+
+/*=============================================
+    (上)UpSettingBar / (下)DownSettingBar 工具列
+ =============================================*/
+
+
+@container (max-width: 177px) {
+
+    .settingAreaContainer {
+        justify-content: flex-end !important;
+    }
+
+    .UpSettingBar, .DownSettingBar, .optionSwitch {
+        display: none !important;
+    }
+
+    .gear-menu-button {
+        display: flex !important;
+    }
+}
+
+
+
+
+.settingAreaContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 100%;
+    height: auto;
+    min-width: 20px;
+    word-break: break-word;
+    container-type: inline-size;
+}
+    .settingAreaContainer .optionSwitch{
+        border-color: white;
+    }
+    .settingAreaContainer .gear-menu-button {
+        display: none;
+    }
+    .settingAreaContainer .form-check {
+        padding: 0;
+    }
+    .settingAreaContainer .form-select {
+        font-size: 8px;
+        height: 20px;
+        width: 50px;
+        padding-top: 2px;
+        padding-left: 5px;
+        padding-right: 0px;
+        padding-bottom: 0px;
+        white-space: break-spaces;
+        word-break: break-word;
+        text-align: left;
+        /**/
+        background-size: 6px 6px; /* 調整箭頭的大小 */
+    }
+    .settingAreaContainer option {
+        font-size: 12px;
+    }
+    .settingAreaContainer * {
+        height: auto;
+        width: auto;
+        /*flex-wrap: wrap;*/
+        display: flex;
+        align-items: center;
+    }
+    .settingAreaContainer .btn {
+        width: 8px;
+        justify-content: center;
+        margin:2px
+    }
+    .settingAreaContainer ::before {
+        font-size: 8px;
+        align-self: center;
+    }
+    .settingAreaContainer .gear-menu-button {
+        margin: 0;
+    }
+
+    .UpSettingBar {
+        display: flex;
+        /*flex-wrap: wrap;*/
+        flex: 1;
+        justify-content: flex-start;
+    }
+    .DownSettingBar {
+        display: flex;
+        /*flex-wrap: wrap;*/
+        justify-content: flex-end;
+    }
+
+
+
+
+
+/*================[定義必選具列選項的顏色]=====================*/
+
+/* 如果必填的 label 有特定 class (例如 form-check-label)懸浮窗的字形 */
+.form-check-label {
+    background-color: transparent; /*!important;*/
+    /*margin-left: 10px;*/ /* 與核取方塊保持距離 */
+    font-size: 10px;  
+    /*color: #333;*/ /* 文字顏色 */
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd; /* 你想要的藍色 */
+    border-color: #0d6efd;
+    /*    box-shadow: none;  */
+}
+
+.form-check-input {
+    width: 20px !important; /* 核取方塊寬度 */
+    /*    height: 20px !important;  核取方塊高度 */
+    /*    border: 1px solid #ccc;  邊框顏色 
+    border-radius: 4px;  方形略帶圓角 
+    background-color: #fff;  背景為白色 */
+}
+
+    .form-check-input:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25); /* Bootstrap 原始陰影 */
+    }
+
+
+
+/*=========== [齒輪按鈕的樣式] ===========*/
+.gear-menu-button {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.7rem;
+    margin-left: 3px;
+    color: #666;
+}
+
+    .gear-menu-button:hover {
+        color: #0d6efd;
+    }
+
+/*=========== [自訂浮動面板] ===========*/
+#customFloatPanel.custom-float-panel {
+    display: none;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    min-width: 150px;
+}
+
+
+/* 調整下拉選單位置，這裡假設相對於圖示按鈕顯示 */
+#importExportMenu {
+    position: fixed;
+    top: 150px;
+    left: 150px;
+    z-index: 9999;
+}
+
+#pdfPreviewContainer canvas {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+    background: white;
+}
+
+#pdfPreviewContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+#pdfPreviewContainer::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}

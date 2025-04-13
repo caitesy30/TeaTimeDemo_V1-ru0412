@@ -1,0 +1,77 @@
+﻿@model PageGroupVM
+<div class="container">
+    <input type="hidden" id="categoryIdInput" value="@Model.Category.Id" />
+    <input type="hidden" id="layerIdInput" value="@Model.Layer.Id" />
+    <div class="row pt-4 pb-3">
+        <div class="col-6">
+            <h2 class="text-primary">Notes空白表單編輯分類</h2>
+        </div>
+        <div class="col-6 text-end">
+            <button type="button" class="btn btn-success" onclick="ToggleForm()">
+                <i class="bi bi-plus-circle"></i> 新增自訂頁數
+            </button>
+            <btton id="autoAddGroupBtn" class="btn btn-success" onclick="autoAddSG()">
+                <i class="bi bi-plus-circle"></i>新增自動頁數
+            </btton>
+        </div>
+    </div>
+    <div class="row pb-3" id="NewPageSection" style="display: none;">
+        <div class="col-md-12">
+            <form id="entryForm" method="post" asp-action="AddGroup">
+                <input asp-for="Layer.Id" hidden />
+                <input asp-for="Category.Id" hidden />
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="name" class="form-label">名稱</label>
+                        <input type="text" class="form-control" asp-for="SurveyGroup.Name" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="order" class="form-label">順序</label>
+                        <input type="number" class="form-control" asp-for="SurveyGroup.Order" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="description" class="form-label">描述</label>
+                        <input type="text" class="form-control" asp-for="SurveyGroup.Description">
+                    </div>
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-20">
+                            新增
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="table-responsive">
+        @*可滾動的*@
+        <form id="pageGroup" method="post">
+            <table id="GtblData" class="table table-bordered table-striped" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>名稱</th>
+                        <th>題數</th>
+                        <th>順序</th>
+                        <th>描述</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+            </table>
+            @* <button type="submit" asp-action="Upsert" class="btn btn-primary">加入類別</button> *@
+        </form>
+    </div>
+    <div class="col-2">
+        <a  href="/customer/pagegroup/Layer/@Model.Category.Id" class="btn btn-secondary">
+            <i class="bi bi-emoji-smile"></i>
+            返回上一層
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var categoryId = "@Model.Category.Id";
+        var layerId = "@Model.Layer.Id";
+        
+    </script>
+    <script src="~/js/page.js" asp-append-version="true"></script>
+}

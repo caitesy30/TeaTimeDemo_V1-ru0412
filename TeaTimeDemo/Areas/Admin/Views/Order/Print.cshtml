@@ -1,0 +1,145 @@
+﻿@* Print.cshtml *@
+
+
+
+@* @model TeaTimeDemo.Areas.Customer.Views.SurveyAns.IndexModel *@
+
+@using TeaTimeDemo.Models.ViewModels
+
+@model LoadSurveyVM
+
+@*問卷填寫畫面*@
+
+
+<head>
+    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
+
+    <!-- 保留原本已經存在的CSS -->
+    <link rel="stylesheet" href="~/css/surveyEdit_R5.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/labletext_CT.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/panelStyle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/switchStyle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/floatingNavigator.css" asp-append-version="true" />
+
+
+    <!-- 新增或合併：把功能列相關的CSS寫到surveyAnsStyle.css -->
+    <link rel="stylesheet" href="~/css/surveyAnsStyle.css" asp-append-version="true" />
+</head>
+
+<body>
+
+
+
+    <div id="BlockPenel">
+        <!-- 文件功能列 (文件/查看/其它/幫助) ，置於Notes自動化導航列下方，箭頭靠最右 -->
+        <div class="documentMenuBar" id="documentMenuBar">
+            <ul>
+                <li>
+                    文件
+                    <ul>
+                        <li id="btnSave" onclick="SaveAndLoadAnswerMgr.saveAnswer();">保存 (Ctrl+Alt+7)</li>
+                        <!--  <li id="btnNew">新建</li> -->
+                        <li id="btnImport" onclick="setLoadBtnMgr.importTxtAndProcess();">匯入</li>
+                        <li id="btnClean" onclick="TopMenuBarMgr.initMenuBar();">清除 (F5)</li>
+                        <li id="btnHistory" onclick="TopMenuBarMgr.initMenuBar();">修訂歷史</li>
+                        <li id="btnPageSetup" onclick="TopMenuBarMgr.initMenuBar();">頁面設置</li>
+                        <li id="btnPrint" onclick="TopMenuBarMgr.initPrintwindows();">列印</li>
+                        <li id="btnClose" onclick="TopMenuBarMgr.initMenuBar();">關閉</li>
+                    </ul>
+                </li>
+                <li>查看</li>
+                <li>其它</li>
+                <li>幫助</li>
+
+
+                <!-- 右側工具區（釘選+雙箭頭） -->
+                <div class="rightTools">
+                    <div id="pinToggle" class="pinBtn" title="釘選/解釘">📌</div>
+                    <div id="toggleArrowUp" class="toggleArrowUp" title="收合/展開">⏫</div>
+                </div>
+            </ul>
+        </div>
+
+        <!-- 隱藏區：收合後，使用者可點此再展開 -->
+        <div id="documentMenuBarHiddenZone"></div>
+
+
+        <div id="AutoScreenBlock">
+            <div id="AutoScreen">
+                <!-- 這裡是動態產生的問卷內容 (範例) -->
+                @* @Html.Raw(Model.MceHtml) *@
+            </div>
+        </div>
+    </div>
+
+    <div>
+    </div>
+
+    <div id="BlockPenel">
+
+
+        <div id="AutoScreenBlock">
+            <div id="AutoScreen">
+                @* @Html.Raw(Model.MtNum) *@
+
+
+
+
+            </div>
+        </div>
+
+
+
+
+
+    </div>
+
+
+    @section Scripts {
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+
+                var mtNum = "@Html.Raw(Model.MtNum)";
+                var stage = "@Html.Raw(Model.stage)";
+                console.log("MtNum:", mtNum);
+
+                console.log("MtNum:", mtNum);
+                var _surveyHtmlDataList = @Html.Raw(Json.Serialize(Model.surveyHtmlDataList));
+                    SaveAndLoadAnswerMgr.LoadAllSurvey(mtNum,stage,_surveyHtmlDataList);
+
+                           FloatingNavigator.init(_surveyHtmlDataList);
+            });
+        </script>
+
+
+
+
+
+        @*====================編輯文本================================================== *@   
+
+                <!-- 既有的js檔案 (AutoScreen.js、SurveyAnswerMode.js 等) -->
+        <script src="~/js/AutoScreen.js" asp-append-version="true"></script>
+        <script src="~/js/SurveyAnswerMode.js" asp-append-version="true"></script>
+        <script src="~/js/ModuleBlockElementMgr.js" asp-append-version="true"></script>
+        <script src="~/js/ModuleBlockEditMgr.js" asp-append-version="true"></script>
+        <script src="~/js/surveyLoad.js" asp-append-version="true"></script>
+        <script src="~/js/SurveyEditerModeMgr.js" asp-append-version="true"></script>
+        <script src="~/js/ModuleBlockSettingBarMgr.js" asp-append-version="true"></script>
+        <script src="~/js/floatingNavigator.js" asp-append-version="true"></script>
+
+        <script>
+            // 網頁載入完成後，呼叫我們在 SurveyAnswerMode.js 中新增的 DocumentMenuBarMgr.initMenuBar()
+            $(document).ready(function () {
+                DocumentMenuBarMgr.initMenuBar();
+
+               // 若要自動顯示/隱藏 + pinned，就再呼叫
+                AutoHideMenuBar.initAutoHideMenu();
+
+
+            });
+
+
+        </script>
+    }
+</body>

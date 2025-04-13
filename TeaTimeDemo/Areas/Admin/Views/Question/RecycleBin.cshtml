@@ -1,0 +1,103 @@
+﻿ <!-- Areas/Admin/Views/Question/RecycleBin.cshtml -->
+@model IEnumerable<TeaTimeDemo.Models.Question>
+
+@{
+    ViewData["Title"] = "回收筒";
+}
+
+<h1><i class="bi bi-trash"></i>回收筒 - 問題管理</h1>
+
+<p>
+    <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+</p>
+
+<!-- 回收筒問題列表表格 -->
+<table id="tblRecycleBin" class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th style="width: 5%;">ID</th>
+            <th style="width: 15%;">問卷標題</th>
+            <th style="width: 35%;">問題文本</th>
+            <th style="width: 15%;">答案類型</th>
+            <th style="width: 15%;">刪除時間</th>
+            <th style="width: 15%;">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Survey.Title</td>
+                <td>@item.QuestionText</td>
+                <td>
+                    @{
+                        // 根據 AnswerTypeEnum 的值顯示相應文字
+                        string answerTypeText = "";
+                        switch (item.AnswerType)
+                        {
+                            case AnswerTypeEnum.SingleChoice:
+                                answerTypeText = "單選";
+                                break;
+                            case AnswerTypeEnum.MultipleChoice:
+                                answerTypeText = "多選";
+                                break;
+                            case AnswerTypeEnum.TextAnswer:
+                                answerTypeText = "填空";
+                                break;
+                            case AnswerTypeEnum.TextareaAnswer:
+                                answerTypeText = "填空框";
+                                break;
+                            case AnswerTypeEnum.SelectOption:
+                                answerTypeText = "下拉選單";
+                                break;
+                            case AnswerTypeEnum.ImageUpload:
+                                answerTypeText = "圖片上傳";
+                                break;
+                            default:
+                                answerTypeText = "未知";
+                                break;
+                        }
+                    }
+                    @answerTypeText
+                </td>
+                <td>@item.DeletedAt?.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <!-- 還原問題的表單 -->
+                        <form asp-action="Restore" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn btn-success btn-sm mx-1">
+                                <i class="bi bi-arrow-counterclockwise"></i> 還原
+                            </button>
+                        </form>
+                        <!-- 永久刪除問題的表單 -->
+                        <form asp-action="PermanentDelete" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm mx-1" onclick="return confirm('確定要永久刪除這個問題嗎?')">
+                                <i class="bi bi-trash-fill"></i> 永久刪除
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+
+    <script>
+        $(document).ready(function () {
+            $('#tblRecycleBin').DataTable({
+                "language": {
+                    "url": "/js/i18n/Chinese-traditional.json" // 使用繁體中文語言包
+                },
+                "order": [[0, "asc"]], // 按 ID 排序)
+                "fixedHeader": true,  // 固定標題
+                "responsive": true, // 響應式設計
+                "scrollX": true // 啟用橫向捲軸
+            });
+        });
+    </script>
+}

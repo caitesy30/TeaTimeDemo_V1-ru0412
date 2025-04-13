@@ -1,0 +1,162 @@
+/* 基本的 HTML 設定，用於確保網?在不同裝置上的基本顯示效果 */
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* 按鈕、表單控件在獲得焦點時的?影樣式，增??覺反? */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+/* body 底部空間留白設定，避免內容被底部導航/工具欄遮擋 */
+body {
+    margin-bottom: 60px;
+}
+
+/* 表格?應式設?，確保表格在小屏設備上也能橫向滾動顯示 */
+.table-responsive {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+/* 表格基本設定，確保表格?度適應容器?度 */
+.table {
+    width: 100%;
+    min-width: 1000px;
+}
+
+/* Flexbox 設定，用於設?等高的列（column） */
+.row.equal-height {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+    .row.equal-height > [class*='col-'] {
+        display: flex;
+        flex-direction: column;
+    }
+
+@media (min-width: 768px) {
+    .editor-section,
+    .form-section {
+        flex: 1;
+    }
+}
+
+/* 文本??器區域的樣式設?，確保??器能夠充分利用可用空間 */
+.editor-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-section textarea {
+        flex: 1;
+        min-height: 300px;
+    }
+
+/* 圖片預覽區域的樣式，用於顯示?卷中包含的各種圖片 */
+#survey-preview,
+#question-preview,
+#option-preview,
+#survey-image-preview,
+#question-image-preview-*, /* ?對特定?題的圖片預覽區域 */
+#option-image-preview-*-* /* ?對特定選?的圖片預覽區域 */ {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+    #survey-preview img,
+    #question-preview img,
+    #option-preview img,
+    #survey-image-preview img,
+    #question-image-preview-* img,
+    #option-image-preview-*-* img {
+        margin: 5px;
+        max-width: 150px; /* 控制圖片的最大?度，避免圖片過大 */
+    }
+
+/* 填空?入框的樣式設定，用於?卷中動態添加的填空?入框 */
+.fill-in-blank-input {
+    width: 150px;
+    margin: 0 5px; /* 調整填空?入框的外?距，以適應布局 */
+}
+
+/* 表單滑桿樣式，用於填空位置的精確控制 */
+.form-range {
+    margin-top: 5px;
+}
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .break {
+        break-after: page;
+    }
+    body {
+        font-size: 12px; /* 罽俱砰砰 */
+        line-height: 1.4; /* 秸俱︽禯絋玂弄┦ */
+    }
+    h1 {
+        font-size: 20px; /* 夹肈砰罽 */
+        font-weight: bold;
+    }
+    h2 {
+        font-size: 20px; /* 夹肈砰罽 */
+    }
+    h3 {
+        font-size: 14px; /* 夹肈砰罽 */
+        font-weight: bold;
+        padding-top:10px
+    }
+    h4 {
+        font-size: 14px; /* 夹肈砰罽 */
+    }
+    h5 {
+        font-size: 14px; /* 夹肈砰罽 */
+    }
+    h6 {
+        font-size: 14px; /* 夹肈砰罽 */
+    }
+    p, span, td, th {
+        font-size: 10px; /* ず甧ゅ罽 */
+        font-weight: normal;
+    }
+    div {
+        /*font-size: 100px;*/
+        /*font-weight: bold;*/
+
+    }
+    label,
+    .fakeLabels
+    {
+        font-size: 12px;
+        font-weight: normal;
+        color: black;
+    }
+    #printContentArea {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .checkbox-div {
+        /*background-color : aqua;*/
+        font-size: 10px;
+        text-align: right;
+    }
+    
+}
+footer {
+    z-index: 0;
+}

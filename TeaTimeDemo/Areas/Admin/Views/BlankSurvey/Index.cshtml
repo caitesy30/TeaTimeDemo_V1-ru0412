@@ -1,0 +1,57 @@
+﻿<div class="container">
+    <div class="row pt-4 pb-3">
+        <div class="col-6">
+            <h2 class="text-primary">Notes空白表單編輯分類</h2>
+        </div>
+        <div class="col-6 text-end">
+            <button type="button" class="btn btn-success" onclick="ToggleForm()">
+                <i class="bi bi-plus-circle"></i> 新增Notes
+            </button>
+        </div>
+    </div>
+    <div class="row pb-3" id="NewPageSection" style="display: none;">
+        <div class="col-md-12">
+            <form id="CategoryForm" method="post" asp-action="AddNotes">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="name" class="form-label">Notes分類</label>
+                        <input type="text" class="form-control" name="Name" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="displayorder" class="form-label">顯示順序</label>
+                        <input type="number" class="form-control" name="DisplayOrder" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="imageUrl" class="form-label"></label>
+                        <input type="file" class="form-control" name="ImageUrl" />
+                    </div>
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">
+                            新增
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <form id="blankSurvey" method="post">
+            <table id="NtblData" class="table table-bordered table-striped" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Notes分類</th>
+                        <th>顯示順序</th>
+                        <th>發布</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/blanksurvey.js" asp-append-version="true"></script>
+}

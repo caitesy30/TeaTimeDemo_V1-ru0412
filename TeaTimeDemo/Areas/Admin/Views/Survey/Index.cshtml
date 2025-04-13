@@ -1,0 +1,132 @@
+﻿<!--SurveyController的index-->
+<div class="container">
+    <h2 class="text-primary">Notes 管理</h2>
+
+    <!-- 新增與匯入匯出功能按鈕區 -->
+    <!-- 匯出/匯入區域修改 -->
+    <div class="row pb-3">
+        <div class="col-md-6">
+            <!-- 新增問卷的按鈕 -->
+            <a href="/admin/survey/upsert" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 新增Notes
+            </a>
+            <!-- 回收筒按鈕 -->
+            <a asp-action="RecycleBin" class="btn btn-secondary ms-2">
+                <i class="bi bi-trash"></i> 回收筒
+            </a>
+            <!-- 修改後：改為呼叫 BeginRefresh Action -->
+            <a asp-controller="Survey" asp-action="BeginRefresh" class="btn btn-warning ms-2">資料重整</a>
+
+
+        </div>
+
+        <div class="col-md-6 text-end">
+            <!-- 匯出下拉選單或兩個按鈕 -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-file-earmark-excel"></i> 匯出
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" asp-action="ExportToExcelOldFormat">匯出舊格式</a></li>
+                    <li><a class="dropdown-item" asp-action="ExportToExcelNewFormat">匯出新格式</a></li>
+                </ul>
+            </div>
+
+            <!-- 匯入按鈕，點擊後彈出 Modal 選擇新舊格式 -->
+            <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="bi bi-file-earmark-arrow-up"></i> 匯入
+            </button>
+        </div>
+    </div>
+
+    <!-- 匯入 Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">選擇匯入格式</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="importTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="old-format-tab" data-bs-toggle="tab" data-bs-target="#old-format" type="button" role="tab" aria-controls="old-format" aria-selected="true">舊格式</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="new-format-tab" data-bs-toggle="tab" data-bs-target="#new-format" type="button" role="tab" aria-controls="new-format" aria-selected="false">新格式</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3" id="importTabContent">
+                        <!-- 舊格式匯入表單 -->
+                        <div class="tab-pane fade show active" id="old-format" role="tabpanel" aria-labelledby="old-format-tab">
+                            <form method="post" enctype="multipart/form-data" class="mb-2">
+                                <input type="file" name="file" class="form-control d-inline-block" style="width: auto;" required />
+                                <button formaction="@Url.Action("ImportExcelOldFormat", "Survey", new { replaceExistingData = false })" class="btn btn-primary mt-2">
+                                    匯入舊格式資料(新增)
+                                </button>
+                                <button formaction="@Url.Action("ImportExcelOldFormat", "Survey", new { replaceExistingData = true })" class="btn btn-danger mt-2">
+                                    取代現有資料(舊格式)
+                                </button>
+                            </form>
+                        </div>
+                        <!-- 新格式匯入表單 -->
+                        <div class="tab-pane fade" id="new-format" role="tabpanel" aria-labelledby="new-format-tab">
+                            <form method="post" enctype="multipart/form-data" class="mb-2">
+                                <input type="file" name="file" class="form-control d-inline-block" style="width: auto;" required />
+                                <button formaction="@Url.Action("ImportExcelNewFormat", "Survey", new { replaceExistingData = false })" class="btn btn-primary mt-2">
+                                    匯入新格式資料(新增)
+                                </button>
+                                <button formaction="@Url.Action("ImportExcelNewFormat", "Survey", new { replaceExistingData = true })" class="btn btn-danger mt-2">
+                                    取代現有資料(新格式)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <hr />
+
+    <!-- 資料表區域 -->
+    <div class="table-responsive">
+        <table id="tblData" class="table table-bordered table-striped" style="width: 100%">
+            <thead>
+                <tr>
+                    <th>類別</th>
+                    <th>問卷標題</th>
+                    <th>站別</th>
+                    <th>描述</th>
+                    <th>頁數</th>
+                    <th>發佈</th>
+                    <th>創立時間</th>
+                    <th>完成時間</th>
+                    <th>建立人</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 由 DataTables 通過 AJAX 填充資料 -->
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+@section Scripts {
+    <!-- 引入 survey.js -->
+    <script src="~/js/survey.js" asp-append-version="true"></script>
+    @* <script src="~/js/catchIndex.js" asp-append-version="true"></script> *@
+
+    <!-- 顯示匯入/匯出區域的 JavaScript -->
+    <script>
+        function showImportExport() {
+            document.getElementById('importExportSection').style.display = 'block';
+        }
+    </script>
+}

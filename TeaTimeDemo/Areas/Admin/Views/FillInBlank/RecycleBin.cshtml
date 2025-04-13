@@ -1,0 +1,69 @@
+﻿@model IEnumerable<TeaTimeDemo.Models.DTOs.FillInBlankDTO>
+
+@{
+    ViewData["Title"] = "回收筒 - 填空題管理";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<p>
+    <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+</p>
+
+<table id="tblRecycleBin" class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>填空編號</th>
+            <th>提示文字</th>
+            <th>刪除時間</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.BlankNumber</td>
+                <td>@item.Placeholder</td>
+                <td>@item.DeletedAt?.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <!-- 還原填空題的表單 -->
+                        <form asp-action="Restore" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="bi bi-arrow-counterclockwise"></i> 還原
+                            </button>
+                        </form>
+                        <!-- 永久刪除填空題的表單 -->
+                        <form asp-action="PermanentDelete" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('確定要永久刪除這個填空題嗎？')">
+                                <i class="bi bi-trash-fill"></i> 永久刪除
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+   
+    <script>
+        $(document).ready(function () {
+            $('#tblRecycleBin').DataTable({
+                "language": {
+                    "url": "/js/i18n/Chinese-traditional.json" // 使用繁體中文語言包
+                },
+                "order": [[0, "asc"]], // 按 ID 排序
+                "fixedHeader": true,  // 固定標題
+                "responsive": true, // 響應式設計
+                "scrollX": true // 啟用橫向捲軸
+            });
+        });
+    </script>
+}

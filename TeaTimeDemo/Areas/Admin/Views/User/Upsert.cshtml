@@ -1,0 +1,87 @@
+﻿@model TeaTimeDemo.Models.ViewModels.UserVM
+
+@{
+    ViewData["Title"] = string.IsNullOrEmpty(Model.Input.Id) ? "新增使用者" : "編輯使用者";
+}
+
+<h1 class="pt-4">@ViewData["Title"]</h1>
+
+<form method="post">
+    <input asp-for="Input.Id" type="hidden" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label asp-for="Input.Name" class="form-label">姓名</label>
+                <input asp-for="Input.Name" class="form-control" />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Input.Email" class="form-label">信箱</label>
+                <input asp-for="Input.Email" class="form-control" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Input.PhoneNumber" class="form-label">分機</label>
+                <input asp-for="Input.PhoneNumber" class="form-control" />
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Input.Address" class="form-label">工號</label>
+                <input asp-for="Input.Address" class="form-control" />
+                <span asp-validation-for="Input.Address" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Input.StoreId" class="form-label">廠區</label>
+                <select asp-for="Input.StoreId" asp-items="Model.StoreList" class="form-select">
+                    <option disabled selected>選擇門市</option>
+                </select>
+                <span asp-validation-for="Input.StoreId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Role" class="form-label">階級</label>
+                <select asp-for="Role" asp-items="Model.RoleList" class="form-select">
+                    <option disabled selected>選擇階級</option>
+                </select>
+                <span asp-validation-for="Role" class="text-danger"></span>
+            </div>
+
+            @if (string.IsNullOrEmpty(Model.Input.Id))
+            {
+                <div class="form-group mb-3">
+                    <label asp-for="Password" class="form-label">密碼</label>
+                    <input asp-for="Password" class="form-control" type="password" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ConfirmPassword" class="form-label">確認密碼</label>
+                    <input asp-for="ConfirmPassword" class="form-control" type="password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+            }
+
+            <div class="d-flex">
+                <button type="submit" class="btn btn-primary me-2">
+                    @if (string.IsNullOrEmpty(Model.Input.Id))
+                    {
+                        <span>新增</span>
+                    }
+                    else
+                    {
+                        <span>編輯</span>
+                    }
+                </button>
+                <a asp-area="Admin" asp-action="Index" class="btn btn-secondary">返回</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

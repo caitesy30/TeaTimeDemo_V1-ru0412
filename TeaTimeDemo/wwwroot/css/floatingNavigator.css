@@ -1,0 +1,109 @@
+﻿/* floatingNavigator.css */
+
+/* 浮動導航容器：預設固定在螢幕左側，垂直位置可調 (例如：偏下方) */
+#floatingNavigator {
+    position: fixed; /* 固定定位，容器不隨滾動改變位置 */
+    left: 10px; /* 距離螢幕左側 10px */
+    top: 60%; /* 距離螢幕上方 60%，可調整容器的垂直位置 */
+    transform: translateY(-50%); /* 將容器向上移動自身高度的 50%，使垂直置中 */
+    background: #f0f8ff; /* 背景顏色：淺藍色 */
+    padding: 10px; /* 內邊距 10px */
+    border: 2px solid #007BFF; /* 2px 寬的實線邊框，顏色為藍色 */
+    border-radius: 8px; /* 圓角 8px */
+    z-index: 1000; /* z-index 設定，確保容器位於其他元素之上 */
+    max-width: 250px; /* 最大寬度 250px */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3); /* 陰影效果 */
+    line-height: 1.2; /* 行高 1.2 倍 */
+    /*cursor: move;*/ /* 游標呈現拖曳樣式 */
+}
+
+/* 導航標題列：包含圖示與縮放按鈕 */
+.navigator-header {
+    display: flex; /* 使用彈性盒模型 */
+    justify-content: space-between; /* 子元素之間平均分配空間 */
+    align-items: center; /* 垂直置中對齊子元素 */
+    font-size: 16px; /* 字體大小 16px */
+    font-weight: bold; /* 字體加粗 */
+    margin-bottom: 10px; /* 下方外邊距 10px */
+    user-select: none; /* 禁止用戶選取此區域文字 */
+    line-height: 1.2; /* 行高 1.2 倍 */
+}
+
+/* 標題文字 */
+.navigator-title {
+    flex-grow: 1; /* 此元素在彈性容器中擴展以填滿剩餘空間 */
+    line-height: 1.2; /* 行高 1.2 倍 */
+}
+
+/* 縮放按鈕 */
+.navigator-toggle-btn {
+    background: none; /* 無背景色 */
+    border: none; /* 無邊框 */
+    font-size: 20px; /* 字體大小 20px */
+    cursor: pointer; /* 當滑鼠懸停時顯示手型游標 */
+    color: #007BFF; /* 文字顏色藍色 */
+    padding: 4px;
+    line-height: 1.2; /* 行高 1.2 倍 */
+    transition: transform 0.2s; /* 平滑縮放過渡效果 */
+}
+
+
+
+    .navigator-toggle-btn:hover {
+        transform: scale(1.5); /* 滑鼠移入時放大 1.3 倍 */
+    }
+
+
+/* 內容區塊 */
+.navigator-content {
+    /* 內容區塊會根據內部元素自動調整高度 */
+    line-height: 1.2; /* 行高 1.2 倍 */
+}
+
+/* 站別按鈕 */
+.navigator-station-btn {
+    display: block; /* 以區塊元素呈現 */
+    width: 100%; /* 寬度 100% */
+    margin-bottom: 5px; /* 下方外邊距 5px */
+    background-color: #007BFF; /* 背景顏色藍色 */
+    color: white; /* 文字顏色為白色 */
+    border: none; /* 無邊框 */
+    padding: 5px; /* 內邊距 5px */
+    border-radius: 4px; /* 圓角 4px */
+    cursor: pointer; /* 游標顯示手型 */
+    text-align: left; /* 文字左對齊 */
+    font-size: 14px; /* 字體大小 14px */
+    line-height: 1.2; /* 行高 1.2 倍 */
+}
+
+    .navigator-station-btn:hover {
+        background-color: #0056b3; /* 滑鼠懸停時改為較深藍色 */
+    }
+
+/* 下拉選單 */
+.navigator-dropdown {
+    width: 100%; /* 寬度 100% */
+    margin-bottom: 10px; /* 下方外邊距 10px */
+    padding: 4px; /* 內邊距 4px */
+    border: 1px solid #ccc; /* 1px 寬的邊框，顏色為淺灰色 */
+    border-radius: 4px; /* 圓角 4px */
+    font-size: 14px; /* 字體大小 14px */
+    line-height: 1.2; /* 行高 1.2 倍 */
+}
+
+/* 導航按鈕（導覽用） */
+.navigator-go-btn {
+    width: 100%; /* 寬度 100% */
+    padding: 6px; /* 內邊距 6px */
+    background-color: #007BFF; /* 藍色背景 */
+    color: white; /* 白色文字 */
+    border: none; /* 無邊框 */
+    border-radius: 4px; /* 圓角 4px */
+    cursor: pointer; /* 手型游標 */
+    font-size: 14px; /* 字體大小 14px */
+    line-height: 1.2;
+}
+
+    .navigator-go-btn:hover {
+        background-color: #0056b3; /* 懸停時背景變深 */
+    }

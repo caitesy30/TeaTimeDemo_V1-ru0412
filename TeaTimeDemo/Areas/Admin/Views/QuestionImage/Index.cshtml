@@ -1,0 +1,144 @@
+﻿@{
+    ViewData["Title"] = "圖片管理";
+}
+
+<h2 class="text-primary">圖片管理</h2>
+
+<div class="row pb-3">
+    <div class="col-md-6">
+        <!-- 匯出圖片與資料 -->
+        <a asp-action="ExportToExcel" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> 匯出 Excel
+        </a>
+        <!-- 新增回收筒的按鈕 -->
+        <a asp-action="RecycleBin" class="btn btn-secondary ms-2">
+            <i class="bi bi-trash"></i> 回收筒
+        </a>
+    </div>
+    <div class="col-md-6 text-end">
+        <!-- 一開始只有一個「匯入」按鈕，點擊後出現選擇舊/新格式的 Modal -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-file-earmark-arrow-up"></i> 匯入
+        </button>
+    </div>
+</div>
+
+<div style="overflow-x:auto;">
+    <table id="tblData" class="table table-bordered table-striped" style="width:100%;">
+        <thead>
+            <tr>
+                <th>圖片ID</th>
+                <th>圖片</th>
+                <th>圖片路徑</th>
+                <th>問卷ID</th>
+                <th>問題ID</th>
+                <th>選項ID</th>
+                <th>描述</th>
+                <th>寬度</th>
+                <th>高度</th>
+                <th>操作</th>
+                <th>圖片擴展名</th>
+                <th>圖片Base64_Part</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- 預覽用的懸浮容器：滑鼠停留圖片/路徑時顯示預覽 -->
+<div id="imagePreviewContainer" style="position:absolute; display:none; border:1px solid #ccc; background:#fff; padding:5px; z-index:999;">
+    <img id="imagePreview" src="" alt="預覽圖片" style="max-width:500px; max-height:500px;" />
+</div>
+
+<!-- 匯入格式選擇 Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">選擇匯入格式</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 使用 Nav Tabs 切換匯入格式 -->
+                <ul class="nav nav-tabs" id="importTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="old-format-tab" data-bs-toggle="tab" data-bs-target="#old-format" type="button" role="tab" aria-controls="old-format" aria-selected="true">舊格式</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="new-format-tab" data-bs-toggle="tab" data-bs-target="#new-format" type="button" role="tab" aria-controls="new-format" aria-selected="false">新格式</button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="importTabContent">
+                    <!-- 舊格式匯入表單 -->
+                    <div class="tab-pane fade show active" id="old-format" role="tabpanel" aria-labelledby="old-format-tab">
+                        <form method="post" enctype="multipart/form-data" class="mb-2">
+                            <input type="file" name="file" class="form-control d-inline-block" style="width: auto;" required />
+                            <button formaction="@Url.Action("ImportExcel", "QuestionImage", new { replaceExistingData = false, isNewFormat = false })" class="btn btn-primary mt-2">
+                                <i class="bi bi-file-earmark-arrow-up"></i> 匯入舊格式資料(新增)
+                            </button>
+                            <button formaction="@Url.Action("ImportExcel", "QuestionImage", new { replaceExistingData = true, isNewFormat = false })" class="btn btn-danger mt-2">
+                                <i class="bi bi-file-earmark-arrow-up"></i> 取代現有資料(舊格式)
+                            </button>
+                        </form>
+                    </div>
+                    <!-- 新格式匯入表單 -->
+                    <div class="tab-pane fade" id="new-format" role="tabpanel" aria-labelledby="new-format-tab">
+                        <form method="post" enctype="multipart/form-data" class="mb-2">
+                            <input type="file" name="file" class="form-control d-inline-block" style="width: auto;" required />
+                            <button formaction="@Url.Action("ImportExcel", "QuestionImage", new { replaceExistingData = false, isNewFormat = true })" class="btn btn-primary mt-2">
+                                <i class="bi bi-file-earmark-arrow-up"></i> 匯入新格式資料(新增)
+                            </button>
+                            <button formaction="@Url.Action("ImportExcel", "QuestionImage", new { replaceExistingData = true, isNewFormat = true })" class="btn btn-danger mt-2">
+                                <i class="bi bi-file-earmark-arrow-up"></i> 取代現有資料(新格式)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- 關閉 Modal 按鈕 -->
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯圖片尺寸的 Modal -->
+<div class="modal fade" id="editImageModal" tabindex="-1" aria-labelledby="editImageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">編輯圖片尺寸</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="editImagePreview" src="" alt="Image Preview" style="max-width:100%; height:auto;" />
+                </div>
+                <input type="hidden" id="editImageId" />
+                <div class="row mb-3">
+                    <div class="col">
+                        <label>寬度(px)</label>
+                        <input type="number" class="form-control" id="imageWidthInput" />
+                        <input type="range" min="50" max="1000" class="form-range mt-1" id="imageWidthRange" />
+                    </div>
+                    <div class="col">
+                        <label>高度(px)</label>
+                        <input type="number" class="form-control" id="imageHeightInput" />
+                        <input type="range" min="50" max="1000" class="form-range mt-1" id="imageHeightRange" />
+                    </div>
+                </div>
+                <small class="text-muted">透過拖曳拉桿或直接輸入數值即可調整圖片大小。</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveDimensionsBtn">儲存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <!-- 引入 questionImage.js -->
+    <script src="~/js/questionImage.js" asp-append-version="true"></script>
+}

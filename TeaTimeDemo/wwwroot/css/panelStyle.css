@@ -1,0 +1,299 @@
+﻿
+/*TODO：新增、顯示ID、預覽列印、儲存、表格編輯*/
+
+#closeBtn:hover, #mergeTableBtn:hover {
+    background: #5f6368; 
+}
+
+#mergeTableBtn {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+
+
+    border: none;
+}
+
+#closeBtn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#resizeAlert {
+    width:150px;
+    position: fixed;
+    top: 80px; 
+    left: 10px; 
+    display: flex;
+    flex-direction: column; /* 讓內容垂直排列 */
+    align-items: flex-start; /* 讓按鈕靠左對齊 */
+    /*background: white;*/
+    color: white;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border: 1px solid #ccc;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000; 
+}
+
+    #resizeAlert .header-container {
+        display: flex;
+        justify-content: space-between; /* 讓內容左右對齊 */
+        align-items: center; /* 垂直置中 */
+        width: 100%;
+    }
+
+    #resizeAlert span {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    #resizeAlert button {
+        margin: 5px 0;
+    }
+
+.ModuleBlock_group {
+    font-size: 7px;
+    display: flex;
+    grid-template-columns: repeat(2, 1fr); /* 左右兩列布局 */
+    justify-items: center; /* 水平居中 */
+    /*align-content: center;*/ /* 垂直居中 */
+    /*width: 55px;*/
+    gap: 6px;
+    margin: 3px;
+    white-space: nowrap;
+    border-bottom: 1px dashed;
+    border-top: 1px dashed;
+    margin-bottom: -1px;
+    margin-top: 0px;
+
+    padding-top: 5px;
+    padding-bottom: 5px;
+    align-items: center;
+
+}
+    .ModuleBlock_group input {
+        border-radius:0;
+    }
+.table-handle {
+    width: 5px;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    cursor: ns-resize;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+.resize-handle.top-left {
+    top: -2px;
+    left: -2px;
+    cursor: nwse-resize;
+}
+
+.resize-handle.top-center {
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+.resize-handle.top-right {
+    top: -2px;
+    right: -2px;
+    cursor: nesw-resize;
+}
+
+.resize-handle.left-center {
+    top: 50%;
+    left: -2px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+.resize-handle.right-center {
+    top: 50%;
+    right: -2px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+.resize-handle.bottom-left {
+    bottom: -2px;
+    left: -2px;
+    cursor: nesw-resize;
+}
+
+.resize-handle.bottom-center {
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+.resize-handle.bottom-right {
+    bottom: -2px;
+    right: -2px;
+    cursor: nwse-resize;
+}
+
+.offcanvas-start {
+    opacity: 0.95;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+
+
+.resize-wrapper img {
+    border: 1px solid #4285f4;
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.invisiblebox {
+    position:absolute;
+    top: 0;
+    left: 0;
+}
+
+.imgBox {
+    position: absolute;
+    pointer-events:none;
+}
+
+.test {
+    position: absolute;
+    pointer-events: none;
+}
+
+.resize-wrapper {
+    position: relative;
+    display: inline-block;
+    min-width: 16px;
+    min-height: 16px;
+    border: 1px #4285f4;
+    /*padding: 10px;*/
+}
+
+.resize-handle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background-color: #4285f4;
+    z-index: 10;
+    /*box-sizing: border-box;*/
+}
+
+.floating-panel {
+
+    gap: 10px;
+    position: fixed;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.floating-panel.desktop {
+    display: flex;
+    right: -65px;
+    height: auto;
+    width: auto;
+    gap: 1px;
+    flex-direction: column;
+    bottom: 25%;
+    transition: transform 0.8s, background-color 0.5s ease-in-out;
+    transform: translateX(-100%);
+}
+
+/* 手機端面板位置（按鈕水平排列） */
+.floating-panel.mobile {
+    height: auto; /* 面板高度 */
+    display: flex;
+    flex-direction: row; /* 水平排列按鈕 */
+    position: fixed; /* 固定在屏幕內 */
+    bottom: -60px; /* 最終停留位置是屏幕底部 */
+    left: 10%; /* 側邊對齊 */
+    width: 80%; /* 占據全寬 */
+    gap: 1px; /* 按鈕間距 */
+    background-color: white; /* 背景顏色 */
+    box-shadow: 0px -4px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 1s, background-color 0.5s ease-in-out; 
+    transform: translateY(-100%); /* 初始位置：屏幕外 */
+    /*animation: slide-up 1s ease-in-out;*/ /* 動畫效果 */
+    justify-content: space-evenly;
+}
+
+.floating-panel button {
+    height: 70px;
+    width: 70px;
+    display: block;
+    padding-top: 60px;
+    padding: 12px;
+    background-color: #ffffff;
+    color: #5f6368;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 50%;
+    transition: transform 0.8s;
+}
+
+.floating-panel button i {
+    font-size: 24px; /* 設定圖標大小 */
+    transition: transform 0.8s; /* 動態效果 */
+}
+
+
+/* 點擊效果（縮小按鈕） */
+.floating-panel button:active {
+    transform: scale(0.85); /* 點擊時按鈕縮小至 85% */
+    transition: transform 0.8s, background-color 0.5s ease-in-out; /* 添加平滑過渡效果 */
+}
+
+
+.floating-panel button:hover {
+    background-color: #f9f9f9;
+    /*transform: scale(1.1);*/
+    transition: transform 0.8s, background-color 0.5s ease-in-out;
+    /*transform: scale(1.1); /* 放大效果 */
+    /*box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.3);*/ /* 增強陰影效果 */
+}
+
+
+
+
+/* CSS */
+/*#floatingButton {
+    position: fixed;
+    bottom: 20px;*/ /* 距離底部 */
+    /*right: 20px;*/ /* 距離右側 */
+    /*width: 56px;*/ /* 按鈕寬度 */
+    /*height: 56px;*/ /* 按鈕高度 */
+    /*background-color: white;
+    border-radius: 50%;*/ /* 圓形 */
+    /*box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);*/ /* 陰影效果 */
+    /*display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;*/ /* 滑鼠變成指針 */
+    /*transition: transform 10s, background-color 0.5s;*/ /* 動態效果 */
+/*}
+
+#floatingButton i {
+    font-size: 24px;*/ /* 圖標大小 */
+    /*color: #d7dce8;*/ /* 圖標顏色 */
+/*}
+
+#floatingButton:hover {
+    background-color: #3700b3;*/ /* 滑鼠懸停時的背景色 */
+    /*transform: scale(1.1);*/ /* 放大效果 */
+/*}*/

@@ -1,0 +1,119 @@
+﻿<!-- Areas/Admin/Views/Question/Edit.cshtml -->
+@model TeaTimeDemo.Models.ViewModels.QuestionVM
+
+@{
+    ViewData["Title"] = "編輯問題";
+}
+
+<h1>編輯問題</h1>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+    <!-- 隱藏的問題 ID -->
+    <input type="hidden" asp-for="Id" />
+
+    <!-- 問題文本 -->
+    <div class="form-group">
+        <label asp-for="QuestionText" class="control-label"></label>
+        <input asp-for="QuestionText" class="form-control" />
+        <span asp-validation-for="QuestionText" class="text-danger"></span>
+    </div>
+
+    <!-- 問卷選擇 -->
+    <div class="form-group">
+        <label asp-for="SurveyId" class="control-label">問卷</label>
+        <select asp-for="SurveyId" asp-items="Model.SurveyList" class="form-control">
+            <option value="">請選擇問卷</option>
+        </select>
+        <span asp-validation-for="SurveyId" class="text-danger"></span>
+    </div>
+
+    <!-- 答案類型選擇 -->
+    <div class="form-group">
+        <label asp-for="AnswerType" class="control-label">答案類型</label>
+        <select asp-for="AnswerType" asp-items="Model.AnswerTypeList" class="form-control">
+            <option value="">請選擇答案類型</option>
+        </select>
+        <span asp-validation-for="AnswerType" class="text-danger"></span>
+    </div>
+
+    <!-- 富文本內容 -->
+    <div class="form-group">
+        <label asp-for="MceHtml" class="control-label">富文本內容</label>
+        <textarea asp-for="MceHtml" class="form-control"></textarea>
+        <span asp-validation-for="MceHtml" class="text-danger"></span>
+    </div>
+
+    <!-- 現有圖片管理 -->
+    <div class="form-group">
+        <label>現有圖片</label>
+        <div>
+            @foreach (var image in Model.QuestionImages)
+            {
+                <div class="mb-2">
+                    <!-- 顯示圖片 -->
+                    <img src="@image.ImageUrl" alt="Question Image" width="100" height="100" class="img-thumbnail" />
+                    <!-- 刪除圖片按鈕 -->
+                    <button type="button" class="btn btn-danger btn-sm" onclick="RemoveImage(@image.Id)">
+                        <i class="bi bi-trash-fill"></i> 刪除
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 新增圖片上傳 -->
+    <div class="form-group">
+        <label>新增圖片</label>
+        <input type="file" asp-for="QuestionImageFiles" multiple class="form-control-file" />
+        <small class="form-text text-muted">可選擇多張圖片，格式限制：JPG、PNG、WEBP、GIF，大小不超過 5MB。</small>
+    </div>
+
+    <!-- 提交按鈕 -->
+    <div class="form-group">
+        <input type="submit" value="保存" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">取消</a>
+    </div>
+</form>
+
+@section Scripts {
+    <!-- 引入驗證腳本 -->
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // 刪除圖片的 JavaScript 函數
+        function RemoveImage(id) {
+            Swal.fire({
+                title: "你確定要刪除這張圖片嗎?",
+                text: "刪除後將無法恢復!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "是的，刪除它!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/admin/question/removeimage', // 刪除圖片的後端 API
+                        type: 'POST', // 請求類型為 POST
+                        data: { id: id },
+                        headers: {
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // CSRF Token
+                        },
+                        success: function (data) {
+                            if (data.success) {
+                                toastr.success(data.message); // 顯示成功訊息
+                                location.reload(); // 重新載入頁面以更新圖片列表
+                            } else {
+                                toastr.error(data.message); // 顯示錯誤訊息
+                            }
+                        },
+                        error: function () {
+                            toastr.error("刪除圖片時發生錯誤。"); // 顯示錯誤訊息
+                        }
+                    });
+                }
+            })
+        }
+    </script>
+}

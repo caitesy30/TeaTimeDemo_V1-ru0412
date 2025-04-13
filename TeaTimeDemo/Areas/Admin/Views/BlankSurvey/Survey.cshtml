@@ -1,0 +1,58 @@
+﻿@using Newtonsoft.Json
+@model BlankSurveyVM
+<div class="container">
+    <h2 class="text-primary">問卷管理</h2>
+    <div class="table-responsive">@*可滾動的*@
+        <form id="addToCatForm" method="post" action="/Admin/BlankSurvey/Survey?NotesId=@ViewData["CategoryId"]&StationId=@ViewData["LayerId"]">
+            <input asp-for="Layer.Id" hidden />
+            <input type="hidden" name="NotesId" />
+            <input type="hidden" name="StationId" />
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="name" class="form-label">名稱</label>
+                    <input type="text" class="form-control"
+                           value="@Model.Layer.Name" asp-for="Layer.Name" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="order" class="form-label">順序</label>
+                    <input type="number" class="form-control"
+                           value="@Model.Layer.Order" asp-for="Layer.Order" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="description" class="form-label">描述</label>
+                    <input type="text" class="form-control"
+                           value="@Model.Layer.Description" asp-for="Layer.Description">
+                    </div>
+                </div>
+            <table id="StblData" class="table table-bordered table-striped" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>選擇</th>
+                        <th>類別</th>
+                        <th>流程</th>
+                        <th>頁數</th>
+                        <th>文件編號</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button type="submit" asp-action="Upsert" class="btn btn-primary btn-lg">選取</button>
+        </form>
+    </div>
+</div>
+
+
+
+
+@section Scripts {
+    <script>
+        var selectedSurveyIds =  @Html.Raw(JsonConvert.SerializeObject(Model.SelectedSurveyIds));
+        var categoryId = "@Model.Category.Id";
+        var layerId = "@Model.Layer.Id";
+    </script>
+    <script src="~/js/blanksurvey.js" asp-append-version="true"></script>
+     
+
+    
+
+}

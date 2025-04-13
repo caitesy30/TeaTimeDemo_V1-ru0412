@@ -1,0 +1,116 @@
+﻿@model TeaTimeDemo.Models.AnswersData.ViewModels.AnsweredNotesVM
+
+
+@{
+    var status = Context.Request.Query["status"];
+    var pending = "text-primary";
+    var processing = "text-primary";
+    var ready = "text-primary";
+    var completed = "text-primary";
+    var all = "text-primary";
+
+    switch (status)
+    {
+        case "Pending":
+            pending = "active text-white";
+            break;
+        case "Processing":
+            processing = "active text-white";
+            break;
+        case "Ready":
+            ready = "active text-white";
+            break;
+        case "Completed":
+            completed = "active text-white";
+            break;
+        default:
+            all = "active text-white";
+            break;
+    }
+}
+
+<div class="p-3">
+    @* <div class="d-flex justify-content-between pt-4">
+        <div class="pt-2">
+            <h2 class="text-primary">@Model.Title</h2>
+        </div>
+        <div class="p-2">
+            <ul class="list-group list-group-horizontal-sm">
+                <a style="text-decoration:none;" asp-controller="Order"
+                   asp-action="Index" asp-route-status="Pending">
+
+                <li class="list-group-item @pending">作答編輯中</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                   asp-action="Index" asp-route-status="Processing">
+                <li class="list-group-item @processing">等待料號審核</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                   asp-action="Index" asp-route-status="Ready">
+                <li class="list-group-item @ready">料號審核中</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                   asp-action="Index" asp-route-status="Completed">
+                <li class="list-group-item @completed">已完成</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                   asp-action="Index" asp-route-status="all">
+                <li class="list-group-item @all">所有清單</li>
+                </a>
+            </ul>
+        </div>
+    </div> *@
+
+
+
+
+
+
+    <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+        <br>
+        <thead>
+            <tr class="align-middle">
+                <th>流程名稱</th>
+                <th>操作</th>
+                <th>進度</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @foreach (var Process in @Model.AllProcess)
+            {
+                @* var progress = Model.ProcessingProcess.FirstOrDefault(pp => pp.ProcessingProcess == Process.ProcessCategoryId); *@
+                <tr class="align-middle">
+                    <td>@Process.ProcessName</td>
+@*                     <td>@Process.CreateTime</td> *@
+                    <td>
+                        <a asp-controller="SurveyAns"
+                           asp-action="Index" 
+                           asp-route-MtNum="@Model.AnsweredNotes.MtNum"
+                           asp-route-ProcessName="@Process.ProcessName"
+                           asp-area="Customer"
+                           class="btn btn-primary mx-2">
+							<i class="bi bi-pencil-square"></i>填寫
+                        </a>
+                    </td>
+                    <td>@* @progress.Completed / @progress.Total *@</td>
+                    <td></td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+    <div class="col-2">
+    <a asp-controller="Order"
+       asp-action="Index"
+       class="btn btn-secondary w-100">
+        <i class="bi bi-emoji-smile"></i>
+        返回上一層
+    </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/order.js" asp-append-version="true"></script>
+}

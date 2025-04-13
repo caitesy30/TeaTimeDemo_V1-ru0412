@@ -1,0 +1,74 @@
+﻿@model TeaTimeDemo.Models.ViewModels.QuestionOptionVM
+
+@{
+    ViewData["Title"] = "編輯問題選項";
+}
+
+<h1><i class="bi bi-pencil-square"></i>編輯問題選項</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group">
+                <label asp-for="QuestionId" class="control-label">問題</label>
+                <select asp-for="QuestionId" class="form-control" asp-items="Model.QuestionList">
+                    <option value="">-- 請選擇問題 --</option>
+                </select>
+                <span asp-validation-for="QuestionId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OptionText" class="control-label">選項文本</label>
+                <input asp-for="OptionText" class="form-control" />
+                <span asp-validation-for="OptionText" class="text-danger"></span>
+            </div>
+
+            <div class="form-group form-check">
+                <input asp-for="IsCorrect" class="form-check-input" />
+                <label asp-for="IsCorrect" class="form-check-label">是否正確</label>
+            </div>
+
+            <div class="form-group form-check">
+                <input asp-for="IsOther" class="form-check-input" />
+                <label asp-for="IsOther" class="form-check-label">是否其他</label>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Description" class="control-label">描述</label>
+                <textarea asp-for="Description" class="form-control"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SortOrder" class="control-label">排序順序</label>
+                <input asp-for="SortOrder" class="form-control" />
+                <span asp-validation-for="SortOrder" class="text-danger"></span>
+            </div>
+
+            <!-- 如果需要顯示 CreateTime 和 CompleteTime，可以取消註解以下部分 -->
+            <!--
+            <div class="form-group">
+                <label class="control-label">創建時間</label>
+                <input asp-for="CreateTime" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label class="control-label">完成時間</label>
+                <input asp-for="CompleteTime" class="form-control" readonly />
+            </div>
+            -->
+
+            <div class="form-group">
+                <input type="submit" value="儲存" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

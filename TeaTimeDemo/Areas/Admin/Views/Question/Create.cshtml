@@ -1,0 +1,88 @@
+﻿<!-- Areas/Admin/Views/Question/Create.cshtml -->
+@model TeaTimeDemo.Models.ViewModels.QuestionVM
+
+@{
+    ViewData["Title"] = ViewData["Action"] == "Insert" ? "插入問題" : "新增問題";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<form asp-action="@ViewData["Action"]" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <!-- 隱藏的 QuestionId（僅插入時需要） -->
+    @if (ViewData["Action"].ToString() == "Insert")
+    {
+        <!-- 傳遞 CurrentQuestionId，而不是 Id -->
+        <input type="hidden" asp-for="CurrentQuestionId" />
+    }
+
+    <!-- 問卷選擇或顯示 -->
+    @if (ViewData["Action"].ToString() == "Insert")
+    {
+        <!-- 已經有 SurveyId，顯示問卷標題並隱藏 SurveyId -->
+        <input type="hidden" asp-for="SurveyId" />
+        <div class="form-group">
+            <label asp-for="SurveyTitle" class="control-label">問卷</label>
+            <input asp-for="SurveyTitle" class="form-control" readonly />
+        </div>
+    }
+    else
+    {
+        <!-- 沒有 SurveyId，需要選擇問卷 -->
+        <div class="form-group">
+            <label asp-for="SurveyId" class="control-label">問卷</label>
+            <select asp-for="SurveyId" asp-items="Model.SurveyList" class="form-control">
+                <!-- 預設選項已在控制器中添加，不需要手動添加 -->
+            </select>
+            <span asp-validation-for="SurveyId" class="text-danger"></span>
+        </div>
+    }
+
+    <!-- 隱藏的 SortOrder（插入時需要） -->
+    @if (ViewData["Action"].ToString() == "Insert")
+    {
+        <input type="hidden" asp-for="SortOrder" />
+    }
+
+    <!-- 問題文本 -->
+    <div class="form-group">
+        <label asp-for="QuestionText" class="control-label"></label>
+        <textarea asp-for="QuestionText" class="form-control"></textarea>
+        <span asp-validation-for="QuestionText" class="text-danger"></span>
+    </div>
+
+    <!-- 答案類型選擇 -->
+    <div class="form-group">
+        <label asp-for="AnswerType" class="control-label">答案類型</label>
+        <select asp-for="AnswerType" asp-items="Model.AnswerTypeList" class="form-control">
+            <!-- 預設選項已在控制器中添加，不需要手動添加 -->
+        </select>
+        <span asp-validation-for="AnswerType" class="text-danger"></span>
+    </div>
+
+    <!-- 富文本內容 -->
+    <div class="form-group">
+        <label asp-for="MceHtml" class="control-label">富文本內容</label>
+        <textarea asp-for="MceHtml" class="form-control"></textarea>
+        <span asp-validation-for="MceHtml" class="text-danger"></span>
+    </div>
+
+    <!-- 圖片上傳 -->
+    <div class="form-group">
+        <label>上傳圖片</label>
+        <input type="file" asp-for="QuestionImageFiles" multiple class="form-control-file" />
+        <small class="form-text text-muted">可選擇多張圖片，格式限制：JPG、PNG、WEBP、GIF，大小不超過 5MB。</small>
+    </div>
+
+    <!-- 提交按鈕 -->
+    <div class="form-group">
+        <input type="submit" value="保存" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">取消</a>
+    </div>
+</form>
+
+@section Scripts {
+    <!-- 引入驗證腳本 -->
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

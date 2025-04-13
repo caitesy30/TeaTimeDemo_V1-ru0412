@@ -1,0 +1,93 @@
+﻿@model List<TeaTimeDemo.Models.Station>
+
+<div class="container">
+    <div class="row pt-4 pb-3">
+        <div class="col-6">
+            <h2 class="text-primary">站別清單</h2>
+        </div>
+        <div class="col-6 text-end">
+            <a asp-controller="Station" asp-action="Upsert" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 新增站別
+            </a>
+            <a asp-controller="Station" asp-action="ExportToExcel" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> 匯出 Excel
+            </a>
+
+            <!-- 匯入 Excel 按鈕，用於顯示檔案選擇器 -->
+            <form asp-controller="Station" asp-action="ShowImportForm" method="post" class="d-inline">
+                <button type="submit" class="btn btn-info">
+                    <i class="bi bi-file-earmark-arrow-up"></i> 匯入 Excel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 匯入 Excel 的模態框 -->
+    <div id="progressModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="background-color: rgba(255, 255, 255, 0.8);">
+                <div class="modal-body text-center">
+                    <!-- 這裡嵌入Unity的WebGL進度條 -->
+                    <iframe src="~/UnityBuild/index.html" width="100%" height="400px" style="border:none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 如果 ViewBag.ShowImportForm 為 true，則顯示檔案選擇器 -->
+    @if (ViewBag.ShowImportForm == true)
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <form method="post" enctype="multipart/form-data" id="importForm">
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control-file" />
+                    </div>
+
+                    <!-- 按鈕: 上傳新增資料 -->
+                    <button formaction="@Url.Action("ImportExcel", "Station", new { replaceExistingData = false })" 
+                    class="btn btn-success" onclick="showProgressModal()">新增資料</button>
+
+                    <!-- 按鈕: 上傳取代資料 -->
+                    <button formaction="@Url.Action("ImportExcel", "Station", new { replaceExistingData = true })" 
+                    class="btn btn-danger" onclick="showProgressModal()">取代資料表</button>
+
+                </form>
+            </div>
+        </div>
+    }
+
+    <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th>站別名稱</th>
+                <th>顯示順序</th>
+                <th>備註</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+@section Scripts
+{
+    <!-- 引入 station.js -->
+    <script src="~/js/station.js" asp-append-version="true"></script>
+
+    <script>
+        // 顯示進度條的模態框
+        function showProgressModal() {
+            document.getElementById("progressModal").style.display = "block";                  
+        }
+
+        // 隱藏進度條的模態框
+        function hideProgressModal() {
+            document.getElementById("progressModal").style.display = "none";
+        }
+
+        // 在表單提交後顯示模態
+        document.getElementById('importForm').onsubmit = function() {
+            showProgressModal();
+        };
+    </script>
+}

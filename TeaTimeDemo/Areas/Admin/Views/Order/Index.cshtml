@@ -1,0 +1,441 @@
+﻿@model TeaTimeDemo.Models.AnswersData.ViewModels.AnsweredIndexVM
+@using TeaTimeDemo
+
+@{
+    var status = Context.Request.Query["status"];
+    var tbd = "text-primary";
+    var cam = "text-primary";
+    var qa = "text-primary";
+    var completed = "text-primary";
+    var all = "text-primary";
+
+    switch (status)
+    {
+        case "作答編輯中":
+            tbd = "active text-white";
+            break;
+        case "等待料號審核":
+            cam = "active text-white";
+            break;
+        case "料號審核中":
+            qa = "active text-white";
+            break;
+        case "完成":
+            completed = "active text-white";
+            break;
+        default:
+            all = "active text-white";
+            break;
+    }
+}
+
+<div class="p-3">
+    <div class="d-flex justify-content-between pt-4">
+        <div class="pt-2">
+            <h2 class="text-primary">Notes清單 Notes List</h2>
+        </div>
+        <div class="p-2">
+            <ul class="list-group list-group-horizontal-sm">
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="作答編輯中">
+
+                    <li class="list-group-item @tbd">作答編輯中</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="等待料號審核">
+                    <li class="list-group-item @cam">等待料號審核</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="料號審核中">
+                    <li class="list-group-item @qa">料號審核中</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="完成">
+                    <li class="list-group-item @completed">已完成</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Order"
+                asp-action="Index" asp-route-status="all">
+                    <li class="list-group-item @all">所有清單</li>
+                </a>
+            </ul>
+        </div>
+    </div>
+
+
+    <div class="col-md-6 button-group">
+        <button type="button" class="btn btn-success" onclick="ToggleForm()">
+            <i class="bi bi-plus-circle"></i> 新增料號
+        </button>
+        
+    </div>
+
+
+    <div class="row pb-3" id="NewPageSection" style="display: none;">
+        <br>
+        <div class="col-md-12">
+            @* <form id="entryForm" method="post" asp-action="AddGroup"> *@
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="productId" class="form-label">料號</label>
+                    <input type="text" id="productId" class="form-control" name="productId" required title="Only letters and numbers are allowed" oninput="restrictInput(event)">
+
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="ReProductId" class="form-label">料號確認</label>
+                    <input type="text" id="ReProductId" class="form-control" name="ReProductId" required title="Only letters and numbers are allowed" oninput="restrictInput(event)">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="pcbCategoryId" class="form-label">PCB類別</label>
+                    <select class="form-select" id="PcbCategoryId" name="pcbCategoryId">
+                        <option value="0">無</option>
+                        @foreach (Category _Category in @Model.Categorys)
+                        {
+                            <option value="@_Category.Id">@_Category.Name</option>
+                        }
+
+                    </select>
+                </div>
+                <div class="alert alert-primary d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <div>
+                        如無選取特規則默認是公版所有頁數
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3 " style="display: flex">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-process-type="PNL" data-original-text="PNL特規">PNL特規</button>
+                        <ul class="dropdown-menu">
+                            @* <li><button class="dropdown-item" data-value="1">預設</button></li>
+                            <li><button class="dropdown-item" data-value="2">測試</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" data-value="0" onclick="SurveyOption.Add('PNL')">>新增其他</button></li> *@
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3" style="display: flex">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-process-type="內層" data-original-text="內層特規">內層特規</button>
+                        <ul class="dropdown-menu">
+                            @* <li><button class="dropdown-item" data-value="1">預設</button></li>
+                            <li><button class="dropdown-item" data-value="2">測試</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" data-value="0" onclick="SurveyOption.Add(內層)">>新增其他</button></li> *@
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3" style="display: flex">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-process-type="外層" data-original-text="外層特規">外層特規</button>
+                        <ul class="dropdown-menu">
+                            @* <li><button class="dropdown-item" data-value="1">預設</button></li>
+                            <li><button class="dropdown-item" data-value="2">測試</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" data-value="0" onclick="SurveyOption.Add(外層)">>新增其他</button></li> *@
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3" style="display: flex">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-process-type="印字" data-original-text="印字特規">印字特規</button>
+                        <ul class="dropdown-menu">
+                            @* <li><button class="dropdown-item" data-value="1">預設</button></li>
+                            <li><button class="dropdown-item" data-value="2">測試</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" data-value="0" onclick="SurveyOption.Add(印字)">>新增其他</button></li> *@
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3" style="display: flex">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-process-type="防焊" data-original-text="防焊特規">防焊特規</button>
+                        <ul class="dropdown-menu">
+                            @* <li><button class="dropdown-item" data  -value="1">預設</button></li>
+                            <li><button class="dropdown-item" data-value="2">測試</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" data-value="0" onclick="SurveyOption.Add(防焊)">>新增其他</button></li> *@
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3" style="display: flex">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-process-type="其他" data-original-text="新增其他流程">新增其他流程</button>
+                        <ul class="dropdown-menu">
+                            @* <li><button class="dropdown-item" data-value="1">預設</button></li>
+                            <li><button class="dropdown-item" data-value="2">測試</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item" data-value="0" onclick="SurveyOption.Add(其他)">新增其他</button></li> *@
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-end">
+
+                    <button type="button" class="btn btn-success btn-lg" onclick="Notes.Add()">
+                        建立
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addOption">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">選取問卷</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="OptionInput" class="form-label">名稱</label>
+                    <input type="text" id="newOptionInput" class="form-control" placeholder="請輸入新選項">
+
+                    <table id="MtblData" class="table table-bordered table-striped" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>選擇</th>
+                                <th>類別</th>
+                                <th>流程</th>
+                                <th>頁數</th>
+                                <th>文件編號</th>
+                                <th>版本</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" asp-action="addSurveyOption" class="btn btn-primary" id="saveNewOption">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+        <br>
+        <thead>
+            <tr class="align-middle">
+                <th>料號</th>
+                <th>PCB類別</th>
+                <th>目前狀態</th>
+                <th>建立時間</th>
+                <th>最後編輯時間</th>
+                <th>建立人工號</th>
+                <th>建立人姓名</th>
+                <th>操作</th>
+                <th>歷史紀錄</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Notes in @Model.SelectedNotes)
+            {
+                var progress = @Model.NotesProcess.FirstOrDefault(np => np.MtNum == Notes.MtNum);
+                var collapseId = $"collapse-{Notes.Id}"; // 唯一的 collapse ID
+                var selectedLogs = Model.NotesModifyLogs.Where(n => n.MtNum == Notes.MtNum).ToList();
+                <tr class="align-middle">
+                    <td>@Notes.MtNum</td>
+                    <td>@Model.Categorys.FirstOrDefault(c => c.Id == Notes.PcbCategoryId)?.Name</td>
+                    <td style="color: @(Notes.status == null ? "red" : "blue");">
+                        @(Notes.status ?? "未審核")
+                    </td>
+                    <td>@Notes.CreateTime</td>
+                    <td>@Notes.CompleteTime</td>
+                    <td>@Notes.JobNum</td>
+                    <td>@Notes.JobName</td>
+                    <td class="text-nowrap">
+                        @{
+                            var nStatus = Notes.status;
+                            switch (nStatus)
+                            {
+                                case "作答編輯中":
+                                    <a asp-controller="Order" asp-action="NotesView"    asp-route-Id="@Notes.Id" asp-area="Admin" class="btn btn-primary mx-2">
+                                        <i class="bi bi-pencil-square"></i> 填寫
+                                    </a>
+                                    <form asp-controller="Order" asp-action="CompleteNotes" asp-area="Admin" method="post" class="d-inline">
+                                        <input type="hidden" name="Id" value="@Notes.Id" />
+                                        <button type="submit" class="btn btn-primary mx-2">
+                                            <i class="bi bi-check2-square"></i> 送出
+                                        </button>
+                                    </form>
+                                    <button class="btn btn-danger mx-2" type="button" onclick="Delete('@Notes.MtNum')">
+                                        <i class="bi bi-trash"></i> 刪除
+                                    </button>
+                                    break;
+                                case "等待料號審核":
+
+                                    @if (User.IsInRole(SD.Role_Admin))
+                                    {
+                                        <form asp - controller="Order" asp-action="ValiNotes" asp-area="Admin" method="post" class="d-inline">
+                                            <input type="hidden" name="Id" value="@Notes.Id" />
+                                            <button type="submit" class="btn btn-info">
+                                                <i class="bi bi-eye"></i> 確認送審
+                                            </button>
+                                        </form>
+                                    }
+
+                                    
+
+                                    <form asp-controller="Order" asp-action="CancelNotes" asp-area="Admin" method="post" class="d-inline">
+                                        <input type="hidden" name="Id" value="@Notes.Id" />
+                                        <button type="submit" class="btn btn-danger mx-2">
+                                            <i class="bi bi-hand-thumbs-down"></i> 取消送出
+                                        </button>
+                                    </form>
+
+                                    <button class="btn btn-danger mx-2" type="button" onclick="Delete('@Notes.MtNum')">
+                                        <i class="bi bi-trash"></i> 刪除
+                                    </button>
+                                    
+                                    break;
+                                case "料號審核中":
+
+
+                                    @if (User.IsInRole(SD.Role_Admin))
+                                    {
+                                        <form asp-controller="Order" asp-action="ToValiNotes" asp-area="Admin" method="post" class="d-inline">
+                                            <input type="hidden" name="Id" value="@Notes.Id" />
+                                            <button type="submit" class="btn btn-info mx-2">
+                                                <i class="bi bi-eye"></i>審核
+                                            </button>
+                                        </form>
+                                        <form asp-controller="Order" asp-action="ValiComplete" asp-area="Admin" method="post" class="d-inline">
+                                            <input type="hidden" name="Id" value="@Notes.Id" />
+                                            <button type="submit" class="btn btn-success mx-2">
+                                                <i class="bi bi-hand-thumbs-up"></i> 審核完成
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-danger mx-2" data-bs-toggle="modal" data-bs-target="#rejectModal-@Notes.Id">
+                                            <i class="bi bi-hand-thumbs-down"></i> 退回
+                                        </button>
+                                        <button class="btn btn-danger mx-2" type="button" onclick="Delete('@Notes.MtNum')">
+                                            <i class="bi bi-trash"></i> 刪除
+                                        </button>
+
+                                    }
+                                    @if (User.IsInRole(SD.Role_Manager))
+                                    {
+                                        <button class="btn btn-danger mx-2" type="button" onclick="" disabled>
+                                            審核中
+                                        </button>
+                                    }
+
+                                    <div class="modal fade" id="rejectModal-@Notes.Id" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="rejectModalLabel">輸入退回原因</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form asp-controller="Order" asp-action="RejectNotes" asp-area="Admin" method="post">
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="Id" value="@Notes.Id" />
+                                                        <div class="mb-3">
+                                                            <label for="remark" class="form-label">退回原因：</label>
+                                                            <textarea class="form-control" name="remark" id="remark-@Notes.Id" rows="3" ></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                                        <button type="submit" class="btn btn-danger">確認退回</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    break;
+                                case "完成":
+                                    // <a asp-controller="Order" asp-action="Print" asp-route-MtNum="@Notes.MtNum" class="btn btn-info mx-2">
+                                    //     <i class="bi bi-printer"></i> 列印
+                                    // </a>
+                                    <form asp-controller="Print" asp-action="Print" asp-area="Customer" method="post" class="d-inline">
+                                        <input type="hidden" name="Id" value="@Notes.Id" />
+                                        <button type="submit" class="btn btn-info mx-2">
+                                            <i class="bi bi-printer"></i>列印
+                                        </button>
+                                        <button type="button" class="btn btn-dark" onclick="Notes.Duplicate(@Notes.Id)">
+                                            <i class="bi bi-back"></i> 複製
+                                        </button>
+                                    </form>
+
+
+
+
+                                    <!-- 修改後：直接呼叫 Print 方法，傳遞 MtNum -->
+                                    // <a asp-controller="Order" asp-action="Print" asp-route-MtNum="@Notes.Id" class="btn btn-info mx-2">
+                                    //     <i class="bi bi-printer"></i> 列印
+                                    // </a>
+
+
+                                    @if (User.IsInRole(SD.Role_Admin))
+                                    {
+                                        <button class="btn btn-danger mx-2" type="button" onclick="Delete('@Notes.MtNum')">
+                                            <i class="bi bi-trash"></i> 刪除
+                                        </button>
+                                    }
+                                    
+                                        break;
+                                    default:
+                                        
+                                        break;
+                                }
+                            }
+                        
+
+					</td>
+                    <td>@*進度*@@* @progress.Completed / @progress.Total *@ </td>
+                    <td>
+                        <button class="btn btn-link collapse-icon" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </td>
+                </tr>
+
+                <!--詳細區域-->
+                <tr id="@collapseId" class="collapse">
+                    <td colspan="9">
+                        <div class="p-3 border rounded bg-light">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr class="align-middle">
+                                        <th>狀態</th>
+                                        <th>備註</th>
+                                        <th>編輯者工號</th>
+                                        <th>編輯者姓名</th>
+                                        <th>最後編輯時間</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    @foreach (var log in selectedLogs)
+                                    {
+                                        <tr>
+                                            <td>@log.Status</td>
+                                            <td>@log.Remark</td>
+                                            <td>@log.JobNum</td>
+                                            <td>@log.JobName</td>
+                                            <td>@log.CompleteTime</td>
+                                            <td></td>
+
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            @if (!(Model.NotesModifyLogs?.Any(m => m.MtNum == Notes.MtNum) ?? true))
+                            {
+                                <p class="text-muted">無修改紀錄</p>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+</div>
+
+@section Scripts {
+    <script src="~/js/order.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,128 @@
+﻿<!--SurveyController的Upsert-->
+@model TeaTimeDemo.Models.ViewModels.SurveyVM
+
+
+@{
+    ViewData["Title"] = "問卷管理";
+
+    // 判斷是否多筆模式 (有 allIds 且 currentIndex >=0)
+    var allIds = ViewBag.AllIds as string ?? "";
+    var currentIndex = (ViewBag.CurrentIndex as int?) ?? -1;
+    var isMultiMode = !string.IsNullOrEmpty(allIds) && currentIndex >= 0;
+}
+
+<!-- 全螢幕遮罩，用來擋住所有內容 -->
+<div id="processingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%;background:#000; z-index:9999; color:#fff; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+    <div class="spinner-border text-light mb-3" role="status"><span class="visually-hidden">處理中...</span></div>
+    <h3>更新中，請稍候...</h3>
+</div>
+
+@{
+    if (TempData["ERROR"] != null)
+    {
+        <div class="alert alert-danger">
+            @Html.Raw(TempData["ERROR"])
+        </div>
+    }
+}
+
+<!-- Upsert.cshtml -->
+<form method="post" enctype="multipart/form-data">
+    <!-- 隱藏欄位：問卷的 Id -->
+    <input type="hidden" asp-for="Survey.Id" />
+    <!-- 隱藏欄位：存儲 TinyMCE 編輯器的 HTML 內容 -->
+    <input type="hidden" id="MceHtml" name="MceHtml" value="@Model.MceHtml" />
+
+    <!-- 新增以下兩行：用於多筆問卷自動處理 -->
+    <input type="hidden" name="AllIds" value="@ViewBag.AllIds" />
+    <input type="hidden" name="CurrentIndex" value="@ViewBag.CurrentIndex" />
+
+    <div class="row equal-height">
+        <div class="col-md-6">
+            <div class="border p-3 mt-4 form-section">
+                <h2 class="text-primary">@(Model.Survey.Id != 0 ? "編輯" : "新增") 問卷</h2>
+                <hr />
+
+                <!-- 加載問卷基本資訊部分 -->
+                <partial name="Partials/SurveyInfoPartial" model="Model" />
+
+                <!-- 表單提交與返回按鈕 -->
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary form-control" onclick="updateMceContent()">保存問卷</button>
+
+                    </div>
+                    <div class="col-md-3">
+                        <a asp-controller="Survey" asp-action="Index" class="btn btn-secondary form-control">返回</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-md-6 editor-section">
+            <textarea id="editor">@Model.MceHtml</textarea>
+        </div>
+    </div>
+</form>
+
+<div id="survey-image-preview"></div>
+<div id="questions"></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <!-- 引入 TinyMCE 腳本 -->
+    <script src="~/lib/tinymce/tinymce.min.js"></script>
+
+    <!-- 引入外部 JavaScript 文件 -->
+    <script src="~/js/editor.js" asp-append-version="true"></script>
+
+    <!-- 傳遞伺服器端資料到 JavaScript -->
+    <script>
+        window.initialData = {
+            questionCount: @Model.QuestionVMs.Count,
+            optionsIndices: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.QuestionVMs.Select((qvm, index) => new { index, count = qvm.QuestionOptionVMs.Count })
+                .ToDictionary(x => x.index, x => x.count)
+            )),
+            questionTypeList: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.QuestionTypeList.Select(qt => new { qt.Value, qt.Text })
+            )),
+            imageMappings: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ImageMappings)) // 傳遞 ImageMappings        
+        };
+
+         // 從 ViewBag 取得 AllIds 與 CurrentIndex
+        var allIds = '@ViewBag.AllIds';     // 如果沒有就是空字串
+        var currentIndex = @((ViewBag.CurrentIndex ?? -1)); // 如果沒有則為 -1
+
+        // 檢查是否多筆模式
+        var isMultiMode = allIds !== '' && currentIndex >= 0;
+
+        // 當文件加載完成後
+        $(document).ready(function () {
+            // 如果是多筆模式，則在 TinyMCE 初始化完成後自動提交表單
+            if (isMultiMode) {
+                  // 顯示遮罩
+                $('#processingOverlay').show();
+
+                // TinyMCE 初始化需要時間，可以在 editor.js 初始化完成後執行
+                // 使用 setTimeout 延遲幾秒，確保編輯器與 MceHtml 已同步
+                setTimeout(function () {
+                    // 自動提交表單
+                    $('form').submit();
+                }, 10); // 2秒後提交，可根據實際情況調整時間
+            }
+            else
+            {
+                  // 隱藏遮罩
+                $('#processingOverlay').hide();
+            }
+        });
+        
+    </script>
+
+  
+
+
+}

@@ -1,0 +1,362 @@
+﻿@model TeaTimeDemo.Models.ViewModels.SurveyVM
+@using System.Text.Encodings.Web
+
+
+
+
+<!-- Upsert的SurveyInfoPartial.cshtml -->
+<!-- 問卷基本資訊 -->
+<!-- 類別選擇 -->
+<div class="mb-3 row">
+    <label asp-for="Survey.CategoryId" class="col-md-2 col-form-label">類別</label>
+    <div class="col-md-10">
+        <!-- 下拉選單，用於選擇問卷的類別 -->
+        <select asp-for="Survey.CategoryId" asp-items="Model.CategoryList" class="form-select" onchange="updateMceContent()"></select>
+        <span asp-validation-for="Survey.CategoryId" class="text-danger"></span>
+    </div>
+</div>
+
+<!-- 問卷標題 -->
+<div class="mb-3 row">
+    <label asp-for="Survey.Title" class="col-md-2 col-form-label">問卷標題</label>
+    <div class="col-md-10">
+        <!-- 輸入欄位，用於輸入問卷的標題 -->
+        <input asp-for="Survey.Title" class="form-control" oninput="updateMceContent()" />
+        <span asp-validation-for="Survey.Title" class="text-danger"></span>
+    </div>
+</div>
+
+<!-- 站別選擇 -->
+<div class="mb-3 row">
+    <label asp-for="Survey.StationName" class="col-md-2 col-form-label">站別</label>
+    <div class="col-md-10">
+        <!-- 下拉選單，用於選擇站別 -->
+        <select asp-for="Survey.StationName" asp-items="Model.StationList" class="form-select" onchange="updateMceContent()"></select>
+        <span asp-validation-for="Survey.StationName" class="text-danger"></span>
+    </div>
+</div>
+
+<!-- 頁數 -->
+<div class="mb-3 row">
+    <label asp-for="Survey.QuestionNum" class="col-md-2 col-form-label">頁數</label>
+    <div class="col-md-10">
+        <!-- 輸入欄位，用於輸入頁數 -->
+        <input asp-for="Survey.QuestionNum" class="form-control" oninput="updateMceContent()" />
+        <span asp-validation-for="Survey.QuestionNum" class="text-danger"></span>
+    </div>
+</div>
+
+<!-- 描述 -->
+<div class="mb-3 row">
+    <label asp-for="Survey.Description" class="col-md-2 col-form-label">描述</label>
+    <div class="col-md-10">
+        <!-- 多行文字輸入欄位，用於輸入問卷描述 -->
+        <textarea asp-for="Survey.Description" class="form-control" oninput="updateMceContent()"></textarea>
+        <span asp-validation-for="Survey.Description" class="text-danger"></span>
+    </div>
+</div>
+
+<!-- 問卷圖片上傳區域 -->
+<div class="mb-3 row">
+    <label class="col-md-2 col-form-label">上傳問卷圖片</label>
+    <div class="col-md-10">
+        <!-- 問卷圖片上傳容器，動態新增圖片上傳欄位 -->
+        <div id="survey-image-upload-container">
+            <!-- 初始不顯示圖片上傳欄位 -->
+        </div>
+        <!-- 新增圖片的加號按鈕 -->
+        <button type="button" class="btn btn-primary" onclick="addSurveyImageUploadField()">新增圖片+</button>
+        <!-- 顯示上傳圖片的錯誤訊息 -->
+        <span asp-validation-for="SurveyImageFiles" class="text-danger"></span>
+    </div>
+</div>
+
+<!-- 問卷圖片預覽區域 -->
+<div class="mb-3 row">
+    <label class="col-md-2 col-form-label">問卷圖片預覽</label>
+    <div class="col-md-10" id="survey-image-preview">
+        @if (Model.Survey.QuestionImages != null && Model.Survey.QuestionImages.Count > 0)
+        {
+            @for (int i = 0; i < Model.Survey.QuestionImages.Count; i++)
+            {
+                var image = Model.Survey.QuestionImages[i];
+                <div class="mb-3 image-upload-group existing-image" id="image-@image.Id">
+                    <!-- 顯示問卷圖片 -->
+                    <img src="@image.ImageUrl" alt="Survey Image" data-image-id="@image.Id" style="width:@($"{image.Width}px"); height:@($"{image.Height}px");" />
+
+                    <!-- 隱藏欄位：圖片的 ID -->
+                    <input type="hidden" name="ExistingSurveyImageIds[@i]" value="@image.Id" />
+
+                    <!-- 寬度和高度的輸入欄位及滑桿 -->
+                    <div class="row">
+                        <div class="col">
+                            <label>寬度 (px)</label>
+                            <input type="number" name="ExistingSurveyImageWidths[@i]" class="form-control" value="@image.Width" oninput="updateImageSize(this)" />
+                            <input type="range" min="50" max="1000" value="@image.Width" class="form-range" oninput="syncInputAndRange(this)" data-target="width" />
+                        </div>
+                        <div class="col">
+                            <label>高度 (px)</label>
+                            <input type="number" name="ExistingSurveyImageHeights[@i]" class="form-control" value="@image.Height" oninput="updateImageSize(this)" />
+                            <input type="range" min="50" max="1000" value="@image.Height" class="form-range" oninput="syncInputAndRange(this)" data-target="height" />
+                        </div>
+                    </div>
+
+                    <!-- 刪除按鈕 -->
+                    <button type="button" class="btn btn-danger" onclick="removeImage(@image.Id)">刪除</button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- 問卷中的問題顯示區域 -->
+<div id="questions">
+    @for (int i = 0; i < Model.QuestionVMs.Count; i++)
+    {
+        <div class="border p-2 my-3 question-container" id="question-@i" data-question-index="@i">
+            <h4>問題 @(i + 1)</h4>
+
+            <!-- 隱藏欄位：傳遞問題的 Id -->
+            <input type="hidden" asp-for="QuestionVMs[@i].Question.Id" />
+
+            <!-- 問題描述 -->
+            <div class="mb-3">
+                <label asp-for="QuestionVMs[@i].Question.QuestionText" class="form-label">問題描述</label>
+                <input asp-for="QuestionVMs[@i].Question.QuestionText" class="form-control" oninput="updateMceContent()" />
+                <span asp-validation-for="QuestionVMs[@i].Question.QuestionText" class="text-danger"></span>
+            </div>
+
+            <!-- 問題類型 -->
+            <div class="mb-3">
+                <label asp-for="QuestionVMs[@i].Question.AnswerType" class="form-label">問題類型</label>
+                <select asp-for="QuestionVMs[@i].Question.AnswerType" asp-items="Model.QuestionTypeList" class="form-select" onchange="updateMceContent()"></select>
+                <span asp-validation-for="QuestionVMs[@i].Question.AnswerType" class="text-danger"></span>
+            </div>
+
+            <!-- 現有問題圖片標籤 -->
+            @if (Model.QuestionVMs[i].QuestionImages != null && Model.QuestionVMs[i].QuestionImages.Count > 0)
+            {
+                <div class="mb-3">
+                    <label class="form-label">現有問題圖片</label>
+                </div>
+            }
+
+            <!-- 问题填空设置区域（问题级别） -->
+            <div class="mb-3">
+                <label class="form-label">問題填空</label>
+                <div id="question-fill-in-blanks-@i">
+                    @for (int k = 0; k < Model.QuestionVMs[i].Question.FillInBlanks.Count; k++)
+                    {
+                        var fillInBlank = Model.QuestionVMs[i].FillInBlanks[k];
+                     
+                        <div class="fill-in-blank" id="question-fill-in-blank-@i-@k">
+                            <h5>填空 @(k + 1)</h5>
+                            <input type="hidden" name="QuestionVMs[@i].FillInBlanks[@k].Id" value="@fillInBlank.Id" />
+                            <input type="hidden" name="QuestionVMs[@i].FillInBlanks[@k].IsDeleted" value="false" />
+
+                            <div class="mb-2">
+                                <label>正則表達式</label>
+                                <input type="text" name="QuestionVMs[@i].FillInBlanks[@k].RegexPattern" class="form-control" value="@fillInBlank.RegexPattern" />
+                            </div>
+                            <div class="mb-2">
+                                <label>長度</label>
+                                <input type="number" name="QuestionVMs[@i].FillInBlanks[@k].Length" class="form-control" value="@fillInBlank.Length" oninput="updateMceContent()" />
+                            </div>
+                            <div class="mb-2">
+                                <label>提示文字</label>
+                                <input type="text" name="QuestionVMs[@i].FillInBlanks[@k].Placeholder" class="form-control" value="@fillInBlank.Placeholder" oninput="updateMceContent()" />
+                            </div>
+                            <div class="mb-2">
+                                <label>插入位置</label>
+                                <input type="number" name="QuestionVMs[@i].FillInBlanks[@k].Position" class="form-control" value="@fillInBlank.Position" oninput="updateQuestionTextWithBlanks(@i)" />
+                            </div>
+                            <button type="button" class="btn btn-danger" onclick="removeQuestionFillInBlank(@i, @k, @fillInBlank.Id)">刪除填空</button>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="addQuestionFillInBlank(@i)">新增填空+</button>
+            </div>
+
+
+
+
+
+            <!-- 問題圖片預覽區域 -->
+            <div class="mb-3 question-image-preview" id="question-image-preview-@i">
+                @if (Model.QuestionVMs[i].QuestionImages != null && Model.QuestionVMs[i].QuestionImages.Count > 0)
+                {
+                    @for (int j = 0; j < Model.QuestionVMs[i].QuestionImages.Count; j++)
+                    {
+                        var image = Model.QuestionVMs[i].QuestionImages[j];
+                        <div class="mb-3 image-upload-group existing-image" id="image-@image.Id">
+                            <!-- 顯示問題圖片 -->
+                            <img src="@image.ImageUrl" alt="Question Image" data-image-id="@image.Id" style="width:@($"{image.Width}px"); height:@($"{image.Height}px");" />
+
+                            <!-- 隱藏欄位：圖片的 ID -->
+                            <input type="hidden" name="ExistingQuestionImageIds[@i][@j]" value="@image.Id" />
+
+                            <!-- 寬度和高度的輸入欄位及滑桿 -->
+                            <div class="row">
+                                <div class="col">
+                                    <label>寬度 (px)</label>
+                                    <input type="number" name="ExistingQuestionImageWidths[@i][@j]" class="form-control" value="@image.Width" oninput="updateImageSize(this)" />
+                                    <input type="range" min="50" max="1000" value="@image.Width" class="form-range" oninput="syncInputAndRange(this)" data-target="width" />
+                                </div>
+                                <div class="col">
+                                    <label>高度 (px)</label>
+                                    <input type="number" name="ExistingQuestionImageHeights[@i][@j]" class="form-control" value="@image.Height" oninput="updateImageSize(this)" />
+                                    <input type="range" min="50" max="1000" value="@image.Height" class="form-range" oninput="syncInputAndRange(this)" data-target="height" />
+                                </div>
+                            </div>
+
+                            <!-- 刪除按鈕 -->
+                            <button type="button" class="btn btn-danger" onclick="removeImage(@image.Id)">刪除</button>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- 問題圖片上傳區域 -->
+            <div class="mb-3">
+                <label class="form-label">上傳問題圖片</label>
+                <div id="question-image-upload-container-@i">
+                    <!-- 初始不顯示圖片上傳欄位 -->
+                </div>
+                <!-- 新增圖片的加號按鈕 -->
+                <button type="button" class="btn btn-primary" onclick="addQuestionImageUploadField(@i)">新增圖片+</button>
+                <!-- 顯示上傳圖片的錯誤訊息 -->
+                <span asp-validation-for="QuestionVMs[@i].QuestionImageFiles" class="text-danger"></span>
+            </div>
+
+            <!-- 現有選項圖片標籤 -->
+            @if (Model.QuestionVMs[i].QuestionOptionVMs.Any(q => q.QuestionOptionImages != null && q.QuestionOptionImages.Count > 0))
+            {
+                <div class="mb-3">
+                    <label class="form-label">現有選項圖片</label>
+                </div>
+            }
+
+            <!-- 選項顯示區域 -->
+            <div id="options-@i">
+                @for (int j = 0; j < Model.QuestionVMs[i].QuestionOptionVMs.Count; j++)
+                {
+                    var option = Model.QuestionVMs[i].QuestionOptionVMs[j]; // 定義當前選項變數
+
+                    <div class="mb-2 option-container" id="option-@i-@j" data-option-index="@j">
+                        <!-- 隱藏欄位：傳遞選項的 Id -->
+                        <input type="hidden" asp-for="QuestionVMs[@i].QuestionOptionVMs[@j].QuestionOption.Id" />
+
+                        <!-- 選項描述 -->
+                        <div class="mb-3">
+                            <label asp-for="QuestionVMs[@i].QuestionOptionVMs[@j].QuestionOption.OptionText" class="form-label">選項 @(j + 1)</label>
+                            <input asp-for="QuestionVMs[@i].QuestionOptionVMs[@j].QuestionOption.OptionText" class="form-control" oninput="updateMceContent()" />
+                            <span asp-validation-for="QuestionVMs[@i].QuestionOptionVMs[@j].QuestionOption.OptionText" class="text-danger"></span>
+                            <small>如需插入填空框   範例:${填空1}$   將在編輯器中顯示</small>
+                            <!-- 選項刪除按鈕 -->
+                            <!-- 使用正確的 QuestionOption.Id 來傳遞 -->
+                            <button type="button" class="btn btn-danger" onclick="removeOption(@i, @j, @option.QuestionOption.Id)">刪除選項</button>
+
+                        </div>
+
+                        <!-- 填空設定區域 -->
+                        <div class="mb-3">
+                            <label class="form-label">填空</label>
+                            <div id="fill-in-blanks-@i-@j">
+                                @for (int k = 0; k < Model.QuestionVMs[i].QuestionOptionVMs[j].FillInBlanks.Count; k++)
+                                {
+                                    var fillInBlank = Model.QuestionVMs[i].QuestionOptionVMs[j].FillInBlanks[k];
+                                    <div class="fill-in-blank" id="fill-in-blank-@i-@j-@k">
+                                        <h5>填空 @(k + 1)</h5>
+                                        <input type="hidden" name="QuestionVMs[@i].QuestionOptionVMs[@j].FillInBlanks[@k].Id" value="@fillInBlank.Id" />
+
+                                        <!-- 新增 IsDeleted 隱藏欄位 -->
+                                        <input type="hidden" name="QuestionVMs[@i].QuestionOptionVMs[@j].FillInBlanks[@k].IsDeleted" value="false" />
+
+                                        <div class="mb-2">
+                                            <label>正則表達式</label>
+                                            <input type="text" name="QuestionVMs[@i].QuestionOptionVMs[@j].FillInBlanks[@k].RegexPattern" class="form-control" value="@fillInBlank.RegexPattern" />
+                                        </div>
+                                        <div class="mb-2">
+                                            <label>長度</label>
+                                            <input type="number" name="QuestionVMs[@i].QuestionOptionVMs[@j].FillInBlanks[@k].Length" class="form-control" value="@fillInBlank.Length" oninput="updateMceContent()" />
+                                        </div>
+                                        <div class="mb-2">
+                                            <label>提示文字</label>
+                                            <input type="text" name="QuestionVMs[@i].QuestionOptionVMs[@j].FillInBlanks[@k].Placeholder" class="form-control" value="@fillInBlank.Placeholder" oninput="updateMceContent()" />
+                                        </div>
+                                        <div class="mb-2">
+                                            <label>插入位置</label>
+                                            <input type="number" name="QuestionVMs[@i].QuestionOptionVMs[@j].FillInBlanks[@k].Position" class="form-control" value="@fillInBlank.Position" oninput="updateOptionTextWithBlanks(@i, @j)" />
+                                        </div>
+                                        <button type="button" class="btn btn-danger" onclick="removeFillInBlank(@i, @j, @k, @fillInBlank.Id)">刪除填空</button>
+                                    </div>
+                                }
+                            </div>
+                            <button type="button" class="btn btn-secondary" onclick="addFillInBlank(@i, @j)">新增填空+</button>
+                        </div>
+
+
+                        
+                        <!-- 選項圖片預覽區域 -->
+                        <div class="mb-3 option-image-preview" id="option-image-preview-@i-@j">
+                            @if (Model.QuestionVMs[i].QuestionOptionVMs[j].QuestionOptionImages != null && Model.QuestionVMs[i].QuestionOptionVMs[j].QuestionOptionImages.Count > 0)
+                            {
+                                @for (int k = 0; k < Model.QuestionVMs[i].QuestionOptionVMs[j].QuestionOptionImages.Count; k++)
+                                {
+                                    var image = Model.QuestionVMs[i].QuestionOptionVMs[j].QuestionOptionImages[k];
+                                    <div class="mb-3 image-upload-group existing-image" id="image-@image.Id">
+                                        <!-- 顯示選項圖片 -->
+                                        <img src="@image.ImageUrl" alt="Option Image" data-image-id="@image.Id" style="width:@($"{image.Width}px"); height:@($"{image.Height}px");" />
+
+                                        <!-- 隱藏欄位：圖片的 ID -->
+                                        <input type="hidden" name="ExistingOptionImageIds[@i][@j][@k]" value="@image.Id" />
+
+                                        <!-- 寬度和高度的輸入欄位及滑桿 -->
+                                        <div class="row">
+                                            <div class="col">
+                                                <label>寬度 (px)</label>
+                                                <input type="number" name="ExistingOptionImageWidths[@i][@j][@k]" class="form-control" value="@image.Width" oninput="updateImageSize(this)" />
+                                                <input type="range" min="50" max="1000" value="@image.Width" class="form-range" oninput="syncInputAndRange(this)" data-target="width" />
+                                            </div>
+                                            <div class="col">
+                                                <label>高度 (px)</label>
+                                                <input type="number" name="ExistingOptionImageHeights[@i][@j][@k]" class="form-control" value="@image.Height" oninput="updateImageSize(this)" />
+                                                <input type="range" min="50" max="1000" value="@image.Height" class="form-range" oninput="syncInputAndRange(this)" data-target="height" />
+                                            </div>
+                                        </div>
+
+                                        <!-- 刪除按鈕 -->
+                                        <button type="button" class="btn btn-danger" onclick="removeImage(@image.Id)">刪除</button>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <!-- 選項圖片上傳區域 -->
+                        <div class="mb-3">
+                            <label class="form-label">上傳選項圖片</label>
+                            <div id="option-image-upload-container-@i-@j">
+                                <!-- 初始不顯示圖片上傳欄位 -->
+                            </div>
+                            <!-- 新增圖片的加號按鈕 -->
+                            <button type="button" class="btn btn-primary" onclick="addOptionImageUploadField(@i, @j)">新增圖片+</button>
+                            <!-- 顯示上傳圖片的錯誤訊息 -->
+                            <span asp-validation-for="QuestionVMs[@i].QuestionOptionVMs[@j].OptionImageFiles" class="text-danger"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- 新增選項的按鈕 -->
+            <button type="button" class="btn btn-primary" onclick="addOption(@i)">新增選項</button>
+
+
+
+            <!-- 問題刪除按鈕 -->
+            <button type="button" class="btn btn-danger mt-2" onclick="removeQuestion(@i, @Model.QuestionVMs[@i].Question.Id)">刪除問題</button>
+        </div>
+    }
+</div>
+
+<!-- 新增問題的按鈕 -->
+<button type="button" class="btn btn-primary" onclick="addQuestion()">新增問題</button>

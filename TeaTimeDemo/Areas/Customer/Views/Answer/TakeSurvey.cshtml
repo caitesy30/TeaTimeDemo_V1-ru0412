@@ -1,0 +1,155 @@
+﻿@using Microsoft.AspNetCore.WebUtilities
+
+
+@model TeaTimeDemo.Models.ViewModels.TakeSurveyVM
+
+@{
+    ViewData["Title"] = "填寫問卷 - " + Model.SurveyView.Title;
+}
+
+<form asp-area="Customer" asp-controller="Answer" asp-action="SubmitSurvey" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="SurveyView.Id" />
+
+    <input asp-for="SurveyView.MceHtml" hidden />
+
+    <input type="hidden" id="MceHtml" name="MceHtml" value="@Model.MceHtml" />
+    @* <a href="#mybookmark"> test  </a> *@
+    @Html.Raw(@Model.MceHtml) <!-- 使用 MceHtml 渲染問卷內容 -->
+
+    <button type="button" onclick="ShowSelectedOptions()" style="display:none;">測試-顯示選擇選項</button>
+
+    <button type="button" onclick="TestUseSurveyModel()" style="display:none;">測試-顯示選擇資料</button>
+    
+    <div id="confirmation-message" style="display: none; color: green;">成功调用 JavaScript 函数！</div>
+    <br>
+    <br>
+    <button type="button" onclick="TestShowAllSelectedOptions()">輔助功能[顯示作答結果]</button>
+    <br>
+    <button type="button" onclick="TestSetAllOptionValue(true)"  style="display:none;">功能測試[AllOption-True]</button>
+    <button type="button" onclick="TestSetAllOptionValue(false)" style="display:none;">功能測試[AllOption-False]</button>
+    <br>
+    <button type="button" onclick="SetOptionChecked() ">輔助功能[快速作答]</button>
+    <button type="button" onclick="TestSetAllOptionValue_ByOption(false) ">輔助功能[快速取消作答]</button>
+
+    <br>
+    <br>
+    <br>
+
+@*     <h3 id="mybookmark">mybookmark</h3>
+
+    <from action="SubmitSelectedOptions()">
+        <h3> 測試FROM </h3>
+        <p>按鈕使用預設名稱</p>
+        <input type="submit">
+        <p>
+            <input type="submit" value="測試按鈕">
+        </p>
+
+
+    </from> *@
+
+
+    <br>
+    <br>
+
+    <div class="row mt-3">
+        @* <div class="col-2">
+            <button type="submit" class="btn btn-success w-100">提交問卷</button> 
+            <button type="button" onclick="SubmitSelectedOptions()"   class="btn btn-success w-100">測試GET-提交問卷</button>
+        </div> *@
+
+        <div class="col-2">
+            @* <button type="submit" class="btn btn-success w-100">提交問卷</button> *@
+            <button type="button" onclick="SubmitSelectedOptions_Post()" class="btn btn-success w-100">POST-提交問卷</button>
+        </div>
+        
+        <div class="col-2">
+            <a asp-area="Customer" asp-controller="Answer" asp-action="Index" class="btn btn-secondary w-100">返回</a>
+        </div>
+     </div>
+
+
+
+
+    <div id="responseMessage" style="display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background-color: #4CAF50; color: white; padding: 20px; border-radius: 5px; z-index: 9999;">
+    </div>
+
+
+</form>
+
+
+
+@*=====[ 隱藏BTN ]=====*@
+
+<a id="submitBtn"
+   asp-area="Customer"
+   asp-controller="Answer"
+   asp-action="TestGet"
+   style="display:none;">隱藏BTN
+</a>
+
+<a id="submitBtn"
+   style="display:none;">
+    隱藏BTN
+</a>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const SurveyModelId = '@Model.SurveyView.Id'; // 用引号包裹
+        let SurveyModelTitle = '@Model.SurveyView.Title'; // 用引号包裹
+        //let MceHtml = '@Model.SurveyView.MceHtml'; // 用引号包裹
+        //const _LocHtml = '@Model.MceHtml';
+        const UrlEncode_LocHtml = '@(System.Net.WebUtility.UrlEncode(@Model.MceHtml))';
+        const _LocHtml = @Html.Raw(Json.Serialize(Model.MceHtml));
+    </script>
+    <script>
+
+        
+        //let _QuestionsObj = { OrderArr: [1,2,3,"Test"], QuestionsMap: _QuestionsMap };
+        // 遍歷 Model.Questions 集合
+        
+        // 將 C# 變數傳遞給 JavaScript
+        // 使用 Map 儲存問題 ID 和對應的選項 ID
+        let _QuestionsMap = new Map();
+
+        @foreach (var question in Model.Questions)
+        {
+            <text>
+                    // 為每個問題 ID 初始化一個空陣列，準備存儲選項 ID
+                    _QuestionsMap.set(@question.Id, {AnswerType: @((int)question.AnswerType), optionArr: [] });
+            </text>
+        }
+    </script>
+    <script>
+           
+
+        let AllOptionArr = [];  // 初始化一个空数组
+
+        // 使用 Razor 循环生成 JavaScript 数组
+        @foreach (var question in Model.Questions)
+        {
+            // 使用 set 来为每个问题初始化一个空数组，并存储选项
+            <text>
+                    _QuestionsMap.set(@question.Id, {AnswerType: @((int)question.AnswerType), optionArr: [] });
+            </text>
+
+            @foreach (var OptionSub in question.QuestionOptions)
+            {
+                // 将选项 ID 加入到 AllOptionArr 数组
+                <text>
+                        AllOptionArr.push(@OptionSub.OptionId);
+                </text>
+            }
+        }
+
+    </script>
+    
+    <!-- 引入外部 JavaScript 文件 -->
+    <script src="~/js/ReturnSurveyOptionsEditor.js" asp-append-version="true"></script>
+}
+

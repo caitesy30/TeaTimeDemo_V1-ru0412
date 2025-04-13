@@ -1,0 +1,97 @@
+﻿
+@* @model    TeaTimeDemo.Models.AnsweredSurvey *@
+@model TeaTimeDemo.Models.AnswersData.ViewModels.CheckSurveyVM
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Show HTML</title>
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+</head>
+<body>
+    @* <h1>HTML Content</h1> *@
+    <div>
+        @Html.Raw(@Model.html) <!-- 将传入的 HTML 字符串直接渲染 -->
+    </div>
+    <div class="col-6 mt-2 d-flex align-items-center justify-content-start ">
+
+        <a asp-controller="Order"
+        asp-action="ServeyEdit"
+        asp-route-ServeyId="@Model.SelectedSurvey.Id"
+        asp-route-SurveyCount="@Model.SurveyCount"
+        class="btn btn-primary me-2">
+            <i class="bi bi-pencil">編輯</i>
+        </a>
+
+
+        <form asp-controller="Order" asp-action="UpdateStatus" method="post">
+            <input type="hidden" name="surveyId" value="@Model.SelectedSurvey.Id" />
+            <input type="hidden" name="surveyCount" value="@Model.SurveyCount" />
+            <button type="submit" class="btn btn-info me-2">
+                <i class="bi bi-eye"></i>確認審核並下一頁
+            </button>
+        </form>
+
+        <a asp-controller="Order"
+        asp-action="PageView"
+        asp-route-MtNum="@Model.SelectedSurvey.MtNum"
+        asp-route-ProcessNum="@Model.SelectedSurvey.ProcessCategoryId"
+        asp-route-PageName="@Model.SelectedSurvey.PageName"
+        class="btn btn-secondary me-2">
+            <i class="bi bi-emoji-smile"></i>
+            返回上一層
+        </a>
+        
+            @if (@Model.SelectedSurvey.status == "CAM")
+		{
+			<button id="toggleStatusBtn" class="btn btn-danger">
+				<span><i class="bi bi-hand-thumbs-down"></i>取消審核</span>
+			</button>
+            }
+            else
+        {
+            <button id="toggleStatusBtn" class="btn btn-warning">
+				<span><i class="bi-hand-thumbs-up"></i>審核完成</span>
+                </button>
+            }
+        
+    </div>
+    <script>
+        $(document).ready(function () {
+            // 設定按鈕初始狀態
+            var surveyId = @Model.SelectedSurvey.Id;
+
+            $('#toggleStatusBtn').click(function () {
+                $.ajax({
+                    url: '@Url.Action("ToggleStatus", "Order", new { Area = "Admin" })',
+                    type: 'POST',
+                    data: { surveyId: surveyId },
+                    success: function (response) {
+                        if (response.status === "CAM") {
+                            // 切換按鈕為 "取消審核"
+                            $('#toggleStatusBtn')
+                                 .removeClass('btn btn-warning')
+                                 .addClass('btn btn-danger')
+                                 .html('<i class="bi bi-hand-thumbs-down"></i>取消審核');
+                        } else if (response.status === null) {
+                            // 切換按鈕為 "審核完成"
+                            $('#toggleStatusBtn')
+                                .removeClass('btn btn-danger')
+                                .addClass('btn btn-warning')
+                                .html('<i class="bi-hand-thumbs-up"></i>審核完成');
+                        } else {
+                            alert('狀態更新失敗');
+                        }
+                    },
+                    error: function () {
+                        alert('請求失敗');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+<!--MtNum=A1&ProcessNum=1&PageName=PNL第1頁-->

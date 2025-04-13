@@ -1,0 +1,261 @@
+﻿@using TeaTimeDemo.Models.ViewModels
+@model TeaTimeDemo.Models.ViewModels.LoadSurveyVM
+
+<head>
+    <title>列印問卷 - @Model.MtNum</title>
+    <!-- 與 SurveyAns 頁面相同的 CSS 檔案引用 -->
+    <link rel="stylesheet" href="~/css/surveyEdit_R5.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/labletext_CT.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/panelStyle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/switchStyle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/floatingNavigator.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/surveyAnsStyle.css" asp-append-version="true" />
+    <!-- 此處預留分頁斷頁樣式，但初始不啟用 -->
+    <style>
+        .page-break {
+            page-break-after: always;
+            margin-top: 20px;
+        }
+        /* 當切割模式啟動時，移除模塊外框與多餘空間，避免浪費紙張 */
+        .segmentation-active {
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* 新增：動態拆分模式、自動縮放及表格保留模式的 CSS */
+        .dynamic-split {
+            /* 避免模塊內部被分割，並壓縮上下間距 */
+            break-inside: avoid;
+            margin-top: 5px !important;
+            margin-bottom: 5px !important;
+        }
+
+        .auto-scale {
+            transform: scale(0.95);
+            transform-origin: top left;
+        }
+
+        .table-preserve {
+            /* 表格模塊不拆分 */
+            page-break-inside: avoid;
+        }
+        /* 測試用的 survey-section 樣式 */
+        .survey-section {
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 此區域保留 SurveyAns 頁面上半部的結構，例如導覽列、文件功能列等 -->
+    <div id="BlockPenel">
+        @* 此處略去原有功能列 *@
+
+        <!-- 隱藏區：收合後，使用者可點此再展開 -->
+        @* <div id="documentMenuBarHiddenZone"></div> *@
+
+        <div id="AutoScreenBlock">
+                <div id="AutoScreen" >
+                @* 問卷內容將由後端產生，並包在 .survey-section 區塊中 *@
+                @* @Html.Raw(ViewData["HtmlContent"] as string) *@
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增：功能鍵區，置於右上角供預覽與調整列印版面 -->
+    <div id="functionButtons" style="position: fixed; top: 70px; right: 20px; z-index: 3000;">
+        @* <button onclick="toggleDynamicSplit()" class="btn btn-secondary" style="margin-bottom:5px;">動態拆分模式</button><br /> *@
+        @* <button onclick="toggleAutoScale()" class="btn btn-secondary" style="margin-bottom:5px;">自動縮放模式</button><br /> *@
+        @* <button onclick="toggleTableMode()" class="btn btn-secondary" style="margin-bottom:5px;">表格保留模式</button><br /> *@
+        @* <button onclick="togglePeelModuleLayer()" class="btn btn-info" style="margin-bottom:5px;">拆除外層模塊</button><br /> *@
+        <button onclick="togglePeelModuleLayerConditional()" class="btn btn-info" style="margin-bottom:5px;">條件拆除外層模塊</button><br />
+        @* <button onclick="resetPrintLayout()" class="btn btn-warning" style="margin-bottom:5px;">重置列印設定</button><br /> *@
+        <button onclick="previewPrint()" class="btn btn-primary">預覽列印效果</button>
+    </div>
+
+    <!-- 原有的「切割畫面」按鈕，可保留供參考 -->
+    @* <div id="segmentationButton" style="position: fixed; bottom: 20px; right: 20px; z-index: 2000;"> *@
+    @*     <button onclick="toggleSegmentation()" class="btn btn-primary">切割畫面</button> *@
+    @* </div> *@
+
+    @section Scripts {
+        <!-- 與 SurveyAns 頁面相同的 JS 檔案引用 -->
+        <script src="~/js/AutoScreen.js" asp-append-version="true"></script>
+        <script src="~/js/SurveyAnswerMode.js" asp-append-version="true"></script>
+        <script src="~/js/ModuleBlockElementMgr.js" asp-append-version="true"></script>
+        <script src="~/js/ModuleBlockEditMgr.js" asp-append-version="true"></script>
+        <script src="~/js/surveyLoad.js" asp-append-version="true"></script>
+        <script src="~/js/SurveyEditerModeMgr.js" asp-append-version="true"></script>
+        <script src="~/js/ModuleBlockSettingBarMgr.js" asp-append-version="true"></script>
+        <script src="~/js/floatingNavigator.js" asp-append-version="true"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var mtNum = "@Html.Raw(Model.MtNum)";
+                var stage = "@Html.Raw(Model.stage)";
+                console.log("MtNum:", mtNum);
+                var _surveyHtmlDataList = @Html.Raw(Json.Serialize(Model.surveyHtmlDataList));
+                SaveAndLoadAnswerMgr.LoadAllSurvey(mtNum, stage, _surveyHtmlDataList);
+                //FloatingNavigator.init(_surveyHtmlDataList);
+            });
+
+            // 原有：切換斷頁效果（這裡保留但不直接呼叫列印）
+              function toggleSegmentation() {
+                  var sections = document.querySelectorAll('.survey-section');
+                  sections.forEach(function (section) {
+                      section.classList.toggle('page-break');
+                      section.classList.toggle('segmentation-active');
+                  });
+                  var btn = document.querySelector("#segmentationButton button");
+                  btn.textContent = (btn.textContent === "切割畫面") ? "取消切割" : "切割畫面";
+              }
+
+              // 功能鍵 1：動態拆分模式
+              function toggleDynamicSplit() {
+                  var sections = document.querySelectorAll('.survey-section');
+                  sections.forEach(function(section) {
+                      // 若模塊中不含 table，視為非表格模塊
+                      if (!section.querySelector('table')) {
+                          section.classList.toggle('dynamic-split');
+                      }
+                  });
+              }
+
+              // 功能鍵 2：自動縮放模式
+              function toggleAutoScale() {
+                  var sections = document.querySelectorAll('.survey-section');
+                  sections.forEach(function(section) {
+                      section.classList.toggle('auto-scale');
+                  });
+              }
+
+              // 功能鍵 3：表格保留模式
+              function toggleTableMode() {
+                  var sections = document.querySelectorAll('.survey-section');
+                  sections.forEach(function(section) {
+                      // 若模塊內有 table，則添加/移除表格保留類別
+                      if (section.querySelector('table')) {
+                          section.classList.toggle('table-preserve');
+                      }
+                  });
+              }
+
+            // 功能鍵 4：拆除或還原外層模塊（針對所有 .ModuleBlock）
+            // 對每個 .ModuleBlock，從其 .ModuleBlock_inner 中查找直接子層的 table.tableList，
+            // 如果存在則將 table 從原位置移除，
+            // 並將 table 的完整 outerHTML保存到 placeholder 中，
+            // 並將此 placeholder 插入為該 ModuleBlock 的下一個兄弟元素，
+            // 使得原 table 保持完整結構，與該模塊平級顯示；
+            // 若已存在該 placeholder，則從中取回原始 HTML，還原回 .ModuleBlock_inner 的末尾，並移除 placeholder。
+            function togglePeelModuleLayer() {
+                var moduleBlocks = document.querySelectorAll('.ModuleBlock');
+                moduleBlocks.forEach(function(moduleBlock) {
+                    var id = moduleBlock.id;
+                    var inner = moduleBlock.querySelector('.ModuleBlock_inner');
+                    if (!inner) return;
+                    // 檢查 moduleBlock 之後是否有對應的 peeled placeholder (以 div 保存)
+                    var next = moduleBlock.nextElementSibling;
+                    if (next && next.classList.contains('peeled-table-placeholder') && next.getAttribute('data-target') === id) {
+                        // 還原：從 placeholder 中取出原始 table HTML，重建 table 節點，並附加回 inner 的末尾
+                        var originalHTML = next.getAttribute('data-original');
+                        var tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = originalHTML;
+                        var originalTable = tempDiv.firstElementChild;
+                        inner.appendChild(originalTable);
+                        next.parentNode.removeChild(next);
+                    } else {
+                        // 尚未拆除：查找 inner 直接子層中的 table.tableList
+                        var table = inner.querySelector(':scope > table.tableList');
+                        if (table) {
+                            // 保存原始 table 的 outerHTML
+                            var originalHTML = table.outerHTML;
+                            // 將 table 從 inner 中移除
+                            table.parentNode.removeChild(table);
+                            // 創建一個 placeholder 用來保存原始 table HTML（完整結構）
+                            var placeholder = document.createElement('div');
+                            placeholder.classList.add('peeled-table-placeholder');
+                            placeholder.setAttribute('data-original', originalHTML);
+                            placeholder.setAttribute('data-target', id);
+                            // 將 placeholder 的 innerHTML設為原始 table HTML，保證結構一模一樣
+                            placeholder.innerHTML = originalHTML;
+                            // 插入為 moduleBlock 的下一個兄弟元素
+                            moduleBlock.parentNode.insertBefore(placeholder, moduleBlock.nextSibling);
+                        }
+                    }
+                });
+            }
+
+            // 新增：功能鍵 4改寫 - 條件拆除外層模塊（僅拆除那些列印時可能被截斷的模塊）
+            // 檢查每個 .ModuleBlock 的 bounding rectangle，如果其底部超出視窗高度 (window.innerHeight)
+            // 則執行拆除（同 togglePeelModuleLayer 的邏輯）；如果已拆除則還原。
+            function togglePeelModuleLayerConditional() {
+                var moduleBlocks = document.querySelectorAll('.ModuleBlock');
+                moduleBlocks.forEach(function(moduleBlock) {
+                    var rect = moduleBlock.getBoundingClientRect();
+                    var id = moduleBlock.id;
+                    var inner = moduleBlock.querySelector('.ModuleBlock_inner');
+                    if (!inner) return;
+
+                    // 如果該 moduleBlock 已拆除，則不考慮條件，直接還原
+                    var next = moduleBlock.nextElementSibling;
+                    if (next && next.classList.contains('peeled-table-placeholder') && next.getAttribute('data-target') === id) {
+                        // 還原操作
+                        var originalHTML = next.getAttribute('data-original');
+                        var tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = originalHTML;
+                        var originalTable = tempDiv.firstElementChild;
+                        inner.appendChild(originalTable);
+                        next.parentNode.removeChild(next);
+                    }
+                    else {
+                        // 如果未拆除，僅當模塊底部超出視窗 (即可能被截斷) 才進行拆除
+                        if(rect.bottom > window.innerHeight) {
+                            var table = inner.querySelector(':scope > table.tableList');
+                            if(table) {
+                                var originalHTML = table.outerHTML;
+                                table.parentNode.removeChild(table);
+                                var placeholder = document.createElement('div');
+                                placeholder.classList.add('peeled-table-placeholder');
+                                placeholder.setAttribute('data-original', originalHTML);
+                                placeholder.setAttribute('data-target', id);
+                                // 直接保存完整 table 結構
+                                placeholder.innerHTML = originalHTML;
+                                moduleBlock.parentNode.insertBefore(placeholder, moduleBlock.nextSibling);
+                            }
+                        }
+                    }
+                });
+            }
+
+              // 功能鍵 4：重置所有列印設定（移除所有額外的樣式類別）
+              function resetPrintLayout() {
+                  var sections = document.querySelectorAll('.survey-section');
+                  sections.forEach(function(section) {
+                      section.classList.remove('dynamic-split', 'auto-scale', 'table-preserve', 'page-break', 'segmentation-active');
+                  });
+                  // 同時重置「切割畫面」按鈕文字
+                  var btn = document.querySelector("#segmentationButton button");
+                  btn.textContent = "切割畫面";
+              }
+
+            // 功能鍵 6：預覽列印效果，按下後隱藏「條件拆除外層模塊」與「預覽列印效果」按鈕，列印完後還原
+            function previewPrint() {
+                // 隱藏「條件拆除外層模塊」(btn btn-info)與「預覽列印效果」(btn btn-primary)
+                var functionButtons = document.getElementById("functionButtons");
+                var peelBtn = functionButtons.querySelector("button.btn.btn-info");
+                var previewBtn = functionButtons.querySelector("button.btn.btn-primary");
+                if (peelBtn) peelBtn.style.display = "none";
+                if (previewBtn) previewBtn.style.display = "none";
+
+                // 使用 window.onafterprint 還原按鈕
+                window.onafterprint = function() {
+                    if (peelBtn) peelBtn.style.display = "";
+                    if (previewBtn) previewBtn.style.display = "";
+                    window.onafterprint = null;
+                };
+                window.print();
+            }
+        </script>
+    }
+</body>

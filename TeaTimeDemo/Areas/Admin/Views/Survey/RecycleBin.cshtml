@@ -1,0 +1,51 @@
+﻿@{
+    ViewData["Title"] = "回收筒 - 問卷管理";
+}
+
+<h2 class="text-primary"><i class="bi bi-trash"></i> 回收筒 - 問卷管理</h2>
+
+<!-- 顯示 TempData 的錯誤訊息 -->
+@if (TempData["ERROR"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ERROR"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- 顯示 TempData 的成功訊息 -->
+@if (TempData["success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- 返回列表按鈕 -->
+<p>
+    <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+</p>
+
+<div style="overflow-x:auto;">
+    <table id="tblDeletedData" class="table table-bordered table-striped" style="width:100%;">
+        <thead>
+            <tr>
+                <th>類別</th>
+                <th>問卷標題</th>
+                <th>站別</th>
+                <th>描述</th>
+                <th>頁數</th>
+                <th>是否發佈</th>
+                <th>建立時間</th>
+                <th>完成時間</th>
+                <th>建立人</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="~/js/surveyRecycle.js" asp-append-version="true"></script>
+}
