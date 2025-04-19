@@ -37,22 +37,22 @@ string networkPath = @"\\prdnas\notes";
 string username = "notesadm";
 string password = "xzVfroYW8ogA";
 
-try
-{
-    Process.Start(new ProcessStartInfo
-    {
-        FileName = "net",
-        Arguments = $"use K: {networkPath} /user:{username} {password}",
-        WindowStyle = ProcessWindowStyle.Hidden,
-        CreateNoWindow = true
-    });
+//try
+//{
+//    Process.Start(new ProcessStartInfo
+//    {
+//        FileName = "net",
+//        Arguments = $"use K: {networkPath} /user:{username} {password}",
+//        WindowStyle = ProcessWindowStyle.Hidden,
+//        CreateNoWindow = true
+//    });
 
-    builder.Services.AddRazorPages();
-}
-catch (Exception ex)
-{
-    Console.WriteLine("掛載網路磁碟時發生錯誤：" + ex.Message);
-}
+//    builder.Services.AddRazorPages();
+//}
+//catch (Exception ex)
+//{
+//    Console.WriteLine("掛載網路磁碟時發生錯誤：" + ex.Message);
+//}
 
 
 // 註冊 MemoryCache
@@ -176,61 +176,61 @@ var app = builder.Build();
 
 //網路磁碟
 // 設定靜態檔案服務
-string uploadsFolderPath = @"K:\QuestionImages";  // 這裡是網路磁碟中的資料夾
+//string uploadsFolderPath = @"K:\QuestionImages";  // 這裡是網路磁碟中的資料夾
 
 
-try
-{
-    // 檢查資料夾是否存在，若不存在則嘗試建立
-    if (!Directory.Exists(uploadsFolderPath))
-    {
-        Directory.CreateDirectory(uploadsFolderPath);
-    }
-}
-catch (Exception ex)
-{
-    // 建立失敗時記錄錯誤訊息，但不拋出例外，並設定 uploadsFolderPath 為 null 以略過靜態檔案設定
-    Console.WriteLine($"無法建立目錄 {uploadsFolderPath}：{ex.Message}");
-    uploadsFolderPath = null;
-}
+//try
+//{
+//    // 檢查資料夾是否存在，若不存在則嘗試建立
+//    if (!Directory.Exists(uploadsFolderPath))
+//    {
+//        Directory.CreateDirectory(uploadsFolderPath);
+//    }
+//}
+//catch (Exception ex)
+//{
+//    // 建立失敗時記錄錯誤訊息，但不拋出例外，並設定 uploadsFolderPath 為 null 以略過靜態檔案設定
+//    Console.WriteLine($"無法建立目錄 {uploadsFolderPath}：{ex.Message}");
+//    uploadsFolderPath = null;
+//}
 
 app.UseStaticFiles(); // 默認提供 wwwroot 資料夾的靜態檔案
 
 // 若 uploadsFolderPath 成功建立，則設定靜態檔案服務
-if (!string.IsNullOrEmpty(uploadsFolderPath) && Directory.Exists(uploadsFolderPath))
-{
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(uploadsFolderPath),
-        RequestPath = "/images"  // 設定路徑，讓使用者透過 "/images/{filename}" 來訪問
-    });
-}
+//if (!string.IsNullOrEmpty(uploadsFolderPath) && Directory.Exists(uploadsFolderPath))
+//{
+//    app.UseStaticFiles(new StaticFileOptions
+//    {
+//        FileProvider = new PhysicalFileProvider(uploadsFolderPath),
+//        RequestPath = "/images"  // 設定路徑，讓使用者透過 "/images/{filename}" 來訪問
+//    });
+//}
 
 
 
 // 新增：映射 K:\AnswerImage 到 /images/AnswerImage
-string answerImageFolder = @"K:\AnswerImage";
-try
-{
-    if (!Directory.Exists(answerImageFolder))
-    {
-        Directory.CreateDirectory(answerImageFolder);
-    }
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"無法建立目錄 {answerImageFolder}：{ex.Message}");
-    answerImageFolder = null;
-}
+//string answerImageFolder = @"K:\AnswerImage";
+//try
+//{
+//    if (!Directory.Exists(answerImageFolder))
+//    {
+//        Directory.CreateDirectory(answerImageFolder);
+//    }
+//}
+//catch (Exception ex)
+//{
+//    Console.WriteLine($"無法建立目錄 {answerImageFolder}：{ex.Message}");
+//    answerImageFolder = null;
+//}
 
-if (!string.IsNullOrEmpty(answerImageFolder) && Directory.Exists(answerImageFolder))
-{
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(answerImageFolder),
-        RequestPath = "/images/AnswerImage"
-    });
-}
+//if (!string.IsNullOrEmpty(answerImageFolder) && Directory.Exists(answerImageFolder))
+//{
+//    app.UseStaticFiles(new StaticFileOptions
+//    {
+//        FileProvider = new PhysicalFileProvider(answerImageFolder),
+//        RequestPath = "/images/AnswerImage"
+//    });
+//}
 
 // �ϥ� CORS
 app.UseCors("AllowAll");

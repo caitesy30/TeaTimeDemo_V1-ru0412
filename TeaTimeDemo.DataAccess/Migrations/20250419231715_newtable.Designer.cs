@@ -12,7 +12,7 @@ using TeaTimeDemo.DataAccess.Data;
 namespace TeaTimeDemo.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250412123903_newtable")]
+    [Migration("20250419231715_newtable")]
     partial class newtable
     {
         /// <inheritdoc />
@@ -1044,6 +1044,27 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     b.ToTable("OrderHeaders");
                 });
 
+            modelBuilder.Entity("TeaTimeDemo.Models.Point", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PointName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Points");
+                });
+
             modelBuilder.Entity("TeaTimeDemo.Models.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -1605,6 +1626,33 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     b.ToTable("SurveyToGroups");
                 });
 
+            modelBuilder.Entity("TeaTimeDemo.Models.UserPointBalance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Balance")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
+
+                    b.HasIndex("PointId");
+
+                    b.ToTable("UserPointBalances");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1919,6 +1967,25 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     b.Navigation("Survey");
 
                     b.Navigation("SurveyGroup");
+                });
+
+            modelBuilder.Entity("TeaTimeDemo.Models.UserPointBalance", b =>
+                {
+                    b.HasOne("TeaTimeDemo.Models.ApplicationUser", "ApplicationUser")
+                        .WithMany()
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TeaTimeDemo.Models.Point", "Point")
+                        .WithMany()
+                        .HasForeignKey("PointId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
+
+                    b.Navigation("Point");
                 });
 
             modelBuilder.Entity("TeaTimeDemo.Models.Answer", b =>
