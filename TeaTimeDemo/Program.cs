@@ -77,6 +77,8 @@ builder.Services.Configure<FormOptions>(options => {
     options.MultipartBodyLengthLimit = 314572800; // 300MB
 });
 
+builder.Services.AddControllers();
+
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options =>
     {

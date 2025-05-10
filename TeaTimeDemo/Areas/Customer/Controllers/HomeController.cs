@@ -88,6 +88,14 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return View(cart);
         }
 
+         /// <summary>
+         /// 服務條款頁面 (Terms of Service)
+         /// </summary>
+         public IActionResult Terms()
+         {
+             return View();
+         }
+
         public IActionResult Privacy()
         {
             return View();

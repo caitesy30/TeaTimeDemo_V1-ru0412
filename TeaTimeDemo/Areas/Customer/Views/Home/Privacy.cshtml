@@ -1,6 +1,69 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+﻿@* Views/Home/Privacy.cshtml *@
+@{
+    ViewData["Title"] = "隱私權政策";
 }
-<h1>@ViewData["Title"]</h1>
+<div class="container my-5">
+    <!-- 頁首標題 -->
+    <div class="text-center mb-4">
+        <i class="bi bi-shield-lock-fill fs-1 text-primary"></i>
+        <h1 class="display-5 fw-bold">@ViewData["Title"]</h1>
+        <hr class="w-25 mx-auto" />
+    </div>
 
-<p>Use this page to detail your site's privacy policy.</p>
+    <!-- 內容卡片 -->
+    <div class="card shadow-sm p-4">
+        <h5 class="fw-semibold">一、適用範圍</h5>
+        <p>
+            本隱私權政策適用於
+            <a href="https://www.route-sharing.com" target="_blank">https://www.route-sharing.com</a>
+            （以下簡稱「本網站」）及其相關服務，說明本網站如何蒐集、處理、利用及保護您所提供之個人資料，未經您同意，本網站不會將您的個人資料用於本政策約定以外之用途。
+        </p>
+        <hr />
+
+        <h5 class="fw-semibold">二、個人資料之蒐集、處理與利用方式</h5>
+        <ol class="mb-3">
+            <li><strong>主動提供資料：</strong>當您使用聯絡我們功能（姓名、電子郵件、電話、訊息內容）時，本網站將蒐集上述資料，以利回覆您的諮詢或後續服務。</li>
+            <li><strong>自動蒐集資料：</strong>本網站伺服器會自動紀錄您的 IP、瀏覽器類型、作業系統、瀏覽時間與行為，用於流量統計與優化，不對外公開個人資料。</li>
+            <li><strong>第三方資料：</strong>若您選擇以 LINE、Facebook 等第三方服務登入或互動，本網站僅於授權範圍內蒐集必要資料，並用於會員辨識及行銷分析。</li>
+        </ol>
+        <hr />
+
+        <h5 class="fw-semibold">三、Cookie 與類似技術</h5>
+        <p>本網站可能使用 Cookie、LocalStorage 等技術蒐集使用者習慣及偏好，您可於瀏覽器設定拒絕或清除 Cookie，但可能影響部分功能正常運作。</p>
+        <hr />
+
+        <h5 class="fw-semibold">四、資料安全措施</h5>
+        <ul class="mb-3">
+            <li><strong>技術防護：</strong>採用 SSL/TLS 加密傳輸，並部署防火牆、防毒與入侵偵測系統。</li>
+            <li><strong>內部管理：</strong>僅授權專人存取您的資料，並簽署保密協議，定期稽核與教育。</li>
+        </ul>
+        <hr />
+
+        <h5 class="fw-semibold">五、資料保存期間</h5>
+        <p>本網站僅於達成蒐集目的所需期間內保存資料，期間屆滿後刪除或匿名化處理，或依法令另行保留。</p>
+        <hr />
+
+        <h5 class="fw-semibold">六、與第三方連結</h5>
+        <p>本網站可能包含第三方網站連結（如 Facebook、YouTube），其隱私政策由該營運者自行規範，本政策不適用於連結網站之資料處理。</p>
+        <hr />
+
+        <h5 class="fw-semibold">七、您的權利</h5>
+        <ul class="mb-3">
+            <li>查詢或閱覽：您可向本網站請求查詢或閱覽所蒐集之個資。</li>
+            <li>製給複製本：您可請求製給資料複製本。</li>
+            <li>補充或更正：您可請求補充或更正錯誤資料。</li>
+            <li>停止蒐集、處理或利用：除法令例外，您得請求停止。</li>
+            <li>刪除：資料非因法律或正當理由應予保留者，您得請求刪除。</li>
+        </ul>
+        <p>
+            以上權利可透過電郵
+            <a href="mailto:contact@route-sharing.com">contact@route-sharing.com</a>
+            提出，本網站將於法定期間內回覆。
+        </p>
+
+        <hr />
+        <div class="text-end text-secondary small">
+            最後更新：2025/05/08
+        </div>
+    </div>
+</div>
