@@ -1,0 +1,151 @@
+/* wallet.css — 我的錢包專屬樣式 */
+
+/* 0. 按鈕專用圖示尺寸 */
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 4px;
+}
+
+/* 1. 頁首背景：圓弧底部，不裁切 */
+.wallet-header {
+    background: linear-gradient(135deg, #67CEB2, #5DB9EA);
+    height: 180px;
+    position: relative;
+    color: #fff;
+    text-align: center;
+    border-bottom-left-radius: 50% 20%;
+    border-bottom-right-radius: 50% 20%;
+    overflow: visible;
+}
+
+    /* 我的錢包標題 */
+    .wallet-header h5 {
+        color: #fff;
+        font-size: 1.25rem;
+        font-weight: 500;
+    }
+
+    /* 左箭頭, 搜尋, 關閉按鈕 懸停微放大 */
+    .wallet-header .back-btn,
+    .wallet-header .search-btn,
+    .wallet-header .close-btn {
+        color: #fff;
+        transition: transform 0.1s ease;
+    }
+
+        .wallet-header .back-btn:hover,
+        .wallet-header .search-btn:hover,
+        .wallet-header .close-btn:hover {
+            transform: scale(1.1);
+        }
+
+    /* 2. 換算數量區塊：上下排，字體加粗 */
+    .wallet-header .convert-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+        padding: 0 1rem;
+    }
+
+        .wallet-header .convert-info .title-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+            .wallet-header .convert-info .title-row .fw-semibold,
+            .wallet-header .convert-info .title-row .h3,
+            .wallet-header .convert-info small {
+                font-weight: 700;
+            }
+
+            .wallet-header .convert-info .title-row .fw-semibold {
+                font-size: 1.6rem;
+            }
+
+            .wallet-header .convert-info .title-row .h3 {
+                font-size: 2rem;
+                margin: 0;
+            }
+
+        .wallet-header .convert-info small {
+            font-size: 1.6rem;
+        }
+
+/* 3. 白色卡片：更往上重疊 */
+.wallet-card {
+    position: absolute;
+    top: 85%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,0.15);
+    z-index: 10;
+}
+
+/* 4. 隱藏切換（.toggle-wrap）: 縮小間距 */
+.toggle-wrap {
+    position: relative;
+    top: -1.5rem; /* 往上提到卡片下方 */
+    z-index: 11; /* 在卡片之上 */
+}
+
+/* 5. 功能按鈕觸控回饋 */
+.feedback-btn {
+    display: inline-block;
+    transition: transform 0.1s ease, color 0.2s ease;
+}
+
+    .feedback-btn:hover {
+        color: #0d6efd;
+    }
+
+    .feedback-btn:active {
+        transform: scale(0.9);
+    }
+
+@keyframes bounce {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.feedback-btn:active .btn-icon {
+    animation: bounce 0.3s ease;
+}
+
+/* 6. 列表往下留白 */
+.container.mt-5.pt-5 {
+    padding-top: 6rem;
+}
+
+/* 7. 手機版修正 */
+@media (max-width: 576px) {
+    .wallet-card {
+        width: 95%;
+    }
+
+    .toggle-wrap {
+        top: -2rem;
+    }
+
+    .container.mt-5.pt-5 {
+        padding-top: 8rem;
+    }
+}

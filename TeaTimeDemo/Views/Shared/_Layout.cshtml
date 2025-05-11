@@ -101,6 +101,15 @@
         })();
     </script>
 
+    <!-- *** 新增：讓各頁可 inject 自訂 CSS *** -->
+    @* @RenderSection("Styles", required: false) *@
+
+    <!-- 頁尾 script（必要時可保留） -->
+    @* @RenderSection("Scripts", required: false) *@
+
+    @await RenderSectionAsync("Styles", required: false)
+
+
 </head>
 
 <body>

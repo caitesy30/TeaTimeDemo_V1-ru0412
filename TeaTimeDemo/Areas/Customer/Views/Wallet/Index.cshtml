@@ -1,35 +1,89 @@
-﻿@model List<TeaTimeDemo.Models.UserPointBalance>
+﻿@model TeaTimeDemo.Models.ViewModels.WalletViewModel
 
-<h2>我的錢包</h2>
-<table>
-    <thead>
-        <tr>
-            <th>點數名稱</th>
-            <th>餘額</th>
-            <th>操作</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
+@{
+    ViewData["Title"] = "我的錢包";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/wallet.css" asp-append-version="true" />
+}
+
+<div class="wallet-header">
+    <!-- 導航列：← 標題 🔍 × -->
+    <div class="d-flex justify-content-between align-items-center p-3">
+        <a asp-area="Customer" asp-controller="Home" asp-action="Index" class="back-btn">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <h5 class="mb-0">@ViewData["Title"]</h5>
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-search fs-4 search-btn"></i>
+            <button type="button" class="btn-close close-btn"></button>
+        </div>
+    </div>
+
+    <!-- 換算 & 幣別顯示 -->
+    <div class="convert-info text-white">
+        <div class="title-row">
+            <div class="fw-semibold">善時點數</div>
+            <!-- 加入幣別圖示 -->
+            <i class="bi bi-coin fs-3 text-white mx-1"></i>
+            <div class="h3 mb-0">@Model.ConvertQuantity</div>
+        </div>
+        <small>換算數量</small>
+    </div>
+
+    <!-- 三功能按鈕卡片 -->
+    <div class="wallet-card">
+        <div class="d-flex justify-content-around mt-3">
+            <a asp-action="Index" class="feedback-btn text-center text-secondary text-decoration-none">
+                <img src="~/images/返還.png" alt="返還" class="btn-icon" />
+                <small>返還</small>
+            </a>
+            <a asp-action="Index" class="feedback-btn text-center text-secondary text-decoration-none">
+                <img src="~/images/兌換.png" alt="兌換" class="btn-icon" />
+                <small>兌換</small>
+            </a>
+            <a asp-action="Index" class="feedback-btn text-center text-secondary text-decoration-none">
+                <img src="~/images/轉讓.png" alt="轉讓" class="btn-icon" />
+                <small>轉讓</small>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 隱藏切換：移到這裡，並加上 .toggle-wrap -->
+<div class="toggle-wrap text-center mt-2">
+    <div class="d-inline-block">
+        <div class="fw-semibold">持有點數</div>
+        <!-- 這裡保持原有 ON/OFF 切換 -->
+        <div>@* 你的 toggle component code *@</div>
+    </div>
+</div>
+
+<!-- 明細清單 -->
+<div class="container mt-5 pt-5">
+    <table class="table">
+        <thead class="table-light">
             <tr>
-                <td>@item.Point.PointName</td>
-                <td>@item.Balance</td>
-                <td>
-                    <!-- 加點範例 -->
-                    <form asp-action="UpdateBalance" method="post" style="display:inline;">
-                        <input type="hidden" name="pointId" value="@item.PointId" />
-                        <input type="hidden" name="amount" value="10" />
-                        <button type="submit">+10</button>
-                    </form>
-                    <!-- 扣點範例 -->
-                    <form asp-action="UpdateBalance" method="post" style="display:inline;">
-                        <input type="hidden" name="pointId" value="@item.PointId" />
-                        <input type="hidden" name="amount" value="-5" />
-                        <button type="submit">-5</button>
-                    </form>
-                </td>
+                <th style="width:60px;">#</th>
+                <th>名稱</th>
+                <th class="text-end">擁有數量</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @{
+                var idx = 1;
+                foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@idx</td>
+                        <td>@item.Name</td>
+                        <td class="text-end">@item.Quantity</td>
+                    </tr>
+                    ;
+                    idx++;
+                }
+            }
+        </tbody>
+    </table>
+</div>
