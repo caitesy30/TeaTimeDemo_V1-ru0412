@@ -6,26 +6,34 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/wallet.css" asp-append-version="true" />
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="~/lib/DataTables/datatables.min.css" asp-append-version="true" />
 }
 
 <div class="wallet-header">
-    <!-- 導航列：← 標題 🔍 × -->
+    <!-- 1.1 導航列 -->
     <div class="d-flex justify-content-between align-items-center p-3">
         <a asp-area="Customer" asp-controller="Home" asp-action="Index" class="back-btn">
             <i class="bi bi-arrow-left fs-4"></i>
         </a>
-        <h5 class="mb-0">@ViewData["Title"]</h5>
-        <div class="d-flex align-items-center gap-3">
-            <i class="bi bi-search fs-4 search-btn"></i>
-            <button type="button" class="btn-close close-btn"></button>
+        @* <h5 class="mb-0">@ViewData["Title"]</h5> *@
+        <div class="d-flex align-items-center">
+            <!-- 放大鏡觸發搜尋 -->
+            <i class="bi bi-search fs-4 search-btn me-2" style="cursor:pointer"></i>
+            <!-- 隱藏關閉按鈕 -->
+            @* <button type="button" class="btn-close close-btn"></button> *@
+            <!-- 自訂搜尋輸入框，預設隱藏 -->
+            <input id="walletSearch" type="search"
+                   class="form-control form-control-sm ms-2 d-none"
+                   placeholder="搜尋..."
+                   style="width:150px;" />
         </div>
     </div>
 
-    <!-- 換算 & 幣別顯示 -->
+    <!-- 換算數量 -->
     <div class="convert-info text-white">
         <div class="title-row">
             <div class="fw-semibold">善時點數</div>
-            <!-- 加入幣別圖示 -->
             <i class="bi bi-coin fs-3 text-white mx-1"></i>
             <div class="h3 mb-0">@Model.ConvertQuantity</div>
         </div>
@@ -51,39 +59,89 @@
     </div>
 </div>
 
-<!-- 隱藏切換：移到這裡，並加上 .toggle-wrap -->
-<div class="toggle-wrap text-center mt-2">
-    <div class="d-inline-block">
-        <div class="fw-semibold">持有點數</div>
-        <!-- 這裡保持原有 ON/OFF 切換 -->
-        <div>@* 你的 toggle component code *@</div>
+<div class="sort-wrap d-flex justify-content-center align-items-center mb-3">
+    <i class="bi bi-arrow-down-up fs-5 text-secondary me-2"></i>
+    <span class="fw-semibold me-2">排序依據</span>
+    <select class="form-select form-select-sm w-auto">
+        <option value="quantity" selected>擁有數量</option>
+        <option value="name">名稱</option>
+    </select>
+</div>
+
+<!-- 5. 明細清單：響應式 table -->
+<div class="container mt-5 pt-5">
+    <div class="table-responsive">
+        <table id="walletTable" class="table table-striped table-bordered w-100">
+            <thead class="table-light">
+                <tr>
+                    <!-- 第一欄改 40px -->
+                    <th style="width:10px;">種類</th>
+                    <th>名稱</th>
+                    @* <th class="text-end">擁有數量</th> *@
+                    <th>擁有數量</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var idx = 1;
+                    foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@idx</td>                            
+                            <td>
+                                <img src="~/images/@(item.Name).png"
+                                     alt="@item.Name"
+                                     class="table-icon" />
+                                     @item.Name                                
+                            </td>
+                       
+                            <td>@item.Quantity</td>
+                        </tr>
+                        ;
+                        idx++;
+                    }
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- 明細清單 -->
-<div class="container mt-5 pt-5">
-    <table class="table">
-        <thead class="table-light">
-            <tr>
-                <th style="width:60px;">#</th>
-                <th>名稱</th>
-                <th class="text-end">擁有數量</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                var idx = 1;
-                foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@idx</td>
-                        <td>@item.Name</td>
-                        <td class="text-end">@item.Quantity</td>
-                    </tr>
-                    ;
-                    idx++;
+@section Scripts {
+    <!-- jQuery (確保先載入) -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="~/lib/DataTables/datatables.min.js"></script>
+    <script>
+        $(function() {
+            var table = $('#walletTable').DataTable({
+                dom: 'rtip',
+                paging:   true,
+                pageLength: 5,
+                ordering: true,
+                searching: true,    // 啟用搜尋
+                info:     false,
+                lengthChange: false
+            });
+            // 隱藏預設搜尋框
+            $('.dataTables_filter').hide();
+
+            // 放大鏡點擊，切換顯示自訂搜尋輸入框
+            $('.search-btn').on('click', function() {
+                var $inp = $('#walletSearch');
+                $inp.toggleClass('d-none');
+                if (!$inp.hasClass('d-none')) {
+                    $inp.focus();
+                } else {
+                    // 清空搜尋並重繪
+                    $inp.val('');
+                    table.search('').draw();
                 }
-            }
-        </tbody>
-    </table>
-</div>
+            });
+
+            // 自訂搜尋同步到 DataTables
+            $('#walletSearch').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+        });
+    </script>
+}

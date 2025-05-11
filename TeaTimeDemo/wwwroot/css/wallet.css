@@ -1,12 +1,12 @@
 /* wallet.css — 我的錢包專屬樣式 */
 
-/* 0. 按鈕專用圖示尺寸 */
+/* 0. 按鈕專用圖示尺寸：放大按鈕圖示 */
 .btn-icon {
-    width: 40px;
-    height: 40px;
+    width: 50px; /* 原 40px → 50px */
+    height: 50px; /* 原 40px → 50px */
     object-fit: contain;
     display: block;
-    margin: 0 auto 4px;
+    margin: 0 auto 6px; /* 原 4px → 6px，下方間距也加大 */
 }
 
 /* 1. 頁首背景：圓弧底部，不裁切 */
@@ -18,7 +18,9 @@
     text-align: center;
     border-bottom-left-radius: 50% 20%;
     border-bottom-right-radius: 50% 20%;
-    overflow: visible;
+    overflow: visible; /* 允許卡片溢出 */
+    padding-left: 1rem; /* 手機版左右留白 */
+    padding-right: 1rem;
 }
 
     /* 我的錢包標題 */
@@ -28,7 +30,7 @@
         font-weight: 500;
     }
 
-    /* 左箭頭, 搜尋, 關閉按鈕 懸停微放大 */
+    /* 左箭頭、搜尋、關閉按鈕：懸停微放大 */
     .wallet-header .back-btn,
     .wallet-header .search-btn,
     .wallet-header .close-btn {
@@ -91,14 +93,14 @@
     z-index: 10;
 }
 
-/* 4. 隱藏切換（.toggle-wrap）: 縮小間距 */
+/* 4. 隱藏切換（.toggle-wrap）：縮小間距 */
 .toggle-wrap {
     position: relative;
-    top: -1.5rem; /* 往上提到卡片下方 */
-    z-index: 11; /* 在卡片之上 */
+    top: -1.5rem;
+    z-index: 11;
 }
 
-/* 5. 功能按鈕觸控回饋 */
+/* 5. 功能按鈕觸控回饋 + 文字顏色調整 */
 .feedback-btn {
     display: inline-block;
     transition: transform 0.1s ease, color 0.2s ease;
@@ -111,7 +113,13 @@
     .feedback-btn:active {
         transform: scale(0.9);
     }
+    /* 小標題改藍並放大 */
+    .feedback-btn small {
+        color: #0d6efd;
+        font-size: 1rem;
+    }
 
+/* 點擊時圖示彈跳動畫 */
 @keyframes bounce {
     0% {
         transform: scale(1);
@@ -130,21 +138,57 @@
     animation: bounce 0.3s ease;
 }
 
-/* 6. 列表往下留白 */
-.container.mt-5.pt-5 {
-    padding-top: 6rem;
+/* 新增 8. 排序區塊間距 */
+.sort-wrap {
+    margin-bottom: 1rem;
 }
 
-/* 7. 手機版修正 */
+    /* 下拉選單小幅緊緻 */
+    .sort-wrap .form-select-sm {
+        padding-top: .25rem;
+        padding-bottom: .25rem;
+    }
+
+/* 確保 table 滿版 */
+.table-responsive .table {
+    width: 100%;
+    min-width: 0; /* 避免舊版 Bootstrap 設定造成最小寬度衝突 */
+}
+
+/* 最後再加：讓 DataTable 全部置中 */
+#walletTable th,
+#walletTable td {
+    text-align: center !important;
+}
+
+    /* 讓「名稱」欄位靠左，其它欄位仍維持置中 */
+    #walletTable th:nth-child(2),
+    #walletTable td:nth-child(2) {
+        text-align: left !important;
+    }
+
+
+/* 小圖示尺寸，同名稱文字同一行 */
+.table-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+
+/* 7. 手機版修正：收窄版面 */
 @media (max-width: 576px) {
-    .wallet-card {
-        width: 95%;
+    .container.mt-5.pt-5 {
+        padding-top: 8rem;
     }
 
     .toggle-wrap {
         top: -2rem;
     }
 
+    /* 列表區塊再往下留空 */
     .container.mt-5.pt-5 {
         padding-top: 8rem;
     }

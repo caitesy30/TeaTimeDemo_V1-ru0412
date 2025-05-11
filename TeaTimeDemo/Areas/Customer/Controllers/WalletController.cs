@@ -27,7 +27,9 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             var items = new[]
             {
                 new WalletItemViewModel { Name = "公益幣",    Quantity = 492 },
-                new WalletItemViewModel { Name = "善時點數", Quantity = 50  }
+                new WalletItemViewModel { Name = "善時點數", Quantity = 50  },
+                new WalletItemViewModel { Name = "學習幣", Quantity = 36  },
+                new WalletItemViewModel { Name = "培訓幣", Quantity = 11  }
             };
 
             // 3. 計算總點數與換算金額（範例：假設每點 50 元）
