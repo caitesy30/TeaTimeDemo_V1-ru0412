@@ -103,90 +103,80 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
         }
 
         // 第二步：LINE 授權完成後由此回呼
-        public async Task<IActionResult> OnGetCallbackAsync(
-            string returnUrl = null,
-            string remoteError = null)
+        // ExternalLoginModel.OnGetCallbackAsync（修改後）
+        public async Task<IActionResult> OnGetCallbackAsync(string returnUrl = null, string remoteError = null)
         {
             ReturnUrl = returnUrl ?? Url.Content("~/");
 
-            // 如果使用者在 LINE 那邊按「取消」，remoteError 會有值
             if (remoteError != null)
             {
-                ModelState.AddModelError(
-                    string.Empty,
-                    $"外部登入失敗：{remoteError}");
+                ModelState.AddModelError(string.Empty, $"外部登入錯誤：{remoteError}");
                 return Page();
             }
 
-            // 1. 取得外部登入資訊
+            // 1. 取外部登入資訊
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
-            {
-                // 取不到就回本地登入
                 return RedirectToPage("./Login", new { ReturnUrl });
-            }
 
-            // 2. 嘗試直接簽入（如果之前已綁定過）
+            // 2. 嘗試直接用 ExternalLoginSignInAsync 簽入
             var signInResult = await _signInManager.ExternalLoginSignInAsync(
-                info.LoginProvider,
-                info.ProviderKey,
-                isPersistent: false,
-                bypassTwoFactor: true);
-
+                info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
             if (signInResult.Succeeded)
+                return LocalRedirect(ReturnUrl);
+
+            // 3. 準備資料：LINE userId 為主鍵、保留 email（如果有）
+            var lineId = info.Principal.FindFirstValue("urn:line:userid");
+            var emailClaim = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var displayName = info.Principal.FindFirstValue(ClaimTypes.Name);
+
+            // 4. 先找有無同 ProviderKey 的使用者
+            var existingByLogin = await _userManager.FindByLoginAsync(
+                info.LoginProvider, info.ProviderKey);
+            if (existingByLogin != null)
             {
-                // 已經有綁定，直接登入
-                _logger.LogInformation(
-                    "{Name} 透過 {Provider} 已成功登入。",
-                    info.Principal.FindFirstValue(ClaimTypes.Name),
-                    info.LoginProvider);
+                // 已綁定過，直接簽入
+                await _signInManager.SignInAsync(existingByLogin, isPersistent: false);
                 return LocalRedirect(ReturnUrl);
             }
 
-            // 3. 尚未有對應帳號，建立新使用者並綁定
-            var lineId = info.Principal.FindFirstValue("urn:line:userid");
-            var displayName = info.Principal.FindFirstValue(ClaimTypes.Name);
-            var email = info.Principal.FindFirstValue(ClaimTypes.Email)
-                              ?? $"{lineId}@line.local";
+            // 5. 沒有再嘗試找同 Email 的使用者（如果你想合併舊帳號）
+            if (!string.IsNullOrEmpty(emailClaim))
+            {
+                var existingByEmail = await _userManager.FindByEmailAsync(emailClaim);
+                if (existingByEmail != null)
+                {
+                    // 綁定此登入到舊帳號
+                    await _userManager.AddLoginAsync(existingByEmail, info);
+                    await _signInManager.SignInAsync(existingByEmail, isPersistent: false);
+                    return LocalRedirect(ReturnUrl);
+                }
+            }
 
+            // 6. 建立新使用者：UserName 用 lineId，Email 視情況設定或留空
             var newUser = new ApplicationUser
             {
-                UserName = email,
-                Email = email,
-                Name = displayName,
-                // 如有新增 PictureUrl 屬性，也可寫 newUser.PictureUrl = ...
+                UserName = lineId,            // ← LINE userId 當作 UserName
+                Email = emailClaim,        // ← 若有 emailClaim 就存，沒有就空
+                Name = displayName
             };
 
-            // 3-a. 建立本地帳號
             var createResult = await _userManager.CreateAsync(newUser);
             if (!createResult.Succeeded)
             {
-                // 建立失敗，顯示錯誤
                 foreach (var err in createResult.Errors)
-                {
                     ModelState.AddModelError(string.Empty, err.Description);
-                }
                 return Page();
             }
 
-            // 3-b. **綁定外部登入** -> 這行很重要！
-            var addLoginResult = await _userManager.AddLoginAsync(newUser, info);
-            if (!addLoginResult.Succeeded)
-            {
-                foreach (var err in addLoginResult.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, err.Description);
-                }
-                return Page();
-            }
-
-            // 3-c. 綁定成功後，直接簽入
+            // 7. 綁定外部登入並簽入
+            await _userManager.AddLoginAsync(newUser, info);
             await _signInManager.SignInAsync(newUser, isPersistent: false);
-            _logger.LogInformation(
-                "新使用者 {UserId} 綁定 LINE 後登入成功。", newUser.Id);
 
             return LocalRedirect(ReturnUrl);
         }
+
+
 
         public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)
         {
