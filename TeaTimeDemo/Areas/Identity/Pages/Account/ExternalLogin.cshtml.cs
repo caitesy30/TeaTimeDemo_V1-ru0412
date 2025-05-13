@@ -5,6 +5,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
@@ -89,54 +90,102 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
         
         public IActionResult OnGet() => RedirectToPage("./Login");
 
+        // 第一步：發起 Challenge 到 LINE
         public IActionResult OnPost(string provider, string returnUrl = null)
         {
-            // Request a redirect to the external login provider.
-            var redirectUrl = Url.Page("./ExternalLogin", pageHandler: "Callback", values: new { returnUrl });
-            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
-            return new ChallengeResult(provider, properties);
+            ReturnUrl = returnUrl ?? Url.Content("~/");
+            var redirectUrl = Url.Page("./ExternalLogin",
+                pageHandler: "Callback",
+                values: new { returnUrl = ReturnUrl });
+            var props = _signInManager.ConfigureExternalAuthenticationProperties(
+                provider, redirectUrl);
+            return new ChallengeResult(provider, props);
         }
 
-        public async Task<IActionResult> OnGetCallbackAsync(string returnUrl = null, string remoteError = null)
+        // 第二步：LINE 授權完成後由此回呼
+        public async Task<IActionResult> OnGetCallbackAsync(
+            string returnUrl = null,
+            string remoteError = null)
         {
-            returnUrl = returnUrl ?? Url.Content("~/");
+            ReturnUrl = returnUrl ?? Url.Content("~/");
+
+            // 如果使用者在 LINE 那邊按「取消」，remoteError 會有值
             if (remoteError != null)
             {
-                ErrorMessage = $"Error from external provider: {remoteError}";
-                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+                ModelState.AddModelError(
+                    string.Empty,
+                    $"外部登入失敗：{remoteError}");
+                return Page();
             }
+
+            // 1. 取得外部登入資訊
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
             {
-                ErrorMessage = "Error loading external login information.";
-                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+                // 取不到就回本地登入
+                return RedirectToPage("./Login", new { ReturnUrl });
             }
 
-            // Sign in the user with this external login provider if the user already has a login.
-            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
-            if (result.Succeeded)
+            // 2. 嘗試直接簽入（如果之前已綁定過）
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(
+                info.LoginProvider,
+                info.ProviderKey,
+                isPersistent: false,
+                bypassTwoFactor: true);
+
+            if (signInResult.Succeeded)
             {
-                _logger.LogInformation("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity.Name, info.LoginProvider);
-                return LocalRedirect(returnUrl);
+                // 已經有綁定，直接登入
+                _logger.LogInformation(
+                    "{Name} 透過 {Provider} 已成功登入。",
+                    info.Principal.FindFirstValue(ClaimTypes.Name),
+                    info.LoginProvider);
+                return LocalRedirect(ReturnUrl);
             }
-            if (result.IsLockedOut)
+
+            // 3. 尚未有對應帳號，建立新使用者並綁定
+            var lineId = info.Principal.FindFirstValue("urn:line:userid");
+            var displayName = info.Principal.FindFirstValue(ClaimTypes.Name);
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email)
+                              ?? $"{lineId}@line.local";
+
+            var newUser = new ApplicationUser
             {
-                return RedirectToPage("./Lockout");
-            }
-            else
+                UserName = email,
+                Email = email,
+                Name = displayName,
+                // 如有新增 PictureUrl 屬性，也可寫 newUser.PictureUrl = ...
+            };
+
+            // 3-a. 建立本地帳號
+            var createResult = await _userManager.CreateAsync(newUser);
+            if (!createResult.Succeeded)
             {
-                // If the user does not have an account, then ask the user to create an account.
-                ReturnUrl = returnUrl;
-                ProviderDisplayName = info.ProviderDisplayName;
-                if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+                // 建立失敗，顯示錯誤
+                foreach (var err in createResult.Errors)
                 {
-                    Input = new InputModel
-                    {
-                        Email = info.Principal.FindFirstValue(ClaimTypes.Email)
-                    };
+                    ModelState.AddModelError(string.Empty, err.Description);
                 }
                 return Page();
             }
+
+            // 3-b. **綁定外部登入** -> 這行很重要！
+            var addLoginResult = await _userManager.AddLoginAsync(newUser, info);
+            if (!addLoginResult.Succeeded)
+            {
+                foreach (var err in addLoginResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, err.Description);
+                }
+                return Page();
+            }
+
+            // 3-c. 綁定成功後，直接簽入
+            await _signInManager.SignInAsync(newUser, isPersistent: false);
+            _logger.LogInformation(
+                "新使用者 {UserId} 綁定 LINE 後登入成功。", newUser.Id);
+
+            return LocalRedirect(ReturnUrl);
         }
 
         public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)

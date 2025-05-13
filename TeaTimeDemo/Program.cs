@@ -1,319 +1,174 @@
- // Program.cs
-using Microsoft.EntityFrameworkCore;
-using TeaTimeDemo.DataAccess.Data;
-using TeaTimeDemo.DataAccess.Repository;
-using TeaTimeDemo.DataAccess.Repository.IRepository;
+// Program.cs
+using AspNet.Security.OAuth.Line;             // LINE OAuth
+using AutoMapper;                             // AutoMapper
+using Line.Messaging;                         // LINE Messaging API
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.AspNetCore.Razor.Language.Intermediate;
-using TeaTimeDemo.DataAccess.DbInitializer;
-using TeaTimeDemo.Utility;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore.Proxies;
-using AutoMapper;
-using TeaTimeDemo.Mapping; // ���� AutoMapperProfile ?�e
-using System.Text.Json.Serialization;
-using System.Text.Json;
-using Newtonsoft.Json.Serialization;
-using TeaTimeDemo.Models;
 using Microsoft.AspNetCore.Localization;
-using System.Globalization;
-using Microsoft.AspNetCore.Mvc.Razor;
-using Microsoft.Extensions.Localization;
-using PuppeteerSharp;
-using Microsoft.Extensions.FileProviders;
-using System.Diagnostics;
-using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Caching.Memory;
-
-
-
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using TeaTimeDemo.DataAccess.Data;
+using TeaTimeDemo.DataAccess.DbInitializer;
+using TeaTimeDemo.DataAccess.Repository;
+using TeaTimeDemo.DataAccess.Repository.IRepository;
+using TeaTimeDemo.Mapping;
+using TeaTimeDemo.Models;
+using TeaTimeDemo.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string networkPath = @"\\prdnas\notes";
-string username = "notesadm";
-string password = "xzVfroYW8ogA";
+//── 一、服務註冊 ─────────────────────────────────────────//
 
-//try
-//{
-//    Process.Start(new ProcessStartInfo
-//    {
-//        FileName = "net",
-//        Arguments = $"use K: {networkPath} /user:{username} {password}",
-//        WindowStyle = ProcessWindowStyle.Hidden,
-//        CreateNoWindow = true
-//    });
+// (1) 本地化
+builder.Services.AddLocalization(opts => opts.ResourcesPath = "Resources");
 
-//    builder.Services.AddRazorPages();
-//}
-//catch (Exception ex)
-//{
-//    Console.WriteLine("掛載網路磁碟時發生錯誤：" + ex.Message);
-//}
+// (2) 大檔案上傳限制
+builder.WebHost.ConfigureKestrel(opts => opts.Limits.MaxRequestBodySize = 300 * 1024 * 1024);
+builder.Services.Configure<IISServerOptions>(opts => opts.MaxRequestBodySize = 300 * 1024 * 1024);
+builder.Services.Configure<FormOptions>(opts => opts.MultipartBodyLengthLimit = 300 * 1024 * 1024);
 
+// (3) EF Core + Lazy Loading
+var defaultConn = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(opts =>
+    opts.UseSqlServer(defaultConn)
+        .EnableSensitiveDataLogging()
+        .UseLazyLoadingProxies());
 
-// 註冊 MemoryCache
-builder.Services.AddMemoryCache();
-
-
-//設定翻譯檔案路徑
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-
-// 配置 Kestrel 伺服器上傳限制
-builder.WebHost.ConfigureKestrel(serverOptions => {
-    serverOptions.Limits.MaxRequestBodySize = 314572800; // 300MB (300 * 1024 * 1024)
-});
-
-// 配置 IIS 請求主體大小限制
-builder.Services.Configure<IISServerOptions>(options => {
-    options.MaxRequestBodySize = 314572800; // 300MB
-});
-
-// 配置表單選項
-builder.Services.Configure<FormOptions>(options => {
-    options.MultipartBodyLengthLimit = 314572800; // 300MB
-});
-
-builder.Services.AddControllers();
-
-builder.Services.AddControllersWithViews()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles; // ����ѭ�h����
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; // ʹ�� camelCase ��ʽ
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never; // ������ null ֵ
-    })
-    .AddDataAnnotationsLocalization()
-    .AddViewLocalization(LanguageViewLocationExpanderFormat.SubFolder);///////////////////////////////////////////////////////////////設定支援本地化
-
-//網路硬碟路徑註冊
-builder.Services.AddLogging();  // 註冊 Logger
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration); // 註冊 Configuration
-
-// 先嘗試從環境變數讀取連線字串，若無則使用原有的設定
-var defaultConn = Environment.GetEnvironmentVariable("DefaultConnection")
-                  ?? builder.Configuration.GetConnectionString("DefaultConnection");
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(defaultConn)
-      .EnableSensitiveDataLogging()
-      .UseLazyLoadingProxies());
-//04130844
-
-// �O�� Identity ����?�C
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => 
+// (4) Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
 {
-    options.SignIn.RequireConfirmedAccount = true;
-    // �����ܴa���Ե�
-    options.Password.RequireDigit = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequiredLength = 6;
+    opts.SignIn.RequireConfirmedAccount = true;
+    opts.Password.RequiredLength = 6;
+    opts.Password.RequireDigit = false;
+    opts.Password.RequireLowercase = false;
+    opts.Password.RequireUppercase = false;
+    opts.Password.RequireNonAlphanumeric = false;
 })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
-// �O�� Cookie �О�
-builder.Services.ConfigureApplicationCookie(options =>
+// 自訂 Cookie 路徑
+builder.Services.ConfigureApplicationCookie(opts =>
 {
-    options.LoginPath = $"/Identity/Account/Login";
-    options.LogoutPath = $"/Identity/Account/Logout";
-    options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+    opts.LoginPath = "/Identity/Account/Login";
+    opts.LogoutPath = "/Identity/Account/Logout";
+    opts.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
-// �s�W CORS �A��
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        builder => builder
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
-});
+// (5) CORS
+builder.Services.AddCors(o => o.AddPolicy("AllowAll",
+    p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-// ע����?����
-builder.Services.AddScoped<IDbInitializer, DbInitializer>();
+// (6) DI — Repository、Service
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<IImageService, ImageService>();
-
-//builder.Services.AddScoped<ISurveyService, SurveyService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 
-// 在 builder.Services.AddMemoryCache(); 下方添加
+// (7) 其他：HttpClient、MemoryCache、SignalR、RazorPages、AutoMapper
 builder.Services.AddHttpClient();
-
-
-// ���� SignalR ֧Ԯ
+builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
-
-// ���� Razor Pages ֧Ԯ
 builder.Services.AddRazorPages();
-
-// ���� AutoMapper �K�]��ӳ���O���n
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-//�䴩�y���M��
-var supportedLangs = new[] { "en-us", "zh-tw", "th-th" };
-builder.Services.Configure<RequestLocalizationOptions>(options =>
-{
-    options.DefaultRequestCulture = new RequestCulture("zh-tw");
-    options.SupportedCultures = supportedLangs.Select(s => new CultureInfo(s)).ToList();
-    options.SupportedUICultures = options.SupportedCultures;
-});
-builder.Services.AddControllersWithViews().AddViewLocalization();
+// (8) MVC + JSON + Localization
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        opts.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    })
+    .AddDataAnnotationsLocalization()
+    .AddViewLocalization();
 
-builder.Services.AddSession(options =>
+// (9) LINE OAuth 設定（測試時可硬編 ID/Secret 確認流程）
+
+builder.Services
+  .AddAuthentication(options => {
+      options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+      options.DefaultChallengeScheme = LineAuthenticationDefaults.AuthenticationScheme;
+  })
+  .AddLine(LineAuthenticationDefaults.AuthenticationScheme, "LINE 帳號登入", options => {
+      options.ClientId = builder.Configuration["LineLogin:ChannelId"];
+      options.ClientSecret = builder.Configuration["LineLogin:ChannelSecret"];
+      options.CallbackPath = "/signin-line";
+      options.Scope.Add("openid");
+      options.Scope.Add("profile");
+      options.SaveTokens = true;
+
+      // 【新增】在導向授權前，記錄下完整 URL
+      options.Events.OnRedirectToAuthorizationEndpoint = context => {
+          // 將最終 RedirectUri 印到 Console 或日誌
+          Console.WriteLine("LINE OAuth URL: " + context.RedirectUri);
+          // 繼續執行原本的 Redirect
+          context.Response.Redirect(context.RedirectUri);
+          return Task.CompletedTask;
+      };
+  });
+
+
+// (10) LINE Messaging API Client
+var botToken = builder.Configuration["LineBot:ChannelAccessToken"];
+builder.Services.AddSingleton(new LineMessagingClient(botToken));
+
+// (11) Session
+builder.Services.AddSession(opts =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // �]�m Session �W�L�ɪ��ɶ�
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    opts.IdleTimeout = TimeSpan.FromMinutes(30);
+    opts.Cookie.HttpOnly = true;
+    opts.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-//網路磁碟
-// 設定靜態檔案服務
-//string uploadsFolderPath = @"K:\QuestionImages";  // 這裡是網路磁碟中的資料夾
+//── 二、中介軟體順序 ───────────────────────────────────────//
 
-
-//try
-//{
-//    // 檢查資料夾是否存在，若不存在則嘗試建立
-//    if (!Directory.Exists(uploadsFolderPath))
-//    {
-//        Directory.CreateDirectory(uploadsFolderPath);
-//    }
-//}
-//catch (Exception ex)
-//{
-//    // 建立失敗時記錄錯誤訊息，但不拋出例外，並設定 uploadsFolderPath 為 null 以略過靜態檔案設定
-//    Console.WriteLine($"無法建立目錄 {uploadsFolderPath}：{ex.Message}");
-//    uploadsFolderPath = null;
-//}
-
-app.UseStaticFiles(); // 默認提供 wwwroot 資料夾的靜態檔案
-
-// 若 uploadsFolderPath 成功建立，則設定靜態檔案服務
-//if (!string.IsNullOrEmpty(uploadsFolderPath) && Directory.Exists(uploadsFolderPath))
-//{
-//    app.UseStaticFiles(new StaticFileOptions
-//    {
-//        FileProvider = new PhysicalFileProvider(uploadsFolderPath),
-//        RequestPath = "/images"  // 設定路徑，讓使用者透過 "/images/{filename}" 來訪問
-//    });
-//}
-
-
-
-// 新增：映射 K:\AnswerImage 到 /images/AnswerImage
-//string answerImageFolder = @"K:\AnswerImage";
-//try
-//{
-//    if (!Directory.Exists(answerImageFolder))
-//    {
-//        Directory.CreateDirectory(answerImageFolder);
-//    }
-//}
-//catch (Exception ex)
-//{
-//    Console.WriteLine($"無法建立目錄 {answerImageFolder}：{ex.Message}");
-//    answerImageFolder = null;
-//}
-
-//if (!string.IsNullOrEmpty(answerImageFolder) && Directory.Exists(answerImageFolder))
-//{
-//    app.UseStaticFiles(new StaticFileOptions
-//    {
-//        FileProvider = new PhysicalFileProvider(answerImageFolder),
-//        RequestPath = "/images/AnswerImage"
-//    });
-//}
-
-// �ϥ� CORS
-app.UseCors("AllowAll");
-
-// ���� HTTP ?���?
-if (!app.Environment.IsDevelopment())
+// 1. 本地化
+var supportedCultures = new[] { "en-us", "zh-tw", "th-th" };
+app.UseRequestLocalization(new RequestLocalizationOptions
 {
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts(); // �O�� HSTS �� 30 �죬������a�h���{��
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    OnPrepareResponse = ctx =>
-    {
-        ctx.Context.Response.Headers.Append(
-            "Content-Type", "application/javascript; charset=utf-8");
-    }
+    DefaultRequestCulture = new RequestCulture("zh-tw"),
+    SupportedCultures = supportedCultures.Select(c => new CultureInfo(c)).ToList(),
+    SupportedUICultures = supportedCultures.Select(c => new CultureInfo(c)).ToList()
 });
 
-
-app.UseHttpsRedirection();
+// 2. 靜態檔
 app.UseStaticFiles();
+
+// 3. Routing
 app.UseRouting();
 
-// ��ʼ���Y�ώ�
-SeedDatabase();
+// 4. CORS
+app.UseCors("AllowAll");
 
-// ��������?�C���ڙ�
-app.UseAuthentication(); // ���� Identity
+// 5. 驗證
+app.UseAuthentication();
 app.UseAuthorization();
 
-// �O��·��
-app.MapControllerRoute(
-    name: "default",
-    pattern:
-    "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
-
+// 6. Session
 app.UseSession();
 
-/*
-// �O���^��·��
-
-// 1. Admin �^���·��
-app.MapAreaControllerRoute(
-    name: "AdminArea",
-    areaName: "Admin",
-    pattern: "Admin/{controller=Survey}/{action=Index}/{id?}");
-
-// 2. Customer �^���·��
-app.MapAreaControllerRoute(
-    name: "CustomerArea",
-    areaName: "Customer",
-    pattern: "Customer/{controller=Home}/{action=Index}/{id?}");
-
-// 3. �o�^����A�O·��
+// 7. Endpoint 映射
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-*/
-
+    pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
-
-//���a��
-
-app.UseStaticFiles();
-app.UseRequestLocalization();
-app.UseRouting();
-app.MapDefaultControllerRoute();
-
-// 中略: 中介軟體設定、路由等
 app.MapControllers();
 
-app.Run();
+// 8. Database Seed
+using (var scope = app.Services.CreateScope())
+    scope.ServiceProvider.GetRequiredService<IDbInitializer>().Initialize();
 
-// �Y�ώ��ʼ������
-void SeedDatabase()
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-        dbInitializer.Initialize();
-    }
-}
+app.Run();

@@ -1,32 +1,43 @@
 ﻿@page
 @model ExternalLoginModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "註冊新帳號";
 }
 
-<h1>@ViewData["Title"]</h1>
-<h2 id="external-login-title">Associate your @Model.ProviderDisplayName account.</h2>
+<h1 class="mb-4">@ViewData["Title"]</h1>
+<h2 id="external-login-title" class="h5 mb-3">
+    關聯您的 <strong>@Model.ProviderDisplayName</strong> 帳號
+</h2>
 <hr />
 
-<p id="external-login-description" class="text-info">
-    You've successfully authenticated with <strong>@Model.ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
+<p id="external-login-description" class="text-info mb-4">
+    您已成功透過 <strong>@Model.ProviderDisplayName</strong> 驗證，
+    請輸入本站使用的 Email，完成帳號註冊後即可登入。
 </p>
 
-<div class="row">
-    <div class="col-md-4">
-        <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email."/>
-                <label asp-for="Input.Email" class="form-label"></label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </form>
+<form method="post"
+      asp-page-handler="Confirmation"
+      asp-route-returnUrl="@Model.ReturnUrl">
+
+    @* 隱藏帶回原始 ReturnUrl *@
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    @* 顯示所有欄位驗證錯誤 *@
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+
+    <div class="form-floating mb-3">
+        @* Email 輸入框，綁定到 ExternalLoginModel.Input.Email *@
+        <input asp-for="Input.Email"
+               class="form-control"
+               placeholder="請輸入 Email" />
+        <label asp-for="Input.Email">Email</label>
+        <span asp-validation-for="Input.Email" class="text-danger"></span>
     </div>
-</div>
+
+    <button type="submit" class="w-100 btn btn-lg btn-primary">
+        完成註冊
+    </button>
+</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
