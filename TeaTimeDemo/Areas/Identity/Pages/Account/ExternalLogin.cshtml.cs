@@ -114,74 +114,39 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
                 return Page();
             }
 
-            // 1. 取外部登入資訊
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
                 return RedirectToPage("./Login", new { ReturnUrl });
 
-            // 2. 嘗試直接用 ExternalLoginSignInAsync 簽入
             var signInResult = await _signInManager.ExternalLoginSignInAsync(
                 info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
             if (signInResult.Succeeded)
                 return LocalRedirect(ReturnUrl);
 
-            // 3. 準備資料：LINE userId 為主鍵、保留 email（如果有）
-            var lineId = info.Principal.FindFirstValue("urn:line:userid");
+            // 這裡是關鍵：先取出 LINE 傳來的 Email
             var emailClaim = info.Principal.FindFirstValue(ClaimTypes.Email);
-            var displayName = info.Principal.FindFirstValue(ClaimTypes.Name);
 
-            // 4. 先找有無同 ProviderKey 的使用者
-            var existingByLogin = await _userManager.FindByLoginAsync(
-                info.LoginProvider, info.ProviderKey);
-            if (existingByLogin != null)
+            // ✅ 預設填入畫面的 Input.Email 欄位（即 ExternalLogin.cshtml 用到的）
+            Input = new InputModel
             {
-                // 已綁定過，直接簽入
-                await _signInManager.SignInAsync(existingByLogin, isPersistent: false);
-                return LocalRedirect(ReturnUrl);
-            }
-
-            // 5. 沒有再嘗試找同 Email 的使用者（如果你想合併舊帳號）
-            if (!string.IsNullOrEmpty(emailClaim))
-            {
-                var existingByEmail = await _userManager.FindByEmailAsync(emailClaim);
-                if (existingByEmail != null)
-                {
-                    // 綁定此登入到舊帳號
-                    await _userManager.AddLoginAsync(existingByEmail, info);
-                    await _signInManager.SignInAsync(existingByEmail, isPersistent: false);
-                    return LocalRedirect(ReturnUrl);
-                }
-            }
-
-            // 6. 建立新使用者：UserName 用 lineId，Email 視情況設定或留空
-            var newUser = new ApplicationUser
-            {
-                UserName = lineId,            // ← LINE userId 當作 UserName
-                Email = emailClaim,        // ← 若有 emailClaim 就存，沒有就空
-                Name = displayName
+                Email = emailClaim
             };
 
-            var createResult = await _userManager.CreateAsync(newUser);
-            if (!createResult.Succeeded)
-            {
-                foreach (var err in createResult.Errors)
-                    ModelState.AddModelError(string.Empty, err.Description);
-                return Page();
-            }
+            ProviderDisplayName = info.ProviderDisplayName;
+            ReturnUrl = returnUrl;
 
-            // 7. 綁定外部登入並簽入
-            await _userManager.AddLoginAsync(newUser, info);
-            await _signInManager.SignInAsync(newUser, isPersistent: false);
-
-            return LocalRedirect(ReturnUrl);
+            return Page();
         }
 
 
 
+
+        // ExternalLoginModel.cs (含 LINE 名稱寫入)
+
         public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)
         {
             returnUrl = returnUrl ?? Url.Content("~/");
-            // Get the information about the user from the external login provider
+
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
             {
@@ -191,10 +156,24 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                var user = CreateUser();
+                // ✅ 從 LINE 取 Email 與 DisplayName
+                var email = Input?.Email ?? info.Principal.FindFirstValue(ClaimTypes.Email);
+                var displayName = info.Principal.FindFirstValue(ClaimTypes.Name);
 
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+                // ✅ 防呆：若 Email 沒取到就擋下來
+                if (string.IsNullOrEmpty(email))
+                {
+                    ModelState.AddModelError(string.Empty, "無法取得 Email，請確認 LINE 是否授權提供 Email。");
+                    return Page();
+                }
+
+                // ✅ 建立新使用者，UserName 與 Email 用 LINE 信箱，Name 用 LINE 顯示名稱
+                var user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    Name = displayName ?? email.Split('@')[0] // 若沒顯示名稱，取 Email 前段
+                };
 
                 var result = await _userManager.CreateAsync(user);
                 if (result.Succeeded)
@@ -207,25 +186,23 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
                         var userId = await _userManager.GetUserIdAsync(user);
                         var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                        var callbackUrl = Url.Page(
-                            "/Account/ConfirmEmail",
-                            pageHandler: null,
-                            values: new { area = "Identity", userId = userId, code = code },
-                            protocol: Request.Scheme);
+                        var callbackUrl = Url.Page("/Account/ConfirmEmail", null,
+                            new { area = "Identity", userId = userId, code = code },
+                            Request.Scheme);
 
-                        await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
+                        await _emailSender.SendEmailAsync(email, "Confirm your email",
                             $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
-                        // If account confirmation is required, we need to show the link if we don't have a real email sender
                         if (_userManager.Options.SignIn.RequireConfirmedAccount)
                         {
-                            return RedirectToPage("./RegisterConfirmation", new { Email = Input.Email });
+                            return RedirectToPage("./RegisterConfirmation", new { Email = email });
                         }
 
                         await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
                         return LocalRedirect(returnUrl);
                     }
                 }
+
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
@@ -237,19 +214,11 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
             return Page();
         }
 
-        private ApplicationUser CreateUser()
-        {
-            try
-            {
-                return Activator.CreateInstance<ApplicationUser>();
-            }
-            catch
-            {
-                throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                    $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor, or alternatively " +
-                    $"override the external login page in /Areas/Identity/Pages/Account/ExternalLogin.cshtml");
-            }
-        }
+        // ✅ CreateUser() 不再需要，可安全刪除
+
+
+
+
 
         private IUserEmailStore<ApplicationUser> GetEmailStore()
         {

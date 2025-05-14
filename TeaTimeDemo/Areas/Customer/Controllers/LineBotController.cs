@@ -1,4 +1,7 @@
-﻿using System.Net.Http;
+﻿using System.IO;                   // 新增：StreamContent 需要
+using System.Linq;                 // 新增：ToArray() 擴充方法
+using System.Collections.Generic;  // IEnumerable<T>
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -9,44 +12,45 @@ namespace TeaTimeDemo.Controllers
 {
     [ApiController]
     [Route("api/line/webhook")]
+    [Consumes("application/json")]  // 明示只接受 JSON
     public class LineBotController : ControllerBase
     {
         private readonly LineMessagingClient _lineClient;
         private readonly string _channelSecret;
 
-        public LineBotController(IConfiguration config)
+        // 改為透過 DI 注入 LineMessagingClient
+        public LineBotController(LineMessagingClient lineClient, IConfiguration config)
         {
             _channelSecret = config["LineBot:ChannelSecret"];
-            var token = config["LineBot:ChannelAccessToken"];
-            _lineClient = new LineMessagingClient(token);
+            _lineClient = lineClient;  // 直接使用 DI 提供的 singleton
         }
 
         // 1. Health-check 用 GET（可選）
         [HttpGet]
         public IActionResult Get()
         {
-            // 回傳一句簡單文字，代表你的 Webhook endpoint 啟動正常
             return Ok("LINE Webhook is running 👍");
         }
 
-
+        // 2. Webhook 事件接收
         [HttpPost]
         public async Task<IActionResult> PostAsync()
         {
-            // 1. 把 ASP.NET Core HttpRequest 轉成 HttpRequestMessage
-            var httpReq = new HttpRequestMessage(new HttpMethod(Request.Method),
-                $"{Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}")
+            // 2.1 將 ASP.NET Request 轉成 HttpRequestMessage（保留簽章標頭）
+            var httpReq = new HttpRequestMessage(
+                new HttpMethod(Request.Method),
+                $"{Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}"
+            )
             {
                 Content = new StreamContent(Request.Body)
             };
-            // 複製所有標頭（包含 X-Line-Signature）
             foreach (var header in Request.Headers)
                 httpReq.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
 
+            // 2.2 驗證 X-Line-Signature 並取出事件
             IEnumerable<WebhookEvent> events;
             try
             {
-                // 2. 驗證簽章並解析所有事件
                 events = await httpReq.GetWebhookEventsAsync(_channelSecret);
             }
             catch (InvalidSignatureException)
@@ -54,7 +58,7 @@ namespace TeaTimeDemo.Controllers
                 return BadRequest("Invalid signature");
             }
 
-            // 3. 處理事件並回覆
+            // 2.3 處理事件
             foreach (var ev in events)
             {
                 if (ev is MessageEvent msg && msg.Message is TextEventMessage txt)

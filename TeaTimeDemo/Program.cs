@@ -28,6 +28,9 @@ using TeaTimeDemo.Models;
 using TeaTimeDemo.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
+// ── 新增：讓應用程式在 HTTP 80 端口也能接收請求（對應 cloudflared 預設的 ingress 轉送）
+//builder.WebHost.UseUrls("http://0.0.0.0:80");
+
 
 //── 一、服務註冊 ─────────────────────────────────────────//
 
@@ -59,6 +62,11 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
 {
     opts.SignIn.RequireConfirmedAccount = true;
     opts.User.RequireUniqueEmail = false;      // 允許多帳號無 email 或 email 重複
+
+    // ✅ 加上這行：放寬 UserName 可接受的格式（Email 與 LINE ID 都能用）
+    opts.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+
+
     opts.Password.RequiredLength = 6;
     opts.Password.RequireDigit = false;
     opts.Password.RequireLowercase = false;

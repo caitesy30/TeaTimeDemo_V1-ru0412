@@ -22,14 +22,15 @@
     @* 隱藏帶回原始 ReturnUrl *@
     <input type="hidden" asp-for="ReturnUrl" />
 
-    @* 顯示所有欄位驗證錯誤 *@
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    @* 顯示所有欄位驗證錯誤（包含 UserName 錯誤等） *@
+    <div asp-validation-summary="All" class="text-danger mb-3" role="alert"></div>
 
     <div class="form-floating mb-3">
         @* Email 輸入框，綁定到 ExternalLoginModel.Input.Email *@
         <input asp-for="Input.Email"
                class="form-control"
-               placeholder="請輸入 Email" />
+               placeholder="請輸入 Email"
+               autocomplete="email" />
         <label asp-for="Input.Email">Email</label>
         <span asp-validation-for="Input.Email" class="text-danger"></span>
     </div>
