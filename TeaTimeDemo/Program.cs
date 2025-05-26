@@ -201,6 +201,10 @@ app.MapControllers();
 
 // 10. Database Seed
 using (var scope = app.Services.CreateScope())
+{
     scope.ServiceProvider.GetRequiredService<IDbInitializer>().Initialize();
-
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    // 如無資料庫則自動建立；如有則套用尚未執行的 migration
+    db.Database.Migrate();
+}
 app.Run();
