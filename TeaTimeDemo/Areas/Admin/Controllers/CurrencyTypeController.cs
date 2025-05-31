@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // 必要
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models;
+using ClosedXML.Excel; // 必要
 
 namespace TeaTimeDemo.Areas.Admin.Controllers
 {
@@ -133,5 +135,125 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
             _unitOfWork.Save();
             return RedirectToAction(nameof(Index));
         }
+
+
+        // 匯出 Excel（全部欄位）
+        public IActionResult ExportExcel()
+        {
+            var items = _unitOfWork.CurrencyType.GetAll().OrderBy(x => x.SortOrder).ToList();
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add("CurrencyTypes");
+                // 欄位標題
+                ws.Cell(1, 1).Value = "排序";
+                ws.Cell(1, 2).Value = "名稱";
+                ws.Cell(1, 3).Value = "發行數量";
+                ws.Cell(1, 4).Value = "說明";
+                ws.Cell(1, 5).Value = "抵押兌換率";
+                ws.Cell(1, 6).Value = "發行日期";
+                ws.Cell(1, 7).Value = "圖示路徑";
+                ws.Cell(1, 8).Value = "Id"; // 匯出Id以防還原
+                ws.Cell(1, 9).Value = "更新日期";
+
+                // 寫入資料
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var it = items[i];
+                    ws.Cell(i + 2, 1).Value = it.SortOrder;
+                    ws.Cell(i + 2, 2).Value = it.Name;
+                    ws.Cell(i + 2, 3).Value = it.TotalIssued;
+                    ws.Cell(i + 2, 4).Value = it.Description;
+                    ws.Cell(i + 2, 5).Value = it.ExchangeRate;
+                    ws.Cell(i + 2, 6).Value = it.IssuedAt.ToString("yyyy-MM-dd");
+                    ws.Cell(i + 2, 7).Value = it.IconPath;
+                    ws.Cell(i + 2, 8).Value = it.Id;
+                    ws.Cell(i + 2, 9).Value = it.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                using (var ms = new MemoryStream())
+                {
+                    wb.SaveAs(ms);
+                    return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "幣種資料表.xlsx");
+                }
+            }
+        }
+
+        // 匯入 Excel（全清空再匯入，重置ID）
+        // using 省略，和你原本的 Controller 一樣
+
+        [HttpPost]
+        public async Task<IActionResult> ImportExcel(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                TempData["ERROR"] = "請選擇有效的Excel檔！";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                using (var ms = new MemoryStream())
+                {
+                    await file.CopyToAsync(ms);
+                    using (var wb = new XLWorkbook(ms))
+                    {
+                        var ws = wb.Worksheet(1);
+
+                        // 1. 先刪除資料表全部資料
+                        var oldData = _unitOfWork.CurrencyType.GetAll().ToList();
+                        _unitOfWork.CurrencyType.RemoveRange(oldData);
+                        _unitOfWork.Save();
+
+                        // 2. 重設自增ID（SQL Server）
+                        _unitOfWork.DbContext.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('CurrencyTypes', RESEED, 0)");
+
+                        // 3. 逐列匯入
+                        var rows = ws.RowsUsed().Skip(1); // 跳過標題
+                        int success = 0, fail = 0;
+                        foreach (var row in rows)
+                        {
+                            try
+                            {
+                                var entity = new CurrencyType();
+                                entity.SortOrder = row.Cell(1).GetValue<int>();
+                                entity.Name = row.Cell(2).GetString();
+                                entity.TotalIssued = row.Cell(3).GetValue<int>();
+                                entity.Description = row.Cell(4).GetString();
+                                entity.ExchangeRate = row.Cell(5).GetValue<int>();
+
+                                // 日期防呆（自動解析格式）
+                                DateTime issuedAt;
+                                if (row.Cell(6).DataType == XLDataType.DateTime)
+                                    issuedAt = row.Cell(6).GetDateTime();
+                                else if (!DateTime.TryParse(row.Cell(6).GetString(), out issuedAt))
+                                    issuedAt = DateTime.Now;
+                                entity.IssuedAt = issuedAt;
+
+                                entity.IconPath = row.Cell(7).GetString();
+                                // Id略過，不處理
+                                DateTime updatedAt;
+                                entity.UpdatedAt = DateTime.TryParse(row.Cell(9).GetString(), out updatedAt) ? updatedAt : (DateTime?)null;
+
+                                _unitOfWork.CurrencyType.Add(entity);
+                                success++;
+                            }
+                            catch
+                            {
+                                fail++;
+                                // 可加log
+                                continue;
+                            }
+                        }
+                        _unitOfWork.Save();
+                        TempData["SUCCESS"] = $"匯入完成，資料全部取代！成功{success}筆，失敗{fail}筆。";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ERROR"] = "匯入失敗：" + ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
     }
 }

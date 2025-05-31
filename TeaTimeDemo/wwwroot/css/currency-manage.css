@@ -1,0 +1,15 @@
+#currencyTable th, #currencyTable td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+    #currencyTable th:nth-child(5),
+    #currencyTable td:nth-child(5) {
+        text-align: left !important;
+    }
+
+#importExportBtn:hover, #importExportBtn:focus {
+    background: #def4fa;
+    border-color: #75bfff;
+    box-shadow: 0 0 0 0.15rem #67CEB233;
+}
