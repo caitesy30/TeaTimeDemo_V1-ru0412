@@ -68,6 +68,11 @@ namespace TeaTimeDemo.DataAccess.Repository.IRepository
         IRepository<Point> Point { get; }
         IRepository<UserPointBalance> UserPointBalance { get; }
 
+        IRepository<CurrencyType> CurrencyType { get; }
+        IRepository<UserCurrencyLog> UserCurrencyLog { get; }
+
+
+
         void Save();
         // void DeleteEntity();
 

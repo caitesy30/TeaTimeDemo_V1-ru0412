@@ -1,0 +1,45 @@
+﻿@model TeaTimeDemo.Models.CurrencyType
+@{
+    ViewData["Title"] = "新增幣種";
+}
+<h3>新增幣種</h3>
+<form asp-action="Create" enctype="multipart/form-data" method="post">
+    <div class="mb-2">
+        <label asp-for="Name" class="form-label">名稱</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label asp-for="SortOrder" class="form-label">排序（小的在前）</label>
+        <input asp-for="SortOrder" class="form-control" />
+        <span class="text-muted">數字愈小愈前面，建議1、2、3…</span>
+        <span asp-validation-for="SortOrder" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label asp-for="TotalIssued" class="form-label">發行數量</label>
+        <input asp-for="TotalIssued" class="form-control" />
+        <span asp-validation-for="TotalIssued" class="text-danger"></span>
+    </div>
+    <div class="mb-2">
+        <label asp-for="Description" class="form-label">說明</label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ExchangeRate" class="form-label">抵押兌換率（幾點換 1）</label>
+        <input asp-for="ExchangeRate" class="form-control" placeholder="例：50" />
+        <span class="text-muted">填 50 代表 50:1</span>
+        <span asp-validation-for="ExchangeRate" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="IssuedAt" class="form-label">發行日期</label>
+        <input asp-for="IssuedAt" class="form-control" type="date" />
+        <span asp-validation-for="IssuedAt" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">圖示（icon）</label>
+        <input type="file" name="iconFile" class="form-control" accept="image/*" />
+    </div>
+    <button type="submit" class="btn btn-success">送出</button>
+    <a asp-action="Index" class="btn btn-secondary">返回</a>
+</form>

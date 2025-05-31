@@ -106,6 +106,25 @@ namespace TeaTimeDemo.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CurrencyTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TotalIssued = table.Column<int>(type: "int", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IssuedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ExchangeRate = table.Column<int>(type: "int", nullable: false),
+                    IconPath = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CurrencyTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "DocumentExports",
                 columns: table => new
                 {
@@ -267,6 +286,25 @@ namespace TeaTimeDemo.DataAccess.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SurveyGroups", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserCurrencyLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CurrencyTypeId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    BalanceAfter = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Memo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserCurrencyLogs", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -1249,6 +1287,9 @@ namespace TeaTimeDemo.DataAccess.Migrations
                 name: "BlankSurveys");
 
             migrationBuilder.DropTable(
+                name: "CurrencyTypes");
+
+            migrationBuilder.DropTable(
                 name: "FillInBlanks");
 
             migrationBuilder.DropTable(
@@ -1280,6 +1321,9 @@ namespace TeaTimeDemo.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "SurveyToGroups");
+
+            migrationBuilder.DropTable(
+                name: "UserCurrencyLogs");
 
             migrationBuilder.DropTable(
                 name: "UserPointBalances");

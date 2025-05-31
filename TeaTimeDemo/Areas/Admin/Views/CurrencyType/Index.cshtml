@@ -1,0 +1,85 @@
+﻿@model IEnumerable<TeaTimeDemo.Models.CurrencyType>
+@{
+    ViewData["Title"] = "幣種管理";
+}
+<h3>幣種管理</h3>
+<a asp-action="Create" class="btn btn-success mb-2">新增幣種</a>
+
+<!-- 搜尋輸入框（只顯示這個） -->
+<input type="text" id="currencySearch" class="form-control mb-2" placeholder="搜尋幣種..." style="max-width: 260px;" />
+
+<div class="table-responsive">
+    <table id="currencyTable" class="table table-bordered table-striped align-middle w-100">
+        <thead>
+            <tr>
+                <th>排序</th>
+                <th>Icon</th>
+                <th>名稱</th>
+                <th>發行數量</th>
+                <th>說明</th>
+                <th>抵押兌換率</th>
+                <th>發行日期</th>
+                <th>動作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.OrderBy(x => x.SortOrder))
+            {
+                <tr>
+                    <td>@item.SortOrder</td>
+                    <td>
+                        <img src="@item.IconPath" style="width:40px;height:40px;" />
+                    </td>
+                    <td>@item.Name</td>
+                    <td>@item.TotalIssued</td>
+                    <td>@item.Description</td>
+                    <td>@item.ExchangeRate:1</td>
+                    <td>@item.IssuedAt.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-success btn-sm">編輯</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">刪除</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+
+    <style>
+        /* 1. 全部置中 */
+        #currencyTable th,
+        #currencyTable td {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+            /* 2. 說明那一欄靠左 */
+            #currencyTable th:nth-child(5),
+            #currencyTable td:nth-child(5) {
+                text-align: left !important;
+            }
+    </style>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/DataTables/datatables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 初始化DataTable
+            var table = $('#currencyTable').DataTable({
+                dom: 'lrtip',
+                "order": [[0, 'asc']],      // 預設以第一欄(排序欄)升冪，注意排序索引從0開始
+                "paging": false,            // 不分頁
+                "info": false,              // 不顯示資訊
+                "language": {
+                    "zeroRecords": "找不到資料"
+                }
+            });
+
+            // 只用自訂搜尋框
+            $('#currencySearch').on('keyup', function () {
+                table.search(this.value).draw();
+            });
+        });
+    </script>
+}

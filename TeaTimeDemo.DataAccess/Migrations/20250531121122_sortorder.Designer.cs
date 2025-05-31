@@ -12,8 +12,8 @@ using TeaTimeDemo.DataAccess.Data;
 namespace TeaTimeDemo.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250514130642_newtable")]
-    partial class newtable
+    [Migration("20250531121122_sortorder")]
+    partial class sortorder
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -673,6 +673,45 @@ namespace TeaTimeDemo.DataAccess.Migrations
                             IsPublished = false,
                             Name = "軟硬板"
                         });
+                });
+
+            modelBuilder.Entity("TeaTimeDemo.Models.CurrencyType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExchangeRate")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IconPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalIssued")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CurrencyTypes");
                 });
 
             modelBuilder.Entity("TeaTimeDemo.Models.DocumentExport", b =>
@@ -1624,6 +1663,41 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     b.HasIndex("SurveyId");
 
                     b.ToTable("SurveyToGroups");
+                });
+
+            modelBuilder.Entity("TeaTimeDemo.Models.UserCurrencyLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrencyTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Memo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserCurrencyLogs");
                 });
 
             modelBuilder.Entity("TeaTimeDemo.Models.UserPointBalance", b =>

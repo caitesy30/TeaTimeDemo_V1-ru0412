@@ -64,6 +64,11 @@ namespace TeaTimeDemo.DataAccess.Repository
         public IRepository<Point> Point { get; private set; }
         public IRepository<UserPointBalance> UserPointBalance { get; private set; }
 
+        public IRepository<CurrencyType> CurrencyType { get; private set; }
+        public IRepository<UserCurrencyLog> UserCurrencyLog { get; private set; }
+
+
+
 
         public UnitOfWork(ApplicationDbContext db)
         {
@@ -107,6 +112,11 @@ namespace TeaTimeDemo.DataAccess.Repository
 
             Point=new Repository<Point>(_db);
             UserPointBalance = new Repository<UserPointBalance>(_db);
+
+            CurrencyType = new Repository<CurrencyType>(_db);
+            UserCurrencyLog = new Repository<UserCurrencyLog>(_db);
+
+
         }
         public void Save()
         {

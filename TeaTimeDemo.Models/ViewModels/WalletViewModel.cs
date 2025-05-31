@@ -1,23 +1,20 @@
-﻿using System.Collections.Generic;
+﻿// ==========================
+// 檔名：WalletViewModel.cs
+// 製作人：茶神
+// 日期：2024-05-31
+// 目的：前端顯示用—錢包總覽＋交易明細
+// ==========================
+
+using System.Collections.Generic;
+using TeaTimeDemo.Models;
 
 namespace TeaTimeDemo.Models.ViewModels
 {
-    /// <summary>
-    /// 單一錢包項目
-    /// </summary>
-    public class WalletItemViewModel
-    {
-        public string Name { get; set; }      // 名稱，如「公益幣」
-        public int Quantity { get; set; }     // 擁有數量
-    }
-
-    /// <summary>
-    /// 我的錢包頁面 ViewModel
-    /// </summary>
     public class WalletViewModel
     {
-        public int TotalPoints { get; set; }      // 點數總數（示範）
-        public int ConvertQuantity { get; set; }  // 換算後金額
-        public IEnumerable<WalletItemViewModel> Items { get; set; }  // 明細清單
+        public List<WalletItemViewModel> Items { get; set; }
+        public List<UserCurrencyLogVM> Logs { get; set; }  // <--- 這裡改成 VM
+        public int ConvertQuantity { get; set; }    // 換算顯示
+        public int TotalPoints { get; set; }
     }
 }

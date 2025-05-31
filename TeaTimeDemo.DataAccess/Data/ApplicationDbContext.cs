@@ -64,6 +64,10 @@ namespace TeaTimeDemo.DataAccess.Data
         public DbSet<Point> Points { get; set; }
         public DbSet<UserPointBalance> UserPointBalances { get; set; }
 
+        public DbSet<CurrencyType> CurrencyTypes { get; set; }        // 幣種主檔
+        public DbSet<UserCurrencyLog> UserCurrencyLogs { get; set; }  // 會員交易紀錄
+
+
         /// <summary>
         /// 覆寫 SaveChanges 方法，實現軟刪除邏輯
         /// </summary>

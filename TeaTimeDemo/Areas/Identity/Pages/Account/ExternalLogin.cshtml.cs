@@ -142,6 +142,7 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
 
 
         // ExternalLoginModel.cs (含 LINE 名稱寫入)
+        // 確認用戶資料後建立新帳號（加上預設角色！）
 
         public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)
         {
@@ -178,6 +179,9 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
                 var result = await _userManager.CreateAsync(user);
                 if (result.Succeeded)
                 {
+                    // ✅ 這裡重點：自動加上預設角色（等級），例如 "Customer"
+                    await _userManager.AddToRoleAsync(user, "Customer"); // ← 這裡可換成你要的角色名
+
                     result = await _userManager.AddLoginAsync(user, info);
                     if (result.Succeeded)
                     {
@@ -216,10 +220,8 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
 
         // ✅ CreateUser() 不再需要，可安全刪除
 
-
-
-
-
+        // 取得 Email Store
+   
         private IUserEmailStore<ApplicationUser> GetEmailStore()
         {
             if (!_userManager.SupportsUserEmail)
