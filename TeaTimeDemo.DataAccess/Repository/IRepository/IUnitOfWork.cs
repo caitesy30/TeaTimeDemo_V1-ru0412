@@ -56,6 +56,12 @@ namespace TeaTimeDemo.DataAccess.Repository.IRepository
         IModuleBlockRepository ModuleBlock { get; }
         INotesModifyRepository NotesModify { get; }
 
+        //IUserCurrencyLogRepository UserCurrencyLog { get; }
+
+        //IApplicationUserRepository ApplicationUser { get; }
+
+
+
         // 加上這行，把內部的 ApplicationDbContext 暴露出去
         ApplicationDbContext DbContext { get; }
 

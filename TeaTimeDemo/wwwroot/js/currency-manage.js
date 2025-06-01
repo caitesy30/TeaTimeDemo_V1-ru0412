@@ -118,4 +118,109 @@
     $(document).ajaxComplete(function () {
         $('#loading-overlay').fadeOut();
     });
+
+    // =================== 發幣按鈕：JS動態產生Modal ===================
+    $(document).on('click', '.send-currency-btn', function () {
+        let currencyId = $(this).data('currencyid');
+        let currencyName = $(this).data('currencyname');
+
+        // Modal不存在就動態產生
+        if ($('#dynamicSendCurrencyModal').length === 0) {
+            $('body').append(`
+                <div class="modal fade" id="dynamicSendCurrencyModal" tabindex="-1" aria-labelledby="dynamicSendCurrencyModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <form id="dynamicSendCurrencyForm" autocomplete="off">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="dynamicSendCurrencyModalLabel">發幣給會員</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="mb-2">
+                            <label for="dynamicMemberSelect" class="form-label">選擇會員</label>
+                            <select id="dynamicMemberSelect" class="form-select" required></select>
+                          </div>
+                          <div class="mb-2">
+                            <label for="dynamicCurrencySelect" class="form-label">幣種</label>
+                            <select id="dynamicCurrencySelect" class="form-select" required></select>
+                          </div>
+                          <div class="mb-2">
+                            <label for="dynamicAmountInput" class="form-label">數量</label>
+                            <input type="number" id="dynamicAmountInput" class="form-control" min="1" value="1" required />
+                          </div>
+                          <div class="mb-2">
+                            <label for="dynamicMemoInput" class="form-label">備註（可空）</label>
+                            <input type="text" id="dynamicMemoInput" class="form-control" maxlength="50" />
+                          </div>
+                          <div id="dynamicSendCurrencyError" class="text-danger small"></div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                          <button type="submit" class="btn btn-primary">發幣</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+            `);
+        }
+
+        // 幣種資料設定
+        $('#dynamicCurrencySelect').html(`<option value="${currencyId}" selected>${currencyName}</option>`);
+        $('#dynamicAmountInput').val(1);
+        $('#dynamicMemoInput').val('');
+        $('#dynamicSendCurrencyError').text('');
+
+        // 取得會員清單並開啟 Modal
+        $.get('/Admin/CurrencyType/GetAllMemberList', function (data) {
+            let html = '';
+            data.forEach(u => html += `<option value="${u.id}">${u.name}</option>`);
+            $('#dynamicMemberSelect').html(html);
+            $('#dynamicSendCurrencyModal').modal('show');
+        });
+    });
+
+    // =================== 發幣送出（動態Modal submit） ===================
+    $(document).on('submit', '#dynamicSendCurrencyForm', function (e) {
+        e.preventDefault();
+        let userId = $('#dynamicMemberSelect').val();
+        let currencyId = $('#dynamicCurrencySelect').val();
+        let amount = parseInt($('#dynamicAmountInput').val(), 10);
+        let memo = $('#dynamicMemoInput').val();
+
+        if (!userId || !currencyId || amount <= 0) {
+            $('#dynamicSendCurrencyError').text('請完整填寫資料');
+            return;
+        }
+        $.ajax({
+            url: '/Admin/CurrencyType/SendCurrency',
+            method: 'POST',
+            data: {
+                userId,
+                currencyTypeId: currencyId,
+                quantity: amount,
+                memo
+            },
+            success: function (resp) {
+                if (resp.success) {
+                    $('#dynamicSendCurrencyModal').modal('hide');
+                    Swal.fire('發幣成功', '', 'success');
+                } else {
+                    $('#dynamicSendCurrencyError').text(resp.message || '發幣失敗');
+                }
+            },
+            error: function () {
+                $('#dynamicSendCurrencyError').text('系統異常，請稍後再試');
+            }
+        });
+    });
+
+    // =================== Modal關閉時自動清空 ===================
+    $(document).on('hidden.bs.modal', '#dynamicSendCurrencyModal', function () {
+        $('#dynamicSendCurrencyError').text('');
+    });
+
+
+
+
 });

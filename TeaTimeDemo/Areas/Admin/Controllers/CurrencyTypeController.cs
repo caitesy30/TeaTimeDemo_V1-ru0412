@@ -1,14 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using ClosedXML.Excel; // 必要
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore; // 必要
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models;
-using ClosedXML.Excel; // 必要
 
 namespace TeaTimeDemo.Areas.Admin.Controllers
 {
@@ -254,6 +254,66 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+
+        // 取得所有會員（ID/姓名），for 發幣下拉
+        [HttpGet]
+        public IActionResult GetAllMemberList()
+        {
+            // 這裡建議用你User/會員的Repository
+            // 假設是 _unitOfWork.ApplicationUser.GetAll()
+            var members = _unitOfWork.ApplicationUser.GetAll()
+                .Select(u => new { id = u.Id, name = u.Name })
+                .ToList();
+            return Json(members);
+        }
+
+
+        // ==========================
+        // 檔名：CurrencyTypeController.cs（發幣功能 Action）
+        // 製作人：茶神
+        // 日期：2024-05-31
+        // 目的：管理員發幣給會員，寫一筆 UserCurrencyLog
+        // ==========================
+
+        [HttpPost]
+        public IActionResult SendCurrency(string userId, int currencyTypeId, int quantity, string memo)
+        {
+            if (string.IsNullOrEmpty(userId) || quantity <= 0)
+                return Json(new { success = false, message = "請輸入正確資料" });
+
+            // 取得會員
+            var member = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.Id == userId);
+            if (member == null)
+                return Json(new { success = false, message = "會員不存在" });
+
+            var currency = _unitOfWork.CurrencyType.GetById(currencyTypeId);
+            if (currency == null)
+                return Json(new { success = false, message = "幣種不存在" });
+
+            // 找出目前這位會員的該幣種最新餘額
+            var lastLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == currencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int oldBalance = lastLog?.BalanceAfter ?? 0;
+            int newBalance = oldBalance + quantity;
+
+            // 寫一筆 log
+            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = currencyTypeId,
+                Quantity = quantity,
+                Action = "後台發幣",
+                Memo = memo,
+                CreatedAt = DateTime.Now,
+                BalanceAfter = newBalance
+            });
+
+            _unitOfWork.Save();
+            return Json(new { success = true });
+        }
+
+
 
     }
 }

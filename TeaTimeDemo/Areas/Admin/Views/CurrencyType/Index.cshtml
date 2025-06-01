@@ -35,11 +35,24 @@
                     <td>
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-success btn-sm">編輯</a>
                         <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">刪除</a>
+
+                        <!-- 發幣按鈕，帶幣種Id和名稱 -->
+                        <button type="button"
+                                class="btn btn-warning btn-sm ms-1 send-currency-btn"
+                                data-currencyid="@item.Id"
+                                data-currencyname="@item.Name">
+                            發幣
+                        </button>
+
+
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+
+  
+
 </div>
 
 @section Scripts {
