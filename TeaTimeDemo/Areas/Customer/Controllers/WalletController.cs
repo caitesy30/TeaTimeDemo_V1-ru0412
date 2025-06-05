@@ -71,5 +71,104 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             // 7. 回傳 View
             return View(vm);
         }
+
+
+        // ============ 返還步驟一：顯示返還幣列表（圖二） ============
+        public IActionResult ReturnList()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var coins = _unitOfWork.CurrencyType.GetAll().ToList();
+            var items = coins.Select(ct => new ReturnCoinVM
+            {
+                CurrencyTypeId = ct.Id,
+                Name = ct.Name,
+                IconPath = ct.IconPath,
+                Quantity = _unitOfWork.UserCurrencyLog.GetAll()
+                    .Where(x => x.UserId == userId && x.CurrencyTypeId == ct.Id)
+                    .Sum(x => x.Quantity)
+            }).Where(x => x.Quantity > 0).ToList();
+
+            return View(items); // 傳到 ReturnList.cshtml
+        }
+
+        // ============ 返還步驟二：選擇某幣返還（圖三） ============
+        [HttpGet]
+        public IActionResult Return(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var coin = _unitOfWork.CurrencyType.GetById(id);
+            var quantity = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == id)
+                .Sum(x => x.Quantity);
+            var vm = new ReturnCoinVM
+            {
+                CurrencyTypeId = id,
+                Name = coin.Name,
+                IconPath = coin.IconPath,
+                Quantity = quantity
+            };
+            return View(vm); // 傳到 Return.cshtml
+        }
+
+        // ============ 返還步驟三：送出返還 =============
+        [HttpPost]
+        public IActionResult Return(ReturnCoinVM model, int returnQty)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (returnQty <= 0) return View(model); // 不允許負數
+
+            // 目前擁有數量
+            var nowQty = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                .Sum(x => x.Quantity);
+
+            if (returnQty > nowQty)
+            {
+                ModelState.AddModelError("", "返還數量不可大於持有數量");
+                model.Quantity = nowQty;
+                return View(model);
+            }
+
+            // 1. 會員扣點（寫一筆負數log）
+            var lastLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int oldBalance = lastLog?.BalanceAfter ?? nowQty;
+            int newBalance = oldBalance - returnQty;
+
+            _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = model.CurrencyTypeId,
+                Quantity = -returnQty,
+                Action = "會員返還",
+                Memo = "返還點數給後台",
+                CreatedAt = DateTime.Now,
+                BalanceAfter = newBalance
+            });
+
+            // 2. 後台發行者帳戶加點（可以寫指定帳號，這裡簡單用"Admin"）
+            var admin = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.UserName == "admin");
+            if (admin != null)
+            {
+                var adminOld = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == admin.Id && x.CurrencyTypeId == model.CurrencyTypeId)
+                    .OrderByDescending(x => x.CreatedAt).FirstOrDefault()?.BalanceAfter ?? 0;
+
+                _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+                {
+                    UserId = admin.Id,
+                    CurrencyTypeId = model.CurrencyTypeId,
+                    Quantity = returnQty,
+                    Action = "會員返還入帳",
+                    Memo = $"會員返還：{userId}",
+                    CreatedAt = DateTime.Now,
+                    BalanceAfter = adminOld + returnQty
+                });
+            }
+            _unitOfWork.Save();
+
+            //TempData["SUCCESS"] = "返還成功！";
+            return RedirectToAction("ReturnList");
+        }
+
     }
 }

@@ -1,0 +1,95 @@
+﻿@model TeaTimeDemo.Areas.Customer.Controllers.PointLogViewModel
+
+@{
+    ViewData["Title"] = "點數記錄";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a asp-area="Customer" asp-controller="Wallet" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> 返回
+        </a>
+        <h4>點數記錄</h4>
+        <div>       
+        </div>      
+    </div>
+    <!-- 自訂搜尋框放這 -->
+    <input id="pointLogSearch" type="search" class="form-control form-control-sm ms-2" style="width:180px;" placeholder="搜尋..." />
+    <br/>
+    <div class="table-responsive">
+        <table id="pointLogTable" class="table table-sm table-bordered w-100">
+            <thead class="table-light">
+                <tr>
+                    <th>時間</th>
+                    <th>幣種</th>
+                    <th>異動數量</th>
+                    <th>異動後餘額</th>
+                    <th>動作</th>
+                    <th>備註</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Logs != null && Model.Logs.Any())
+                {
+                    foreach (var log in Model.Logs)
+                    {
+                        <tr>
+                            <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@log.CurrencyTypeName</td>
+                            <td>@log.Quantity</td>
+                            <td>@log.BalanceAfter</td>
+                            <td>@log.Action</td>
+                            <td>@log.Memo</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center">暫無點數記錄</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+      
+    </div>
+</div>
+
+
+
+ @section Scripts {
+    <link href="~/css/currency-manage.css" rel="stylesheet" asp-append-version="true" />
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
+    <script>
+        $(function () {
+            // 初始化DataTable，開啟搜尋功能
+            var table = $('#pointLogTable').DataTable({
+                dom: 'rtip',
+                paging: true,
+                pageLength: 10,
+                ordering: true,
+                searching: true, // ← 一定要 true
+                info: false,
+                lengthChange: false,
+                language: {
+                    "zeroRecords": "找不到資料",
+                    "search": "搜尋：",
+                    "paginate": { "previous": "上一頁", "next": "下一頁" }
+                }
+            });
+
+            // 隱藏原生搜尋框（頁面上只出現你的自訂搜尋欄）
+            $('.dataTables_filter').hide();
+
+            // 綁定自訂搜尋欄，把輸入同步到 DataTables 的搜尋引擎
+            $('#pointLogSearch').on('keyup', function () {
+                table.search(this.value).draw();
+            });
+        });
+    </script>
+}
+
+
+
+

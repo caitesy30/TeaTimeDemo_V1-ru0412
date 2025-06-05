@@ -1,0 +1,26 @@
+﻿@model TeaTimeDemo.Models.ViewModels.ReturnCoinVM
+@{
+    ViewData["Title"] = "返還";
+}
+<div class="container mt-4" style="max-width:420px">
+    <h4 class="mb-3">返還</h4>
+    <div class="text-center mb-3">
+        <img src="@Model.IconPath" width="48" /><br />
+        <span class="h5">@Model.Name</span><br />
+        <span class="text-muted">擁有數量：@Model.Quantity</span>
+    </div>
+    <form asp-action="Return" method="post">
+        <input type="hidden" name="CurrencyTypeId" value="@Model.CurrencyTypeId" />
+        <input type="hidden" name="Name" value="@Model.Name" />
+        <input type="hidden" name="IconPath" value="@Model.IconPath" />
+        <div class="mb-3">
+            <label for="returnQty" class="form-label">返還數量：</label>
+            <input type="number" class="form-control" name="returnQty" id="returnQty" min="1" max="@Model.Quantity" required />
+        </div>
+        <button type="submit" class="btn btn-success w-100">送出</button>
+    </form>
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mt-3">@Html.ValidationSummary()</div>
+    }
+</div>

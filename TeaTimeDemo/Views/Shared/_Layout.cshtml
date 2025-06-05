@@ -130,11 +130,8 @@
                     <!-- 左側導覽連結 -->
                     <ul class="navbar-nav flex-grow-1 ">
                         <!-- 首頁連結 -->
-                        <li class="nav-item">
-
-
+                        @* <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="Customer" asp-controller="Home" asp-action="Index" data-i18n="首頁">首頁</a>
-
                         </li>
                         <!-- Notes管理連結 -->
                         <li class="nav-item">
@@ -150,8 +147,8 @@
                         </li>
                         <!-- 查看已填問卷連結 -->
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="AnsweredSurveyList" data-i18n="查看已填問卷">查看已填問卷</a>
-                        </li>
+                          <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="AnsweredSurveyList" data-i18n="查看已填問卷">查看已填問卷</a>                         
+                        </li>  *@
                         <!-- 管理員或經理員的內容管理下拉選單 -->
                         @if (User.IsInRole(SD.Role_Admin) || User.IsInRole(SD.Role_Manager) || User.IsInRole(SD.Role_Customer))
                         {
@@ -159,8 +156,11 @@
                                 <a class="nav-link dropdown-toggle text-dark" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" data-i18n="內容管理">內容管理</a>
 
                                 <div class="dropdown-menu">
+                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Wallet" asp-action="Index"><i class="bi bi-wallet2 me-2"></i>我的錢包</a>
+                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PointLog" asp-action="Index"><i class="bi bi-journal-text me-2"></i>點數記錄</a>
 
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Category" asp-action="Index" data-i18n="類別">類別</a>
+
+                                    @* <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Category" asp-action="Index" data-i18n="類別">類別</a>
                                     <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Product" asp-action="Index" data-i18n="產品">產品</a>
                                     <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Store" asp-action="Index" data-i18n="分公司">分公司</a>
                                     <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Station" asp-action="Index" data-i18n="站別">站別</a>
@@ -174,37 +174,41 @@
                                     <!-- 內容管理下的圖片管理 -->
 
                                     <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionImage" asp-action="Index" data-i18n="圖片管理">圖片管理</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="User" asp-action="Index" data-i18n="使用者管理">使用者管理</a>
+                                  
 
                                     <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="Index">問卷編輯-測試R5</a>
                                     <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyAns" asp-action="Index">問卷編輯-填寫畫面-測試</a>
-
+                                   
 
                                     <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="TinyMCE">問卷編輯-編輯器</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="BlankSurvey" asp-action="index">公版編輯</a>
-                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Wallet" asp-action="Index">我的錢包</a>
+                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="BlankSurvey" asp-action="index">公版編輯</a> *@
+                                                              
 
                                     @* 只給 Admin 顯示：幣種/點數管理 *@
                                     @if (User.IsInRole(SD.Role_Admin))
                                     {
+                                        <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="User" asp-action="Index" data-i18n="使用者管理">使用者管理</a>
+                                       
+
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item text-danger" asp-area="Admin" asp-controller="CurrencyType" asp-action="Index">
                                             <i class="bi bi-currency-exchange"></i> 幣種/點數管理
                                         </a>
+
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register" data-i18n="建立使用者">建立使用者</a>                                   
                                     }
 
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register" data-i18n="建立使用者">建立使用者</a>
                                 </div>
 
                             </li>
                         }
                         <!-- 購物車連結，包含圖示和文字 -->
-                        <li class="nav-item">
+                        @* <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="Customer" asp-controller="Cart" asp-action="Index">
                                 <i class="bi bi-cart"></i> &nbsp;
                             </a>
-                        </li>                       
+                        </li>                        *@
                     </ul>
 
                     <ul class="navbar-nav">

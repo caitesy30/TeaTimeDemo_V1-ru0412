@@ -13,3 +13,9 @@
     border-color: #75bfff;
     box-shadow: 0 0 0 0.15rem #67CEB233;
 }
+
+
+#pointLogTable th, #pointLogTable td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}

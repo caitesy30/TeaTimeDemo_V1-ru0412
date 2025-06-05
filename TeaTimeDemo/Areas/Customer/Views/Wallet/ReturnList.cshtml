@@ -1,0 +1,48 @@
+﻿@model List<TeaTimeDemo.Models.ViewModels.ReturnCoinVM>
+@{
+    ViewData["Title"] = "選擇返還點數";
+}
+<div class="container mt-4">
+    <h4>選擇返還點數</h4>
+    <input type="search" class="form-control mb-3" placeholder="請輸入關鍵字" id="returnCoinSearch" />
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>名稱</th>
+                <th>擁有數量</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                <tr>
+                    <td>@(i + 1)</td>
+                    <td>
+                        <img src="@Model[i].IconPath" width="24" style="vertical-align:middle" />
+                        @Model[i].Name
+                    </td>
+                    <td>@Model[i].Quantity</td>
+                    <td>
+                        <a asp-action="Return" asp-route-id="@Model[i].CurrencyTypeId" class="btn btn-primary btn-sm">返還</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#returnCoinSearch').on('keyup', function () {
+                let val = this.value.trim();
+                $('tbody tr').each(function () {
+                    let txt = $(this).text();
+                    $(this).toggle(txt.indexOf(val) > -1);
+                });
+            });
+        });
+    </script>
+}

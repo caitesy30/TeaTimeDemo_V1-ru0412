@@ -40,7 +40,7 @@
     <!-- 三功能按鈕卡片 -->
     <div class="wallet-card">
         <div class="d-flex justify-content-around mt-3">
-            <a asp-action="Index" class="feedback-btn text-center text-secondary text-decoration-none">
+            <a asp-action="ReturnList" class="feedback-btn text-center text-secondary text-decoration-none">
                 <img src="~/images/返還.png" alt="返還" class="btn-icon" />
                 <small>返還</small>
             </a>
@@ -100,59 +100,13 @@
     </div>
 </div>
 
-<!-- 新增：異動紀錄明細表（交易紀錄） -->
-<div class="container mt-4">
-    <h5>異動紀錄</h5>
-    <div class="table-responsive">
-        <table id="logTable" class="table table-sm table-bordered w-100">
-            <thead class="table-light">
-                <tr>
-                    <th>時間</th>
-                    <th>幣種</th>
-                    <th>異動數量</th>
-                    <th>異動後餘額</th>
-                    <th>動作</th>
-                    <th>備註</th>
-                </tr>
-            </thead>
-            <tbody>
-                @* 建議Model裡有Logs：List<UserCurrencyLogVM>，UserCurrencyLogVM欄位如下
-                   - CreatedAt：時間
-                   - CurrencyTypeName：幣種名稱
-                   - Quantity：異動數量
-                   - BalanceAfter：異動後餘額
-                   - Action：動作描述
-                   - Memo：備註 *@
-                @if (Model.Logs != null)
-                {
-                    foreach (var log in Model.Logs)
-                    {
-                        <tr>
-                            <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                            <td>@log.CurrencyTypeName</td>
-                            <td>@log.Quantity</td>
-                            <td>@log.BalanceAfter</td>
-                            <td>@log.Action</td>
-                            <td>@log.Memo</td>
-                        </tr>
-                    }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="6" class="text-center">暫無異動紀錄</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
+
 
 @section Scripts {
     <!-- jQuery (確保先載入) -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
     <!-- DataTables JS -->
-    <script src="~/lib/DataTables/datatables.min.js"></script>
+    <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
     <script>
         $(function() {
             // 主錢包表
@@ -186,16 +140,7 @@
                 table.search(this.value).draw();
             });
 
-            // 異動紀錄表，不開啟搜尋和排序
-            $('#logTable').DataTable({
-                dom: 'rtip',
-                paging: true,
-                pageLength: 10,
-                ordering: false,
-                searching: false,
-                info: false,
-                lengthChange: false
-            });
+          
         });
     </script>
 }
