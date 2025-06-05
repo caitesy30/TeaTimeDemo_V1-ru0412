@@ -56,8 +56,10 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 
             // 5. 計算總點數及換算（**依各幣種兌換率**）
             var total = items.Sum(x => x.Quantity);
-            var convertQty = items.Sum(x => x.ExchangeRate > 0 ? x.Quantity / x.ExchangeRate : 0);
-            // 例：50:1，100點=2元；可依需求調整顯示小數或只取整數
+            // 正確：全部換算成「善時點數」
+            var convertQty = items.Sum(x => x.Quantity * x.ExchangeRate); // 善時點數 *1，公益幣*50
+
+           
 
             // 6. 組合 ViewModel
             var vm = new WalletViewModel
@@ -170,5 +172,135 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return RedirectToAction("ReturnList");
         }
 
+
+        // ==================== 兌換功能專用 ====================
+
+        // =========== 幣換善時點數 步驟一：選擇幣列表 ==============
+        public IActionResult ExchangeList()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // 只顯示「可換善時點數」的幣（ExchangeRate>1，且持有>0）
+            var coins = _unitOfWork.CurrencyType.GetAll()
+                .Where(ct => ct.ExchangeRate > 1)
+                .ToList();
+            var items = coins
+                .Select(ct => new ReturnCoinVM
+                {
+                    CurrencyTypeId = ct.Id,
+                    Name = ct.Name,
+                    IconPath = ct.IconPath,
+                    Quantity = _unitOfWork.UserCurrencyLog.GetAll()
+                                .Where(x => x.UserId == userId && x.CurrencyTypeId == ct.Id)
+                                .Sum(x => x.Quantity)
+                })
+                .Where(x => x.Quantity > 0) // 只顯示有持有的幣
+                .ToList();
+            return View(items); // 對應 ExchangeList.cshtml
+        }
+
+        // =========== 幣換善時點數 步驟二：進入兌換頁 ============
+        [HttpGet]
+        public IActionResult Exchange(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var coin = _unitOfWork.CurrencyType.GetById(id);
+            if (coin == null || coin.ExchangeRate <= 1) return NotFound();
+
+            // 幣數量
+            int coinQty = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == coin.Id)
+                .Sum(x => x.Quantity);
+
+            // 善時點數名稱（ExchangeRate==1）
+            var goodPoint = _unitOfWork.CurrencyType.GetAll().FirstOrDefault(x => x.ExchangeRate == 1);
+            string goodPointName = goodPoint?.Name ?? "善時點數";
+
+            ViewBag.ExchangeRate = coin.ExchangeRate;
+            ViewBag.CoinQty = coinQty;
+            ViewBag.CoinName = coin.Name;
+            ViewBag.GoodPointName = goodPointName;
+
+            var vm = new ReturnCoinVM
+            {
+                CurrencyTypeId = coin.Id,
+                Name = coin.Name,
+                IconPath = coin.IconPath,
+                Quantity = coinQty
+            };
+            return View(vm); // 對應 Exchange.cshtml
+        }
+
+        // =========== 幣換善時點數 步驟三：兌換動作 ============
+        [HttpPost]
+        public IActionResult Exchange(ReturnCoinVM model, int exchangeQty)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // 驗證幣種
+            var coin = _unitOfWork.CurrencyType.GetById(model.CurrencyTypeId);
+            if (coin == null || coin.ExchangeRate <= 1) return View(model);
+
+            // 會員持有幣數量
+            int coinQty = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == coin.Id)
+                .Sum(x => x.Quantity);
+
+            if (exchangeQty < 1 || exchangeQty > coinQty)
+            {
+                ModelState.AddModelError("", $"兌換數量必須介於 1 ~ {coinQty} 枚");
+                ViewBag.ExchangeRate = coin.ExchangeRate;
+                ViewBag.CoinQty = coinQty;
+                ViewBag.CoinName = coin.Name;
+                ViewBag.GoodPointName = "善時點數";
+                return View(model);
+            }
+
+            // 找出善時點數幣種
+            var goodPoint = _unitOfWork.CurrencyType.GetAll().FirstOrDefault(x => x.ExchangeRate == 1);
+            if (goodPoint == null) return View(model);
+
+            // 計算要加的善時點數
+            int addGoodPoint = exchangeQty * coin.ExchangeRate;
+
+            // === 1. 幣 扣除 ===
+            var lastCoinLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == coin.Id)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int oldCoinBalance = lastCoinLog?.BalanceAfter ?? coinQty;
+            int newCoinBalance = oldCoinBalance - exchangeQty;
+            _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = coin.Id,
+                Quantity = -exchangeQty,
+                Action = "幣換善時點數",
+                Memo = $"兌換 {addGoodPoint} 點善時點數",
+                CreatedAt = DateTime.Now,
+                BalanceAfter = newCoinBalance
+            });
+
+            // === 2. 善時點數 增加 ===
+            int goodPointQty = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == goodPoint.Id)
+                .Sum(x => x.Quantity);
+            var lastGPLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == goodPoint.Id)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int oldGPBalance = lastGPLog?.BalanceAfter ?? goodPointQty;
+            int newGPBalance = oldGPBalance + addGoodPoint;
+
+            _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = goodPoint.Id,
+                Quantity = addGoodPoint,
+                Action = "幣換善時點數",
+                Memo = $"由{coin.Name}兌換",
+                CreatedAt = DateTime.Now,
+                BalanceAfter = newGPBalance
+            });
+
+            _unitOfWork.Save();
+            // 成功返回錢包
+            return RedirectToAction("Index");
+        }
     }
 }

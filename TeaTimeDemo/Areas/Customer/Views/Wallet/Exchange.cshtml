@@ -1,0 +1,27 @@
+﻿@model TeaTimeDemo.Models.ViewModels.ReturnCoinVM
+@{
+    ViewData["Title"] = "幣換善時點數";
+    var exchangeRate = (int)ViewBag.ExchangeRate;
+    var coinQty = (int)ViewBag.CoinQty;
+    var coinName = (string)ViewBag.CoinName;
+    var goodPointName = (string)ViewBag.GoodPointName;
+}
+<div class="container mt-5 pt-4">
+    <h5 class="mb-3">兌換 @coinName 為 @goodPointName</h5>
+    <div class="mb-2">
+        <span class="badge bg-info text-dark">兌換比例：1 @coinName = @exchangeRate @goodPointName</span>
+    </div>
+    <div>你目前擁有 <b>@coinQty</b> 枚 @coinName，可兌換 <b>@(coinQty* exchangeRate)</b> 點 @goodPointName</div>
+    <form asp-action="Exchange" method="post" class="mt-4">
+        <input type="hidden" asp-for="CurrencyTypeId" />
+        <input type="hidden" asp-for="Name" />
+        <input type="hidden" asp-for="IconPath" />
+        <div class="mb-3">
+            <label for="exchangeQty" class="form-label">請輸入欲兌換的 @coinName 數量</label>
+            <input type="number" class="form-control" id="exchangeQty" name="exchangeQty" min="1" max="@coinQty" required />
+        </div>
+        <button type="submit" class="btn btn-success w-100">立即兌換善時點數</button>
+        <a asp-action="ExchangeList" class="btn btn-outline-secondary w-100 mt-2">返回</a>
+        <div class="text-danger mt-2">@Html.ValidationSummary(true)</div>
+    </form>
+</div>

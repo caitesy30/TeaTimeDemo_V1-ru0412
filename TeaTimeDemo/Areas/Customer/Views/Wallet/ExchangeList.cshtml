@@ -1,0 +1,22 @@
+﻿@model List<TeaTimeDemo.Models.ViewModels.ReturnCoinVM>
+@{
+    ViewData["Title"] = "選擇要兌換的幣";
+}
+<div class="container mt-5 pt-3">
+    <h5 class="mb-3">請選擇要兌換的幣種</h5>
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-6 col-md-4 mb-4">
+                <div class="card text-center">
+                    <img src="@item.IconPath" class="card-img-top mx-auto" style="width:60px;height:60px;" alt="@item.Name" />
+                    <div class="card-body">
+                        <h6 class="card-title">@item.Name</h6>
+                        <div>目前持有：<span class="fw-bold">@item.Quantity</span></div>
+                        <a asp-action="Exchange" asp-route-id="@item.CurrencyTypeId" class="btn btn-success btn-sm mt-2 w-75">兌換善時點數</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
