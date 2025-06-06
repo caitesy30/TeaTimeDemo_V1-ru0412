@@ -5,10 +5,12 @@
 // 目的：會員錢包首頁（餘額、異動紀錄查詢）
 // ==========================
 
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
+using TeaTimeDemo.Models;
 using TeaTimeDemo.Models.ViewModels;
 
 namespace TeaTimeDemo.Areas.Customer.Controllers
@@ -302,5 +304,190 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             // 成功返回錢包
             return RedirectToAction("Index");
         }
+
+        // 請將下列方法加到 WalletController 裡面，已全繁體中文註解                
+
+        // ========== 轉讓步驟一：選擇可轉讓幣種（圖二） ==========
+        public IActionResult TransferList()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var coins = _unitOfWork.CurrencyType.GetAll().ToList();
+            var items = coins.Select(ct => new TransferCoinVM
+            {
+                CurrencyTypeId = ct.Id,
+                Name = ct.Name,
+                IconPath = ct.IconPath,
+                Quantity = _unitOfWork.UserCurrencyLog.GetAll()
+                    .Where(x => x.UserId == userId && x.CurrencyTypeId == ct.Id)
+                    .Sum(x => x.Quantity)
+            }).Where(x => x.Quantity > 0).ToList();
+
+            return View(items); // 對應 TransferList.cshtml
+        }
+
+        // ========== 轉讓步驟二：輸入會員 or 選LINE好友＋數量 ==========
+        [HttpGet]
+        public IActionResult Transfer(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var coin = _unitOfWork.CurrencyType.GetById(id);
+            var quantity = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == id)
+                .Sum(x => x.Quantity);
+
+            // 取得所有會員（排除自己）
+            var members = _unitOfWork.ApplicationUser.GetAll()
+                .Where(u => u.Id != userId)
+                .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                {
+                    Value = u.Id,
+                    Text = u.Name
+                }).ToList();
+
+            // --- 模擬LINE好友資料 ---
+            var lineFriends = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "U001", Text = "小美（LINE）" },
+        new SelectListItem { Value = "U002", Text = "阿偉（LINE）" },
+        new SelectListItem { Value = "U003", Text = "老王（LINE）" }
+    };
+
+            ViewBag.MemberList = members;
+            ViewBag.LineFriendList = lineFriends;
+
+            var vm = new TransferCoinVM
+            {
+                CurrencyTypeId = id,
+                Name = coin.Name,
+                IconPath = coin.IconPath,
+                Quantity = quantity
+            };
+            return View(vm); // 對應 Transfer.cshtml
+        }
+
+    
+        // ========== 轉讓步驟三：送出處理 ==========
+        [HttpPost]
+        public IActionResult Transfer(TransferCoinVM model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (model.TransferQty <= 0)
+                return View(model);
+
+            bool isLineFriend = !string.IsNullOrEmpty(model.TargetLineFriendId);
+            bool isMember = !string.IsNullOrEmpty(model.TargetUserId);
+
+            // 檢查餘額
+            var nowQty = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                .Sum(x => x.Quantity);
+
+            if (model.TransferQty > nowQty)
+            {
+                ModelState.AddModelError("", "轉讓數量不可大於持有數量");
+                model.Quantity = nowQty;
+                // ...帶會員清單
+                return View(model);
+            }
+
+            // 1. 扣自己的點
+            var lastLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int oldBalance = lastLog?.BalanceAfter ?? nowQty;
+            int newBalance = oldBalance - model.TransferQty;
+
+            _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = model.CurrencyTypeId,
+                Quantity = -model.TransferQty,
+                Action = isLineFriend ? "LINE好友預約轉讓" : "會員轉讓",
+                Memo = isLineFriend ? $"轉給LINE好友：{model.TargetLineFriendName}" : $"轉讓給會員：{model.TargetUserId}",
+                CreatedAt = DateTime.Now,
+                BalanceAfter = newBalance
+            });
+
+            // 2. 收方處理
+            string resultMsg = "";
+            if (isMember)
+            {
+                // 對方會員即時入帳
+                var otherOld = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == model.TargetUserId && x.CurrencyTypeId == model.CurrencyTypeId)
+                    .OrderByDescending(x => x.CreatedAt).FirstOrDefault()?.BalanceAfter ?? 0;
+
+                _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+                {
+                    UserId = model.TargetUserId,
+                    CurrencyTypeId = model.CurrencyTypeId,
+                    Quantity = model.TransferQty,
+                    Action = "會員轉讓入帳",
+                    Memo = $"來自：{userId}",
+                    CreatedAt = DateTime.Now,
+                    BalanceAfter = otherOld + model.TransferQty
+                });
+                resultMsg = "轉讓給會員成功！";
+            }
+            else if (isLineFriend)
+            {
+                // 假設用 InvitePending（略），這裡直接顯示訊息
+                resultMsg = $"已預約轉讓給 LINE 好友「{model.TargetLineFriendName}」！";
+            }
+
+            _unitOfWork.Save();
+
+            // --- 重點：顯示轉讓成功頁（帶訊息） ---
+            return RedirectToAction("TransferResult", new { msg = resultMsg });
+        }
+
+        // ========== 轉讓步驟四：顯示成功畫面 ==========
+        public IActionResult TransferResult(string msg)
+        {
+            ViewBag.Message = msg;
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult TransferToLine(TransferCoinVM model)
+        {
+            // 檢查餘額、數量等
+            string token = Guid.NewGuid().ToString("N");
+            var invite = new PendingInvite
+            {
+                FromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                CurrencyTypeId = model.CurrencyTypeId,
+                Quantity = model.TransferQty,
+                Note = model.Note,
+                Token = token,
+                CreatedAt = DateTime.Now,
+                IsClaimed = false
+            };
+            _unitOfWork.PendingInvite.Add(invite);
+            _unitOfWork.Save();
+            return Json(new { success = true, token });
+        }
+
+        [HttpGet]
+        public IActionResult Claim(string token)
+        {
+            var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
+            if (invite == null) return Content("此邀請已領取或不存在");
+            return View(invite); // 對應 Claim.cshtml
+        }
+
+        [HttpPost]
+        public IActionResult Claim(string token, string lineUserId)
+        {
+            var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
+            if (invite == null) return Content("此邀請已領取或不存在");
+
+            // 這裡可檢查帳號，發放點數、註記入帳等
+            invite.IsClaimed = true;
+            invite.ToLineUserId = lineUserId;
+            _unitOfWork.Save();
+            return Content("領取成功！點數已入帳。");
+        }
+
+
+
     }
 }

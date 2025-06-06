@@ -67,6 +67,7 @@ namespace TeaTimeDemo.DataAccess.Data
         public DbSet<CurrencyType> CurrencyTypes { get; set; }        // 幣種主檔
         public DbSet<UserCurrencyLog> UserCurrencyLogs { get; set; }  // 會員交易紀錄
 
+        public DbSet<PendingInvite> PendingInvites { get; set; } // 待領取的邀請
 
         /// <summary>
         /// 覆寫 SaveChanges 方法，實現軟刪除邏輯

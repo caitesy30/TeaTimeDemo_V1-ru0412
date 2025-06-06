@@ -1,0 +1,26 @@
+﻿@model TeaTimeDemo.Models.PendingInvite
+@{
+    ViewData["Title"] = "LINE 領取點數";
+}
+<div class="container mt-4 text-center">
+    <h4>領取好友點數邀請</h4>
+    <p>幣種：@Model.CurrencyTypeId<br />數量：@Model.Quantity<br />註記：@Model.Note</p>
+    <button id="claimBtn" class="btn btn-success">領取點數</button>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<script>
+    liff.init({ liffId: "你的LIFF_ID" }).then(() => {
+        liff.getProfile().then(profile => {
+            $('#claimBtn').data('lineid', profile.userId);
+        });
+    });
+    $('#claimBtn').on('click', function(){
+        var token = '@Model.Token';
+        var lineUserId = $(this).data('lineid');
+        $.post('/Customer/Wallet/Claim', { token, lineUserId }, function(resp){
+            alert(resp);
+            location.reload();
+        });
+    });
+</script>

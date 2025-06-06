@@ -62,6 +62,7 @@ namespace TeaTimeDemo.DataAccess.Repository.IRepository
 
 
 
+
         // 加上這行，把內部的 ApplicationDbContext 暴露出去
         ApplicationDbContext DbContext { get; }
 
@@ -77,7 +78,7 @@ namespace TeaTimeDemo.DataAccess.Repository.IRepository
         IRepository<CurrencyType> CurrencyType { get; }
         IRepository<UserCurrencyLog> UserCurrencyLog { get; }
 
-
+        IRepository<PendingInvite> PendingInvite { get; }
 
         void Save();
         // void DeleteEntity();

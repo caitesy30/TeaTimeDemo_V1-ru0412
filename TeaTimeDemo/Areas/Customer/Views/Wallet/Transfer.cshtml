@@ -1,0 +1,168 @@
+﻿@model TeaTimeDemo.Models.ViewModels.TransferCoinVM
+@{
+    ViewData["Title"] = "點數轉讓";
+}
+<div class="container mt-4" style="max-width:420px">
+    <h4 class="mb-3">點數轉讓</h4>
+    <div class="text-center mb-3">
+        <img src="@Model.IconPath" width="48" /><br />
+        <span class="h5">@Model.Name</span><br />
+        <span class="text-muted">擁有數量：@Model.Quantity</span>
+    </div>
+    <form asp-action="Transfer" method="post" id="transferForm">
+        <input type="hidden" name="CurrencyTypeId" value="@Model.CurrencyTypeId" />
+        <input type="hidden" name="Name" value="@Model.Name" />
+        <input type="hidden" name="IconPath" value="@Model.IconPath" />
+
+        <div class="mb-3">
+            <label class="form-label">選擇轉讓對象：</label>
+            <ul class="nav nav-tabs" id="transferTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-member" data-bs-toggle="tab" data-bs-target="#tab-content-member" type="button" role="tab">會員</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-line" data-bs-toggle="tab" data-bs-target="#tab-content-line" type="button" role="tab">LINE 好友</button>
+                </li>
+            </ul>
+            <div class="tab-content pt-3">
+                <!-- 會員選單 -->
+                <div class="tab-pane fade show active" id="tab-content-member" role="tabpanel">
+                    <select class="form-select" name="TargetUserId" id="TargetUserId">
+                        <option value="">請選擇會員</option>
+                        @foreach (var u in ViewBag.MemberList as List<SelectListItem>)
+                        {
+                            <option value="@u.Value">@u.Text</option>
+                        }
+                    </select>
+                </div>
+                <!-- LINE 好友輸入 -->
+                <!-- Tab: LINE 好友 -->
+                <div class="tab-pane fade" id="tab-content-line" role="tabpanel">
+                    <div class="row mt-2">
+                        @foreach (var lf in ViewBag.LineFriendList as List<SelectListItem>)
+                        {
+                            <div class="col-4 text-center mb-2">
+                                <button type="button" class="btn btn-outline-success line-friend-btn"
+                                        data-id="@lf.Value" data-name="@lf.Text">
+                                    <img src="~/images/line-friend.png" width="36" /><br />
+                                    <small>@lf.Text</small>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                    <input type="hidden" name="TargetLineFriendId" id="TargetLineFriendId" />
+                    <input type="hidden" name="TargetLineFriendName" id="TargetLineFriendName" />
+                </div>
+
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="TransferQty" class="form-label">轉讓數量：</label>
+            <input type="number" class="form-control" name="TransferQty" id="TransferQty" min="1" max="@Model.Quantity" required />
+        </div>
+
+
+        <!-- 新增註記欄位在這裡 -->
+        <div class="mb-3">
+            <label for="Note" class="form-label">註記（選填）：</label>
+            <input type="text" class="form-control" name="Note" id="Note" maxlength="100" />
+        </div>
+
+
+        <button type="submit" class="btn btn-success w-100">送出</button>
+
+        <!-- 轉讓按鈕後加上分享給 LINE 好友的按鈕 -->
+        <button type="button" id="shareLineInviteBtn" class="btn btn-success mt-2 w-100">LINE 好友分享邀請</button>
+        <input type="hidden" id="pendingToken" value="" />
+
+
+    </form>
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mt-3">@Html.ValidationSummary()</div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <script>
+        // tab 切換 required 屬性
+        $(function () {
+            $('#transferTab button').on('shown.bs.tab', function (e) {
+                let tab = $(e.target).attr('id');
+                if (tab === 'tab-member') {
+                    $('#TargetUserId').attr('required', true);
+                    $('#TargetLineFriendName').removeAttr('required');
+                    $('#shareLineInviteBtn').hide();
+                } else {
+                    $('#TargetLineFriendName').attr('required', true);
+                    $('#TargetUserId').removeAttr('required');
+                    $('#shareLineInviteBtn').show(); // 只有 LINE 好友頁顯示
+                }
+            });
+
+            // 檢查送出欄位
+            $('#transferForm').on('submit', function (e) {
+                let activeTab = $('#transferTab .nav-link.active').attr('id');
+                if (activeTab === 'tab-member' && !$('#TargetUserId').val()) {
+                    alert('請選擇會員');
+                    e.preventDefault();
+                }
+                if (activeTab === 'tab-line' && !$('#TargetLineFriendName').val()) {
+                    alert('請選擇LINE好友');
+                    e.preventDefault();
+                }
+            });
+
+            $('.line-friend-btn').on('click', function () {
+                $('#TargetLineFriendId').val($(this).data('id'));
+                $('#TargetLineFriendName').val($(this).data('name'));
+                $('.line-friend-btn').removeClass('active');
+                $(this).addClass('active');
+                Swal.fire('已選擇：' + $(this).data('name'), '', 'success');
+            });
+
+            // ★ LINE 好友分享邀請功能
+            $('#shareLineInviteBtn').on('click', function () {
+                // 取得資料
+                let currencyTypeId = $('[name="CurrencyTypeId"]').val();
+                let transferQty = $('[name="TransferQty"]').val();
+                let note = $('[name="Note"]').val() || '';
+                let name = $('[name="Name"]').val();
+
+                // 防呆：需選擇好友與數量
+                if (!$('#TargetLineFriendId').val()) {
+                    alert('請先選擇LINE好友');
+                    return;
+                }
+                if (!transferQty || transferQty <= 0) {
+                    alert('請輸入正確的轉讓數量');
+                    return;
+                }
+
+                // AJAX產生token
+                $.post('/Customer/Wallet/TransferToLine', {
+                    CurrencyTypeId: currencyTypeId,
+                    TransferQty: transferQty,
+                    Note: note,
+                    Name: name
+                }, function (res) {
+                    if (res.success) {
+                        $('#pendingToken').val(res.token);
+                        // LIFF 分享
+                        liff.init({ liffId: "你的LIFF_ID" }).then(() => {
+                            const url = `https://你的網站/Wallet/Claim?token=${res.token}`;
+                            liff.shareTargetPicker([{
+                                type: "text",
+                                text: `我想轉讓${transferQty}枚「${name}」給你，快來領取吧！\n註記：${note}\n點這裡領取👉 ${url}`
+                            }]);
+                        });
+                    } else {
+                        alert('產生邀請失敗');
+                    }
+                });
+            });
+        });
+    </script>
+}
