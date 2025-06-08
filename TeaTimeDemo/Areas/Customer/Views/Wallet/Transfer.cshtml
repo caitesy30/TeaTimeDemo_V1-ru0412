@@ -14,6 +14,7 @@
         <input type="hidden" name="Name" value="@Model.Name" />
         <input type="hidden" name="IconPath" value="@Model.IconPath" />
 
+        <!-- 對象選擇 Tab -->
         <div class="mb-3">
             <label class="form-label">選擇轉讓對象：</label>
             <ul class="nav nav-tabs" id="transferTab" role="tablist">
@@ -25,7 +26,6 @@
                 </li>
             </ul>
             <div class="tab-content pt-3">
-                <!-- 會員選單 -->
                 <div class="tab-pane fade show active" id="tab-content-member" role="tabpanel">
                     <select class="form-select" name="TargetUserId" id="TargetUserId">
                         <option value="">請選擇會員</option>
@@ -35,25 +35,9 @@
                         }
                     </select>
                 </div>
-                <!-- LINE 好友輸入 -->
-                <!-- Tab: LINE 好友 -->
                 <div class="tab-pane fade" id="tab-content-line" role="tabpanel">
-                    <div class="row mt-2">
-                        @foreach (var lf in ViewBag.LineFriendList as List<SelectListItem>)
-                        {
-                            <div class="col-4 text-center mb-2">
-                                <button type="button" class="btn btn-outline-success line-friend-btn"
-                                        data-id="@lf.Value" data-name="@lf.Text">
-                                    <img src="~/images/line-friend.png" width="36" /><br />
-                                    <small>@lf.Text</small>
-                                </button>
-                            </div>
-                        }
-                    </div>
-                    <input type="hidden" name="TargetLineFriendId" id="TargetLineFriendId" />
-                    <input type="hidden" name="TargetLineFriendName" id="TargetLineFriendName" />
+                    <div class="alert alert-info">點選下方「LINE好友真實分享邀請」按鈕</div>
                 </div>
-
             </div>
         </div>
 
@@ -62,21 +46,15 @@
             <input type="number" class="form-control" name="TransferQty" id="TransferQty" min="1" max="@Model.Quantity" required />
         </div>
 
-
-        <!-- 新增註記欄位在這裡 -->
         <div class="mb-3">
             <label for="Note" class="form-label">註記（選填）：</label>
             <input type="text" class="form-control" name="Note" id="Note" maxlength="100" />
         </div>
 
-
-        <button type="submit" class="btn btn-success w-100">送出</button>
-
-        <!-- 轉讓按鈕後加上分享給 LINE 好友的按鈕 -->
-        <button type="button" id="shareLineInviteBtn" class="btn btn-success mt-2 w-100">LINE 好友分享邀請</button>
+        <!-- 兩種按鈕都要放，但互斥顯示 -->
+        <button type="submit" class="btn btn-success w-100" id="submitMemberBtn">送出（內部會員）</button>
+        <button type="button" id="shareLineInviteBtn" class="btn btn-success mt-2 w-100" style="display:none;">LINE 好友真實分享邀請</button>
         <input type="hidden" id="pendingToken" value="" />
-
-
     </form>
     @if (!ViewData.ModelState.IsValid)
     {
@@ -87,55 +65,43 @@
 @section Scripts {
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
-        // tab 切換 required 屬性
         $(function () {
+            // Tab切換時切換按鈕顯示
             $('#transferTab button').on('shown.bs.tab', function (e) {
                 let tab = $(e.target).attr('id');
                 if (tab === 'tab-member') {
-                    $('#TargetUserId').attr('required', true);
-                    $('#TargetLineFriendName').removeAttr('required');
+                    $('#submitMemberBtn').show();
                     $('#shareLineInviteBtn').hide();
                 } else {
-                    $('#TargetLineFriendName').attr('required', true);
-                    $('#TargetUserId').removeAttr('required');
-                    $('#shareLineInviteBtn').show(); // 只有 LINE 好友頁顯示
+                    $('#submitMemberBtn').hide();
+                    $('#shareLineInviteBtn').show();
                 }
             });
 
-            // 檢查送出欄位
+            // 內部會員送出檢查
             $('#transferForm').on('submit', function (e) {
                 let activeTab = $('#transferTab .nav-link.active').attr('id');
                 if (activeTab === 'tab-member' && !$('#TargetUserId').val()) {
                     alert('請選擇會員');
                     e.preventDefault();
                 }
-                if (activeTab === 'tab-line' && !$('#TargetLineFriendName').val()) {
-                    alert('請選擇LINE好友');
-                    e.preventDefault();
+                if (activeTab === 'tab-line') {
+                    e.preventDefault(); // 防止送出
                 }
             });
 
-            $('.line-friend-btn').on('click', function () {
-                $('#TargetLineFriendId').val($(this).data('id'));
-                $('#TargetLineFriendName').val($(this).data('name'));
-                $('.line-friend-btn').removeClass('active');
-                $(this).addClass('active');
-                Swal.fire('已選擇：' + $(this).data('name'), '', 'success');
-            });
+            // LINE 好友分享流程
+            $('#shareLineInviteBtn').on('click', function (e) {
+                e.preventDefault(); // 絕對要加！
 
-            // ★ LINE 好友分享邀請功能
-            $('#shareLineInviteBtn').on('click', function () {
-                // 取得資料
+                // 偵錯用alert，確認是否執行到這裡
+                alert('進入LINE好友分享流程');
+
                 let currencyTypeId = $('[name="CurrencyTypeId"]').val();
                 let transferQty = $('[name="TransferQty"]').val();
                 let note = $('[name="Note"]').val() || '';
                 let name = $('[name="Name"]').val();
 
-                // 防呆：需選擇好友與數量
-                if (!$('#TargetLineFriendId').val()) {
-                    alert('請先選擇LINE好友');
-                    return;
-                }
                 if (!transferQty || transferQty <= 0) {
                     alert('請輸入正確的轉讓數量');
                     return;
@@ -148,21 +114,35 @@
                     Note: note,
                     Name: name
                 }, function (res) {
+                    alert('Token回傳: ' + JSON.stringify(res));
                     if (res.success) {
                         $('#pendingToken').val(res.token);
-                        // LIFF 分享
-                        liff.init({ liffId: "你的LIFF_ID" }).then(() => {
-                            const url = `https://你的網站/Wallet/Claim?token=${res.token}`;
+                        // LIFF初始化與好友選擇
+                        liff.init({ liffId: "2007402136-nYVE5PqX" }).then(() => {
+                            alert('LIFF已啟動，即將呼叫好友分享選擇器');
+                            const url = `https://caitesy.com/Wallet/Claim?token=${res.token}`;
                             liff.shareTargetPicker([{
                                 type: "text",
                                 text: `我想轉讓${transferQty}枚「${name}」給你，快來領取吧！\n註記：${note}\n點這裡領取👉 ${url}`
-                            }]);
+                            }])
+                            .then(() => {
+                                alert('分享成功！');
+                            })
+                            .catch(err => {
+                                alert('分享失敗（catch）: ' + err.message);
+                            });
+                        }).catch(err => {
+                            alert('LIFF初始化失敗（catch）: ' + err.message);
                         });
                     } else {
                         alert('產生邀請失敗');
                     }
                 });
             });
+
+            // 預設只顯示內部會員按鈕
+            $('#submitMemberBtn').show();
+            $('#shareLineInviteBtn').hide();
         });
     </script>
 }
