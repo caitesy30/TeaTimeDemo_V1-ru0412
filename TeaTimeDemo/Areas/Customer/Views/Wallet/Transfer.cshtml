@@ -118,7 +118,8 @@
                     if (res.success) {
                         $('#pendingToken').val(res.token);
                         // LIFF初始化與好友選擇
-                        liff.init({ liffId: "2007402136-nYVE5PqX" }).then(() => {
+                        // liff.init({ liffId: "2007402136-nYVE5PqX" }).then(() => {
+                           liff.init({ liffId: "2007537903-r3pknwbl" }).then(() => {
                             alert('LIFF已啟動，即將呼叫好友分享選擇器');
                             const url = `https://caitesy.com/Wallet/Claim?token=${res.token}`;
                             liff.shareTargetPicker([{

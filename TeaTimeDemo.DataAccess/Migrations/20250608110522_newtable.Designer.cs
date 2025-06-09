@@ -12,8 +12,8 @@ using TeaTimeDemo.DataAccess.Data;
 namespace TeaTimeDemo.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250531121122_sortorder")]
-    partial class sortorder
+    [Migration("20250608110522_newtable")]
+    partial class newtable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1081,6 +1081,43 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     b.HasIndex("ApplicationUserId");
 
                     b.ToTable("OrderHeaders");
+                });
+
+            modelBuilder.Entity("TeaTimeDemo.Models.PendingInvite", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrencyTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FromUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsClaimed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ToLineUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Token")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PendingInvites");
                 });
 
             modelBuilder.Entity("TeaTimeDemo.Models.Point", b =>

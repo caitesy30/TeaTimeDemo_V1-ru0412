@@ -11,7 +11,7 @@
 <head class="no-print">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - TeaTimeDemo</title>
+    <title>@ViewData["Title"] - 路由共享</title>
 
     <!-- Bootstrap and site CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" asp-append-version="true" />
@@ -119,7 +119,7 @@
 
             <div class="container-fluid">
 
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-i18n="Notes 自動化">我的錢包</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">路由共享</a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -129,6 +129,10 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <!-- 左側導覽連結 -->
                     <ul class="navbar-nav flex-grow-1 ">
+                            <!-- 填寫問卷連結 -->
+                        @* <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="Index" data-i18n="填寫問卷">填寫問卷</a>
+                        </li> *@
                         <!-- 首頁連結 -->
                         @* <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="Customer" asp-controller="Home" asp-action="Index" data-i18n="首頁">首頁</a>

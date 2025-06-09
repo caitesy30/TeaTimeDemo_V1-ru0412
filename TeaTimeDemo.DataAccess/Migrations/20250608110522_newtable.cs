@@ -117,7 +117,8 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     IssuedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ExchangeRate = table.Column<int>(type: "int", nullable: false),
-                    IconPath = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    IconPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SortOrder = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -200,6 +201,26 @@ namespace TeaTimeDemo.DataAccess.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MtNumAnswereds", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PendingInvites",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FromUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Token = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CurrencyTypeId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    Note = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsClaimed = table.Column<bool>(type: "bit", nullable: false),
+                    ToLineUserId = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PendingInvites", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -1306,6 +1327,9 @@ namespace TeaTimeDemo.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrderDetails");
+
+            migrationBuilder.DropTable(
+                name: "PendingInvites");
 
             migrationBuilder.DropTable(
                 name: "QuestionImages");
