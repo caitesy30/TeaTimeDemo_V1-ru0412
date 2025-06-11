@@ -24,46 +24,78 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             _unitOfWork = unitOfWork;
         }
 
+        // ⭐【1. 錢包首頁支援 LIFF 流量，沒登入時也能預覽】⭐
         public IActionResult Index()
         {
-            // 1. 取得目前登入會員ID
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // 判斷是否 LIFF 來源
+            var referer = Request.Headers["Referer"].ToString();
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            bool isLiff = referer.Contains("liff.line.me") || userAgent.Contains("Line");
 
-            // 2. 一次抓下所有幣種，避免重複查詢
-            var coins = _unitOfWork.CurrencyType.GetAll().ToList();
-
-            // 3. 取得所有交易紀錄（最新在前），並組合VM（JOIN查出名稱）
-            var logs = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId)
-                .OrderByDescending(x => x.CreatedAt)
-                .Select(x => new UserCurrencyLogVM
-                {
-                    CreatedAt = x.CreatedAt,
-                    CurrencyTypeName = coins.FirstOrDefault(c => c.Id == x.CurrencyTypeId)?.Name ?? "", // 幣種中文名稱
-                    Quantity = x.Quantity,
-                    BalanceAfter = x.BalanceAfter,
-                    Action = x.Action,
-                    Memo = x.Memo
-                })
-                .ToList();
-
-            // 4. 計算每個幣種持有，並帶入 ExchangeRate
-            var items = coins.Select(ct => new WalletItemViewModel
+            string userId = null;
+            if (!User.Identity.IsAuthenticated)
             {
-                Name = ct.Name,
-                Quantity = _unitOfWork.UserCurrencyLog.GetAll()
-                    .Where(x => x.UserId == userId && x.CurrencyTypeId == ct.Id)
-                    .Sum(x => x.Quantity),
-                ExchangeRate = ct.ExchangeRate   // 兌換率
-            }).ToList();
+                if (isLiff)
+                {
+                    // LIFF 流量來時，允許訪客模式，userId 設 null
+                    // 或：你可以顯示「請先LINE授權」提示
+                    // 或：引導到 LINE Login 頁面（可擴充）
+                    // 這裡預設訪客模式，userId=null，查不到個人資料
+                }
+                else
+                {
+                    // 原本沒登入自動導回登入頁
+                    return RedirectToAction("Login", "Account");
+                }
+            }
+            else
+            {
+                userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            }
 
-            // 5. 計算總點數及換算（**依各幣種兌換率**）
+            // 幣種/異動紀錄查詢
+            var coins = _unitOfWork.CurrencyType.GetAll().ToList();
+            List<UserCurrencyLogVM> logs = new List<UserCurrencyLogVM>();
+            List<WalletItemViewModel> items = new List<WalletItemViewModel>();
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                // 有 userId 才查個人資料
+                logs = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Select(x => new UserCurrencyLogVM
+                    {
+                        CreatedAt = x.CreatedAt,
+                        CurrencyTypeName = coins.FirstOrDefault(c => c.Id == x.CurrencyTypeId)?.Name ?? "",
+                        Quantity = x.Quantity,
+                        BalanceAfter = x.BalanceAfter,
+                        Action = x.Action,
+                        Memo = x.Memo
+                    }).ToList();
+
+                items = coins.Select(ct => new WalletItemViewModel
+                {
+                    Name = ct.Name,
+                    Quantity = _unitOfWork.UserCurrencyLog.GetAll()
+                        .Where(x => x.UserId == userId && x.CurrencyTypeId == ct.Id)
+                        .Sum(x => x.Quantity),
+                    ExchangeRate = ct.ExchangeRate
+                }).ToList();
+            }
+            else
+            {
+                // 訪客或 LIFF 頁面顯示 0，或直接顯示空白資料
+                items = coins.Select(ct => new WalletItemViewModel
+                {
+                    Name = ct.Name,
+                    Quantity = 0,
+                    ExchangeRate = ct.ExchangeRate
+                }).ToList();
+            }
+
             var total = items.Sum(x => x.Quantity);
-            // 正確：全部換算成「善時點數」
-            var convertQty = items.Sum(x => x.Quantity * x.ExchangeRate); // 善時點數 *1，公益幣*50
+            var convertQty = items.Sum(x => x.Quantity * x.ExchangeRate);
 
-           
-
-            // 6. 組合 ViewModel
             var vm = new WalletViewModel
             {
                 Items = items,
@@ -72,7 +104,6 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                 ConvertQuantity = convertQty
             };
 
-            // 7. 回傳 View
             return View(vm);
         }
 
@@ -447,8 +478,13 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public IActionResult TransferToLine(TransferCoinVM model)
         {
+
+      
+
+
             // 檢查餘額、數量等
             string token = Guid.NewGuid().ToString("N");
             var invite = new PendingInvite
@@ -466,26 +502,33 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return Json(new { success = true, token });
         }
 
+        // ========== 支援訪客模式的 Claim 頁 ==========
         [HttpGet]
         public IActionResult Claim(string token)
         {
+            // 只用 token 查資料，不檢查登入狀態
             var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
-            if (invite == null) return Content("此邀請已領取或不存在");
-            return View(invite); // 對應 Claim.cshtml
+            if (invite == null)
+                return Content("此邀請已領取或不存在");
+
+            ViewBag.IsUserLoggedIn = User.Identity.IsAuthenticated; // 可顯示登入提示
+            return View(invite); // 不論登入與否皆可顯示
         }
+
 
         [HttpPost]
         public IActionResult Claim(string token, string lineUserId)
         {
             var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
             if (invite == null) return Content("此邀請已領取或不存在");
+            if (string.IsNullOrEmpty(lineUserId)) return Content("未取得 LINE 用戶，請於 LINE App 中點選連結。");
 
-            // 這裡可檢查帳號，發放點數、註記入帳等
             invite.IsClaimed = true;
             invite.ToLineUserId = lineUserId;
             _unitOfWork.Save();
             return Content("領取成功！點數已入帳。");
         }
+
 
 
 

@@ -196,6 +196,17 @@ app.UseSession();
 app.MapControllerRoute(
     name: "default",
     pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "areaRoute",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+// 加一條短網址自動轉去正確的 area
+app.MapControllerRoute(
+    name: "claimShortcut",
+    pattern: "Wallet/Claim",
+    defaults: new { area = "Customer", controller = "Wallet", action = "Claim" });
+
 app.MapRazorPages();
 app.MapControllers();
 
