@@ -477,15 +477,13 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return View();
         }
 
+
+        // TransferToLine, 貼繁體中文註解
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public IActionResult TransferToLine(TransferCoinVM model)
         {
-
-      
-
-
-            // 檢查餘額、數量等
+            // 檢查餘額等略
             string token = Guid.NewGuid().ToString("N");
             var invite = new PendingInvite
             {
@@ -502,6 +500,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return Json(new { success = true, token });
         }
 
+
         // ========== 支援訪客模式的 Claim 頁 ==========
         [HttpGet]
         public IActionResult Claim(string token)
@@ -515,20 +514,43 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return View(invite); // 不論登入與否皆可顯示
         }
 
-
         [HttpPost]
         public IActionResult Claim(string token, string lineUserId)
         {
             var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
             if (invite == null) return Content("此邀請已領取或不存在");
-            if (string.IsNullOrEmpty(lineUserId)) return Content("未取得 LINE 用戶，請於 LINE App 中點選連結。");
-
+            if (string.IsNullOrEmpty(lineUserId)) return Content("請於LINE內領取");
             invite.IsClaimed = true;
             invite.ToLineUserId = lineUserId;
+            // 這裡可以再補一筆 UserCurrencyLog 入帳
             _unitOfWork.Save();
-            return Content("領取成功！點數已入帳。");
+            return Content("領取成功！");
         }
 
+
+        // 加在 WalletController.cs
+        [HttpGet]
+        public IActionResult LiffEntry(string mode = null, string token = null)
+        {
+            // 如果沒登入，可自動啟動 LINE Login 或顯示提示
+            if (!User.Identity.IsAuthenticated)
+            {
+                // 自動觸發 LINE Login（也可考慮在前端 JS 判斷 LIFF 直接調用 liff.login）
+                return Redirect("/Identity/Account/Login");
+            }
+
+            // 依 mode 跳到正確畫面
+            switch (mode)
+            {
+                case "wallet":
+                default:
+                    return RedirectToAction("Index");
+                case "claim":
+                    return RedirectToAction("Claim", new { token });
+                case "transfer":
+                    return RedirectToAction("TransferList");
+            }
+        }
 
 
 

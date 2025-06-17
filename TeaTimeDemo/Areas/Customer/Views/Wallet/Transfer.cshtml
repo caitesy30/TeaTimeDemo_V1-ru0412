@@ -36,14 +36,12 @@
                     </select>
                 </div>
                 <div class="tab-pane fade" id="tab-content-line" role="tabpanel">
-                    @if ((ViewBag.LineFriendList as List<SelectListItem>)?.Count == 0)
-                    {
-                        <div class="alert alert-warning">目前無可分享的 LINE 好友，請先邀請好友或等待綁定。</div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info">點選下方「LINE好友真實分享邀請」按鈕</div>
-                    }
+                    <div class="alert alert-info">
+                        點選下方「LINE好友真實分享邀請」或「掃描對方收款QR」按鈕
+                    </div>
+                    <button type="button" id="shareLineInviteBtn" class="btn btn-success mt-2 w-100">LINE 好友真實分享邀請</button>
+                    <button type="button" id="scanQrBtn" class="btn btn-secondary mt-2 w-100">掃描對方收款QR</button>
+                    <input type="hidden" id="pendingToken" value="" />
                 </div>
             </div>
         </div>
@@ -58,10 +56,8 @@
             <input type="text" class="form-control" name="Note" id="Note" maxlength="100" />
         </div>
 
-        <!-- 兩種按鈕都要放，但互斥顯示 -->
+        <!-- 只在會員頁顯示 -->
         <button type="submit" class="btn btn-success w-100" id="submitMemberBtn">送出（內部會員）</button>
-        <button type="button" id="shareLineInviteBtn" class="btn btn-success mt-2 w-100" style="display:none;">LINE 好友真實分享邀請</button>
-        <input type="hidden" id="pendingToken" value="" />
     </form>
     @if (!ViewData.ModelState.IsValid)
     {
@@ -74,34 +70,24 @@
     <script>
         $(function () {
 
-                  // 如果沒登入（可用某個後端 ViewBag 判斷或後端下變數）
-        var userLoggedIn = '@User.Identity.IsAuthenticated'.toLowerCase() === 'true';
-        if (!userLoggedIn && typeof liff !== 'undefined') {
-            if (!liff.isLoggedIn()) {
-                liff.login(); // 強制進行 LINE Login
-            } else {
-                liff.getProfile().then(function(profile) {
-                    // 把 LINE 的 userId 傳給後端自動綁定登入
-                    // 這裡可以設計一個 endpoint, 例如 /Customer/Wallet/LiffAutoLogin
-                    $.post('/Customer/Wallet/LiffAutoLogin', { lineUserId: profile.userId }, function(){
-                        location.reload();
-                    });
-                });
-            }
-        }
-
-
             // Tab切換時切換按鈕顯示
             $('#transferTab button').on('shown.bs.tab', function (e) {
                 let tab = $(e.target).attr('id');
                 if (tab === 'tab-member') {
                     $('#submitMemberBtn').show();
                     $('#shareLineInviteBtn').hide();
+                    $('#scanQrBtn').hide();
                 } else {
                     $('#submitMemberBtn').hide();
                     $('#shareLineInviteBtn').show();
+                    $('#scanQrBtn').show();
                 }
             });
+
+            // 預設會員tab顯示
+            $('#submitMemberBtn').show();
+            $('#shareLineInviteBtn').hide();
+            $('#scanQrBtn').hide();
 
             // 內部會員送出檢查
             $('#transferForm').on('submit', function (e) {
@@ -115,15 +101,9 @@
                 }
             });
 
-            // 先從 <form> 取得防偽 Token
-            const antiToken = $('input[name="__RequestVerificationToken"]').val();
-
-            // LINE 好友分享流程
-         $('#shareLineInviteBtn').off('click').on('click', function (e) {
-                e.preventDefault(); // 絕對要加！
-
-                // 偵錯用alert，確認是否執行到這裡
-                alert('進入LINE好友分享流程');
+            // =========== LINE 好友分享邀請 ===========
+            $('#shareLineInviteBtn').off('click').on('click', function (e) {
+                e.preventDefault();
 
                 let currencyTypeId = $('[name="CurrencyTypeId"]').val();
                 let transferQty = $('[name="TransferQty"]').val();
@@ -135,59 +115,65 @@
                     return;
                 }
 
-                                // 改用 $.ajax，並傳送防偽 Token、加上除錯 log
-                       $.ajax({
-                           url: '/Customer/Wallet/TransferToLine',
-                           type: 'POST',
-                           data: {
-                           
-                               CurrencyTypeId: currencyTypeId,
-                               TransferQty: transferQty,
-                               Note: note,
-                               Name: name
-                           },
-                           success: function (res) {
-                           alert('TransferToLine 成功！' + JSON.stringify(res));
-                               // if (res && res.success) {
-                                   $('#pendingToken').val(res.token);
-                                   // LIFF 初始化與分享
-                                   liff.init({ liffId: "2007537903-r3pknwbl" })
-                                   .then(() => {
-                                       alert('LIFF 初始化成功！');
-                                       const url = `https://caitesy.com/Customer/Wallet/Claim?token=${res.token}`;
-                                       return liff.shareTargetPicker([{
-                                           type: "text",
-                                           text: `我想轉讓${transferQty}枚「${name}」給你，快來領取吧！\n註記：${note}\n點這裡領取👉 ${url}`
-                                       }]);
-                                   })
-                                   .then(() => {
-                                       // 分享成功後跳轉結果頁
-                                       window.location.href = '/Customer/Wallet/TransferResult?msg=' +
-                                           encodeURIComponent('已預約轉讓給LINE好友，等對方領取後才會扣點！');
-                                   })
-                                   .catch(err => {
-                                       alert('LIFF 分享或初始化失敗：' + err.message);
-                                   });
-                               // } else {
-                                   // alert('產生邀請失敗，請檢查 Console.log');
-                               // }
-                           },
-                           error: function (xhr, status, error) {
-                               console.error('AJAX 呼叫錯誤：', status, error, xhr.responseText);
-                               alert('伺服器錯誤，無法產生邀請');
-                           }
-                       });
+                // AJAX產生邀請token
+                $.ajax({
+                    url: '/Customer/Wallet/TransferToLine',
+                    type: 'POST',
+                    data: {
+                        CurrencyTypeId: currencyTypeId,
+                        TransferQty: transferQty,
+                        Note: note,
+                        Name: name
+                    },
+                    success: function (res) {
+                        if (res && res.token) {
+                            // LIFF初始化，呼叫好友分享
+                            liff.init({ liffId: "2007537903-r3pknwbl" })
+                                .then(() => {
+                                    const url = `https://caitesy.com/Customer/Wallet/Claim?token=${res.token}`;
+                                    return liff.shareTargetPicker([{
+                                        type: "text",
+                                        text: `我想轉讓${transferQty}枚「${name}」給你，快來領取吧！\n註記：${note}\n點這裡領取👉 ${url}`
+                                    }]);
+                                })
+                                .then(() => {
+                                    // 分享成功後跳轉
+                                    window.location.href = '/Customer/Wallet/TransferResult?msg=' +
+                                        encodeURIComponent('已預約轉讓給LINE好友，等對方領取後才會扣點！');
+                                })
+                                .catch(err => {
+                                    alert('LIFF 分享或初始化失敗：' + err.message);
+                                });
+                        } else {
+                            alert('產生邀請失敗，請稍後重試');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('伺服器錯誤，無法產生邀請');
+                    }
                 });
+            });
 
-
-                    // 預設只顯示內部會員按鈕
-            $('#submitMemberBtn').show();
-            $('#shareLineInviteBtn').hide();
-
+            // =========== 掃描對方收款QR ===========
+            $('#scanQrBtn').off('click').on('click', function () {
+                liff.init({ liffId: "2007537903-r3pknwbl" })
+                    .then(() => {
+                        return liff.scanCode();
+                    })
+                    .then(result => {
+                        // result.value = QR內容（你設計的token或userId）
+                        if (result && result.value) {
+                            // 自動帶入頁面或送出
+                            window.location.href = `/Customer/Wallet/Transfer?token=${result.value}`;
+                        } else {
+                            alert('未掃到有效QR碼');
+                        }
+                    })
+                    .catch(err => {
+                        alert('掃描失敗，請用LINE APP操作');
+                    });
+            });
 
         });
-
-        
-        
     </script>
 }

@@ -112,6 +112,66 @@
 
 </head>
 
+<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<script>
+    // 💡 你的LIFF ID（根據頁面換成對應的）
+    const liffId = "2007537903-5B6y1N70";
+
+    // 判斷是不是在 LIFF 內
+    function isLiff() {
+        return navigator.userAgent.includes("Line");
+    }
+
+    (async function () {
+        if (isLiff()) {
+            // ====== 1. LIFF SDK 初始化 ======
+            await liff.init({ liffId });
+
+            // ====== 2. 如果沒登入，直接走 LIFF Login 流程 ======
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return; // 等登入回來再繼續
+            }
+
+            // ====== 3. 已登入，取 LINE Profile（這裡就可以做你要的自動填表/自動顯示）======
+            try {
+                const profile = await liff.getProfile();
+
+                // 取到資料可以直接印出來
+                // console.log(profile);
+
+                // ==== 你可以自動把資料填到表單隱藏欄位 ====
+                // 假設你有這些欄位 <input type="hidden" id="lineUserId" name="lineUserId">
+                if (document.getElementById('lineUserId')) {
+                    document.getElementById('lineUserId').value = profile.userId;
+                }
+                if (document.getElementById('lineDisplayName')) {
+                    document.getElementById('lineDisplayName').value = profile.displayName;
+                }
+                if (document.getElementById('linePictureUrl')) {
+                    document.getElementById('linePictureUrl').value = profile.pictureUrl;
+                }
+
+                // ==== 也可以顯示在畫面上，例如打招呼 ====
+                if (document.getElementById('helloLineUser')) {
+                    document.getElementById('helloLineUser').innerText =
+                        `歡迎回來，${profile.displayName}！`;
+                }
+
+                // 這裡想做什麼都可以自由加！例如自動送出表單/取得會員資料/改UI…
+            } catch (err) {
+                alert('取得 LINE 資料失敗，請重試。' + (err.message || err));
+            }
+
+        } else {
+            // 非 LINE LIFF 內，視情境處理（一般站內帳號登入流程）
+            // window.location.href = '/Identity/Account/Login';
+        }
+    })();
+</script>
+
+
+
 <body>
     <header class="no-print">   
         <!-- 導覽列開始 -->
@@ -284,6 +344,20 @@
         </nav>
     </header>
 
+    <!-- ====================== LINE LIFF 用戶資料區塊 ======================= -->
+<div id="lineUserSection" class="text-center mb-4" style="display:none;">
+    <!-- 大頭貼圖片 -->
+    <img id="linePictureImg" src="" alt="LINE頭像" width="64" height="64" class="rounded-circle mb-2" style="object-fit:cover;border:2px solid #6cf;" />
+    <!-- 歡迎詞 -->
+    <div id="helloLineUser" class="mb-2" style="font-weight:bold;font-size:1.15rem;color:#1a936f;"></div>
+</div>
+
+<!-- LIFF自動填值的隱藏欄位 -->
+<input type="hidden" id="lineUserId" name="lineUserId" />
+<input type="hidden" id="lineDisplayName" name="lineDisplayName" />
+<input type="hidden" id="linePictureUrl" name="linePictureUrl" />
+
+
     <div class="container">
         <main role="main" class="pb-3">    
 
@@ -316,6 +390,7 @@
     <script src="~/lib/build/toastr.min.js" asp-append-version="true"></script>
     <script src="~/js/querySelection.js" asp-append-version="true"></script>
 
+  
 
     <!--i18next-->
      @* 
@@ -327,5 +402,48 @@
     *@
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    @section Scripts {
+    <!-- 你原本的 JS ... -->
+   <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<script>
+    // 1. 換成你自己的 liffId
+    const liffId = "2007537903-5B6y1N70";
+    function isLiff() {
+        return navigator.userAgent.includes("Line");
+    }
+
+    (async function () {
+        if (isLiff()) {
+            await liff.init({ liffId });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+            // ===== 取得 LINE Profile，帶進表單、顯示大頭貼、名稱歡迎詞 =====
+            try {
+                const profile = await liff.getProfile();
+                // 填進隱藏欄位
+                if (document.getElementById('lineUserId')) document.getElementById('lineUserId').value = profile.userId;
+                if (document.getElementById('lineDisplayName')) document.getElementById('lineDisplayName').value = profile.displayName;
+                if (document.getElementById('linePictureUrl')) document.getElementById('linePictureUrl').value = profile.pictureUrl;
+                // 顯示歡迎詞
+                if (document.getElementById('helloLineUser')) document.getElementById('helloLineUser').innerText = `歡迎回來，${profile.displayName}！`;
+                // 顯示大頭貼
+                if (document.getElementById('linePictureImg') && profile.pictureUrl) {
+                    document.getElementById('linePictureImg').src = profile.pictureUrl;
+                }
+                // 顯示整個用戶區塊
+                document.getElementById('lineUserSection').style.display = '';
+            } catch (err) {
+                alert('取得 LINE 資料失敗，請重試。' + (err.message || err));
+            }
+        }
+    })();
+</script>
+
+}
+
+
 </body>
 </html>

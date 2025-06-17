@@ -1,38 +1,21 @@
 ﻿@model TeaTimeDemo.Models.PendingInvite
-@{
-    ViewData["Title"] = "領取轉讓";
-    var isUserLoggedIn = ViewBag.IsUserLoggedIn as bool? ?? false;
-}
-<div class="container mt-4 text-center">
-    <h4>點數領取邀請</h4>
-    <p>你被邀請領取 <span class="fw-bold text-primary">@Model.Quantity</span> 枚 <span class="fw-bold">@Model.CurrencyTypeId</span></p>
-    <p>註記：@Model.Note</p>
-    <form id="claimForm" method="post">
-        <input type="hidden" name="token" value="@Model.Token" />
-        <input type="hidden" name="lineUserId" id="lineUserId" value="" />
-        <button type="submit" class="btn btn-success w-100">領取</button>
-    </form>
-    @if (!isUserLoggedIn)
-    {
-        <div class="alert alert-info mt-3">
-            若要將點數歸戶會員，請先登入系統！否則僅以 LINE ID 記錄領取。
-        </div>
-    }
-</div>
+<form id="claimForm" method="post">
+    <input type="hidden" name="token" value="@Model.Token" />
+    <input type="hidden" name="lineUserId" id="lineUserId" value="" />
+    <button type="submit">領取</button>
+</form>
+
 @section Scripts {
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
-        // 支援 LIFF，取得 lineUserId 自動帶入後端
-        liff.init({ liffId: "2007537903-r3pknwbl" }).then(() => {
+        liff.init({ liffId: "2007537903-5B6y1N70" }).then(() => {
             return liff.getProfile();
         }).then(profile => {
             $('#lineUserId').val(profile.userId);
         });
-
-        // 表單送出時必帶 lineUserId
         $('#claimForm').on('submit', function(e) {
             if (!$('#lineUserId').val()) {
-                alert('取得 LINE 身份失敗，請於 LINE App 中操作。');
+                alert('請用LINE開啟');
                 e.preventDefault();
             }
         });
