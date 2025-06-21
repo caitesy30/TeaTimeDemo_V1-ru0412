@@ -342,6 +342,11 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         public IActionResult TransferList()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                // 換成專屬 LIFF 登入入口，登入後自動回 TransferList
+                return Redirect($"/Customer/LiffAuthEntry?redirect=/Customer/Wallet/TransferList");
+            }
             var coins = _unitOfWork.CurrencyType.GetAll().ToList();
             var items = coins.Select(ct => new TransferCoinVM
             {
@@ -361,6 +366,10 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         public IActionResult Transfer(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Redirect($"/Customer/LiffAuthEntry?redirect=/Customer/Wallet/Transfer/{id}");
+            }
             var coin = _unitOfWork.CurrencyType.GetById(id);
             var quantity = _unitOfWork.UserCurrencyLog.GetAll()
                 .Where(x => x.UserId == userId && x.CurrencyTypeId == id)
