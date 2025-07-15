@@ -1,5 +1,5 @@
-﻿@* Claim.cshtml *@
-@model TeaTimeDemo.Models.PendingInvite
+﻿@model TeaTimeDemo.Models.PendingInvite
+
 <form id="claimForm" method="post">
     <input type="hidden" name="token" value="@Model.Token" />
     <input type="hidden" name="lineUserId" id="lineUserId" value="" />
@@ -9,14 +9,34 @@
 @section Scripts {
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
-        liff.init({ liffId: "2007537903-r3pknwbl" }).then(() => {
-            return liff.getProfile();
-        }).then(profile => {
-            $('#lineUserId').val(profile.userId);
-        });
-        $('#claimForm').on('submit', function(e) {
+        const ua = navigator.userAgent;
+        if (!/Line/i.test(ua)) {
+            alert("請從 LINE 聊天室內點開連結才能完成領取！");
+        }
+
+        // ⭐⭐ LIFF 初始化 + login 判斷 ⭐⭐
+        liff.init({ liffId: "2007537903-r3pknwbl" })
+            .then(() => {
+                // ⭐⭐ 確保登入（避免非LINE瀏覽器時失敗）⭐⭐
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                return liff.getProfile();
+            })
+            .then(profile => {
+                if (profile) {
+                    $('#lineUserId').val(profile.userId);
+                }
+            })
+            .catch(err => {
+                alert("請使用 LINE 開啟此頁面以完成領取！");
+            });
+
+        // 表單送出時檢查是否有 userId
+        $('#claimForm').on('submit', function (e) {
             if (!$('#lineUserId').val()) {
-                alert('請用LINE開啟');
+                alert('請使用 LINE 開啟此頁面以完成領取！');
                 e.preventDefault();
             }
         });

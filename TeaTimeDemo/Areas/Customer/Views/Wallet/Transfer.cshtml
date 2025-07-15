@@ -1,6 +1,7 @@
 ﻿@model TeaTimeDemo.Models.ViewModels.TransferCoinVM
 @{
     ViewData["Title"] = "點數轉讓";
+
 }
 <div class="container mt-4" style="max-width:420px">
     <h4 class="mb-3">點數轉讓</h4>
@@ -48,8 +49,10 @@
 
         <div class="mb-3">
             <label for="TransferQty" class="form-label">轉讓數量：</label>
-            <input type="number" class="form-control" name="TransferQty" id="TransferQty" min="1" max="@Model.Quantity" required />
+            <input type="number" class="form-control" name="TransferQty" id="TransferQty" min="1" max="@Model.Quantity"
+                   value="@Model.TransferQty" required />
         </div>
+
 
         <div class="mb-3">
             <label for="Note" class="form-label">註記（選填）：</label>
@@ -101,58 +104,61 @@
                 }
             });
 
-            // =========== LINE 好友分享邀請 ===========
-            $('#shareLineInviteBtn').off('click').on('click', function (e) {
-                e.preventDefault();
+           
+               // =========== LINE 好友分享邀請 ===========
+        $('#shareLineInviteBtn').off('click').on('click', function (e) {
+            e.preventDefault();
 
-                let currencyTypeId = $('[name="CurrencyTypeId"]').val();
-                let transferQty = $('[name="TransferQty"]').val();
-                let note = $('[name="Note"]').val() || '';
-                let name = $('[name="Name"]').val();
+            let currencyTypeId = $('[name="CurrencyTypeId"]').val();
+            let transferQty = $('[name="TransferQty"]').val();
+            let note = $('[name="Note"]').val() || '';
+            let name = $('[name="Name"]').val();
 
-                if (!transferQty || transferQty <= 0) {
-                    alert('請輸入正確的轉讓數量');
-                    return;
-                }
+            if (!transferQty || transferQty <= 0) {
+                alert('請輸入正確的轉讓數量');
+                return;
+            }
 
-                // AJAX產生邀請token
-                $.ajax({
-                    url: '/Customer/Wallet/TransferToLine',
-                    type: 'POST',
-                    data: {
-                        CurrencyTypeId: currencyTypeId,
-                        TransferQty: transferQty,
-                        Note: note,
-                        Name: name
-                    },
-                    success: function (res) {
-                        if (res && res.token) {
-                            // LIFF初始化，呼叫好友分享
-                            liff.init({ liffId: "2007537903-r3pknwbl" })
-                                .then(() => {
-                                    const url = `https://caitesy.com/Customer/Wallet/Claim?token=${res.token}`;
-                                    return liff.shareTargetPicker([{
-                                        type: "text",
-                                        text: `我想轉讓${transferQty}枚「${name}」給你，快來領取吧！\n註記：${note}\n點這裡領取👉 ${url}`
-                                    }]);
-                                })
-                                .then(() => {
-                                    // 分享成功後跳轉
-                                    window.location.href = '/Customer/Wallet/TransferResult?msg=' +
-                                        encodeURIComponent('已預約轉讓給LINE好友，等對方領取後才會扣點！');
-                                })
-                                .catch(err => {
-                                    alert('LIFF 分享或初始化失敗：' + err.message);
-                                });
-                        } else {
-                            alert('產生邀請失敗，請稍後重試');
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        alert('伺服器錯誤，無法產生邀請');
+            // AJAX產生邀請token
+            $.ajax({
+                url: '/Customer/Wallet/TransferToLine',
+                type: 'POST',
+                data: {
+                    CurrencyTypeId: currencyTypeId,
+                    TransferQty: transferQty,
+                    Note: note,
+                    Name: name
+                },
+                success: function (res) {
+                    if (res && res.token) {
+                        // ⭐⭐ 使用 LIFF 包裝分享連結 ⭐⭐
+                        const liffEntryUrl = `https://liff.line.me/2007537903-r3pknwbl?mode=claim&token=${res.token}`;
+
+                        liff.init({ liffId: "2007537903-r3pknwbl" })
+                            .then(() => {
+                                return liff.shareTargetPicker([{
+                                    type: "text",
+                                    text: `我想轉讓 ${transferQty} 枚「${name}」給你，快來領取吧！\n註記：${note}\n點這裡領取 👉 ${liffEntryUrl}`
+                                }]);
+                            })
+                            .then(() => {
+                                // 分享成功後跳轉到成功頁
+                                window.location.href = '/Customer/Wallet/TransferResult?msg=' +
+                                    encodeURIComponent('已預約轉讓給LINE好友，等對方領取後才會扣點！');
+                            })
+                            .catch(err => {
+                                alert('LIFF 分享或初始化失敗：' + err.message);
+                            });
+                    } else {
+                        alert('產生邀請失敗，請稍後重試');
                     }
-                });
+                },
+                error: function (xhr, status, error) {
+                    alert('伺服器錯誤，無法產生邀請');
+                }
             });
+        });
+
 
             // =========== 掃描對方收款QR ===========
             $('#scanQrBtn').off('click').on('click', function () {

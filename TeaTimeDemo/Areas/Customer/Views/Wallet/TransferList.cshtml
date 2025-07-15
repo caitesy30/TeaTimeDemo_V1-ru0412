@@ -5,43 +5,47 @@
 <div class="container mt-4">
     <h4>選擇要轉讓的幣種</h4>
     <input type="search" class="form-control mb-3" placeholder="請輸入關鍵字" id="transferCoinSearch" />
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>名稱</th>
-                <th>擁有數量</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < Model.Count; i++)
-            {
-                <tr>
-                    <td>@(i + 1)</td>
-                    <td>
-                        <img src="@Model[i].IconPath" width="24" style="vertical-align:middle" />
-                        @Model[i].Name
-                    </td>
-                    <td>@Model[i].Quantity</td>
-                    <td>
-                        <a asp-action="Transfer" asp-route-id="@Model[i].CurrencyTypeId" class="btn btn-primary btn-sm">轉讓</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="row" id="transferCoinCards">
+        @for (int i = 0; i < Model.Count; i++)
+        {
+            <div class="col-12 mb-3 transfer-coin-card-item">
+                <div class="card shadow-sm p-2">
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="@Model[i].IconPath" width="32" class="me-2" />
+                        <strong>@Model[i].Name</strong>
+                        <span class="badge bg-light text-dark ms-auto">擁有：@Model[i].Quantity</span>
+                    </div>
+                    <div class="d-flex">
+                        <input type="number" min="1" max="@Model[i].Quantity" value="1"
+                               class="form-control me-2" style="max-width:100px;" id="qty_@i" />
+                        <button class="btn btn-primary flex-fill"
+                                onclick="goToTransferPage(@Model[i].CurrencyTypeId, @i)">
+                            轉讓
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 @section Scripts {
     <script>
-        $(function () {
-            $('#transferCoinSearch').on('keyup', function () {
-                let val = this.value.trim();
-                $('tbody tr').each(function () {
-                    let txt = $(this).text();
-                    $(this).toggle(txt.indexOf(val) > -1);
-                });
+        $('#transferCoinSearch').on('keyup', function () {
+            let val = this.value.trim();
+            $('.transfer-coin-card-item').each(function () {
+                let txt = $(this).text();
+                $(this).toggle(txt.indexOf(val) > -1);
             });
         });
+
+        function goToTransferPage(currencyTypeId, idx) {
+            var qty = $('#qty_' + idx).val();
+            if (!qty || qty <= 0) {
+                alert('請輸入轉讓數量');
+                return;
+            }
+            // 跳轉並帶上數量參數
+            window.location.href = '@Url.Action("Transfer", "Wallet")' + '?id=' + currencyTypeId + '&qty=' + qty;
+        }
     </script>
 }

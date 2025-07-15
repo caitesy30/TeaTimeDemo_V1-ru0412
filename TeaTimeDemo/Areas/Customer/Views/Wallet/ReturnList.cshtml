@@ -5,44 +5,46 @@
 <div class="container mt-4">
     <h4>選擇返還點數</h4>
     <input type="search" class="form-control mb-3" placeholder="請輸入關鍵字" id="returnCoinSearch" />
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>名稱</th>
-                <th>擁有數量</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < Model.Count; i++)
-            {
-                <tr>
-                    <td>@(i + 1)</td>
-                    <td>
-                        <img src="@Model[i].IconPath" width="24" style="vertical-align:middle" />
-                        @Model[i].Name
-                    </td>
-                    <td>@Model[i].Quantity</td>
-                    <td>
-                        <a asp-action="Return" asp-route-id="@Model[i].CurrencyTypeId" class="btn btn-primary btn-sm">返還</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="row" id="coinCards">
+        @for (int i = 0; i < Model.Count; i++)
+        {
+            <div class="col-12 mb-3 coin-card-item">
+                <div class="card shadow-sm p-2">
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="@Model[i].IconPath" width="32" class="me-2" />
+                        <strong>@Model[i].Name</strong>
+                        <span class="badge bg-light text-dark ms-auto">擁有：@Model[i].Quantity</span>
+                    </div>
+                    <div class="d-flex">
+                        <input type="number" min="1" max="@Model[i].Quantity" value="1"
+                               class="form-control me-2" style="max-width:100px;" id="qty_@i" />
+                        <button class="btn btn-success flex-fill" onclick="submitReturn(@Model[i].CurrencyTypeId, @i)">返還</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
-
+<form id="returnForm" method="post" action="@Url.Action("Return")" style="display:none;">
+    <input type="hidden" name="CurrencyTypeId" id="formCurrencyTypeId" />
+    <input type="hidden" name="returnQty" id="formReturnQty" />
+</form>
 @section Scripts {
     <script>
-        $(function () {
-            $('#returnCoinSearch').on('keyup', function () {
-                let val = this.value.trim();
-                $('tbody tr').each(function () {
-                    let txt = $(this).text();
-                    $(this).toggle(txt.indexOf(val) > -1);
-                });
+        // 搜尋功能
+        $('#returnCoinSearch').on('keyup', function () {
+            let val = this.value.trim();
+            $('.coin-card-item').each(function () {
+                let txt = $(this).text();
+                $(this).toggle(txt.indexOf(val) > -1);
             });
         });
+        // 返還
+        function submitReturn(currencyTypeId, idx) {
+            var qty = $('#qty_' + idx).val();
+            $('#formCurrencyTypeId').val(currencyTypeId);
+            $('#formReturnQty').val(qty);
+            $('#returnForm').submit();
+        }
     </script>
 }

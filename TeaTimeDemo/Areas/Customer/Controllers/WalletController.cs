@@ -363,7 +363,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 
         // ========== 轉讓步驟二：輸入會員 or 選LINE好友＋數量 ==========
         [HttpGet]
-        public IActionResult Transfer(int id)
+        public IActionResult Transfer(int id, int? qty)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
@@ -384,7 +384,6 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                     Text = u.Name
                 }).ToList();
 
-            // --- 模擬LINE好友資料 ---
             var lineFriends = new List<SelectListItem>
     {
         new SelectListItem { Value = "U001", Text = "小美（LINE）" },
@@ -400,12 +399,14 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                 CurrencyTypeId = id,
                 Name = coin.Name,
                 IconPath = coin.IconPath,
-                Quantity = quantity
+                Quantity = quantity,
+                TransferQty = qty ?? 1 // <<==這一行：如果有 qty，預設填到 ViewModel
             };
             return View(vm); // 對應 Transfer.cshtml
         }
 
-    
+
+
         // ========== 轉讓步驟三：送出處理 ==========
         [HttpPost]
         public IActionResult Transfer(TransferCoinVM model)
@@ -527,14 +528,36 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         public IActionResult Claim(string token, string lineUserId)
         {
             var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
-            if (invite == null) return Content("此邀請已領取或不存在");
-            if (string.IsNullOrEmpty(lineUserId)) return Content("請於LINE內領取");
+            if (invite == null)
+                return Content("此邀請已領取或不存在");
+
+            if (string.IsNullOrEmpty(lineUserId))
+                return Content("請於LINE內領取");
+
+            // ⭐⭐ 寫入領取者 ID
             invite.IsClaimed = true;
             invite.ToLineUserId = lineUserId;
-            // 這裡可以再補一筆 UserCurrencyLog 入帳
+
+            // ⭐⭐ 補一筆 UserCurrencyLog 入帳
+            var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == invite.CurrencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+
+            int balance = last?.BalanceAfter ?? 0;
+            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            {
+                UserId = lineUserId,
+                CurrencyTypeId = invite.CurrencyTypeId,
+                Quantity = invite.Quantity,
+                Action = "LINE好友領取",
+                Memo = $"來自：{invite.FromUserId}",
+                CreatedAt = DateTime.Now,
+                BalanceAfter = balance + invite.Quantity
+            });
+
             _unitOfWork.Save();
             return Content("領取成功！");
         }
+
 
 
         // 加在 WalletController.cs
