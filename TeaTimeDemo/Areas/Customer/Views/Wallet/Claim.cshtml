@@ -1,4 +1,5 @@
-﻿@model TeaTimeDemo.Models.PendingInvite
+﻿@* Claim.cshtml *@
+@model TeaTimeDemo.Models.PendingInvite
 <form id="claimForm" method="post">
     <input type="hidden" name="token" value="@Model.Token" />
     <input type="hidden" name="lineUserId" id="lineUserId" value="" />
@@ -8,7 +9,7 @@
 @section Scripts {
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
-        liff.init({ liffId: "2007537903-5B6y1N70" }).then(() => {
+        liff.init({ liffId: "2007537903-r3pknwbl" }).then(() => {
             return liff.getProfile();
         }).then(profile => {
             $('#lineUserId').val(profile.userId);
