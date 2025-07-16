@@ -12,14 +12,13 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         // LIFF專用登入入口
         public IActionResult Index(string redirect = null)
         {
-            // 如果已登入，直接導向目標頁
             if (User.Identity.IsAuthenticated)
             {
                 return Redirect(redirect ?? "/Customer/Wallet");
             }
-            // 否則顯示 LIFF 登入頁（純JS自動login）
             ViewBag.Redirect = redirect ?? "/Customer/Wallet";
             return View();
         }
+
     }
 }

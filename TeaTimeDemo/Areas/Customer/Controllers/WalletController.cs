@@ -5,6 +5,8 @@
 // 目的：會員錢包首頁（餘額、異動紀錄查詢）
 // ==========================
 
+using AspNet.Security.OAuth.Line;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
@@ -512,21 +514,31 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 
 
         // ========== 支援訪客模式的 Claim 頁 ==========
+        // 加在 Customer/WalletController.cs 內（完整 Copy Paste，含自動會員補建）
         [HttpGet]
         public IActionResult Claim(string token)
         {
-            // 只用 token 查資料，不檢查登入狀態
+            if (!User.Identity.IsAuthenticated)
+            {
+                // 自動 challenge LINE Login
+                var properties = new AuthenticationProperties
+                {
+                    RedirectUri = $"/Customer/Wallet/Claim?token={Uri.EscapeDataString(token)}"
+                };
+                return Challenge(properties, LineAuthenticationDefaults.AuthenticationScheme);
+            }
             var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
             if (invite == null)
-                return Content("此邀請已領取或不存在");
-
-            ViewBag.IsUserLoggedIn = User.Identity.IsAuthenticated; // 可顯示登入提示
-            return View(invite); // 不論登入與否皆可顯示
+                return View("ClaimError");
+            return View(invite);
         }
 
+
+
         [HttpPost]
-        public IActionResult Claim(string token, string lineUserId)
+        public async Task<IActionResult> Claim(string token, string lineUserId)
         {
+            // 1. 取得邀請資料
             var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
             if (invite == null)
                 return Content("此邀請已領取或不存在");
@@ -534,16 +546,31 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             if (string.IsNullOrEmpty(lineUserId))
                 return Content("請於LINE內領取");
 
-            // ⭐⭐ 寫入領取者 ID
+            // 2. 若系統不存在此會員，則自動註冊（快速註冊，僅LINE用戶id）
+            var user = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.Id == lineUserId);
+            if (user == null)
+            {
+                // 若有 UserManager 可用更嚴謹註冊，這裡先簡易方式直接加入
+                user = new TeaTimeDemo.Models.ApplicationUser
+                {
+                    Id = lineUserId,
+                    UserName = lineUserId,
+                    Name = "LINE好友" // 可傳更多資訊如 displayName
+                };
+                _unitOfWork.ApplicationUser.Add(user);
+                _unitOfWork.Save();
+            }
+
+            // 3. 標記已領取
             invite.IsClaimed = true;
             invite.ToLineUserId = lineUserId;
 
-            // ⭐⭐ 補一筆 UserCurrencyLog 入帳
+            // 4. 領取入帳
             var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == invite.CurrencyTypeId)
                 .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
 
             int balance = last?.BalanceAfter ?? 0;
-            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
             {
                 UserId = lineUserId,
                 CurrencyTypeId = invite.CurrencyTypeId,
@@ -557,6 +584,8 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             _unitOfWork.Save();
             return Content("領取成功！");
         }
+
+
 
 
 

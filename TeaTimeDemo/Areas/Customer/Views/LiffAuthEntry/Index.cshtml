@@ -1,30 +1,20 @@
 ﻿@{
-    Layout = null; // 不用主版
-    var redirect = ViewBag.Redirect as string ?? "/Customer/Wallet";
+    Layout = null;
 }
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8" />
-    <title>LINE快速登入中…</title>
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
-</head>
-<body>
-    <div style="padding:2em;text-align:center;">正在透過LINE進行快速登入…</div>
-    <script>
-        // LIFF初始化（這邊填你的liffId，通常跟line login的channel id綁定）
-        liff.init({ liffId: "2007537903-r3pknwbl" }) // 換成你自己的liffId
-            .then(() => {
-                if (!liff.isLoggedIn()) {
-                    liff.login({ redirectUri: window.location.href });
-                } else {
-                    // 已登入就導回目標頁
-                    window.location.href = "@redirect";
-                }
-            })
-            .catch(err => {
-                alert('LIFF初始化失敗：' + err.message);
-            });
-    </script>
-</body>
-</html>
+@{
+    ViewData["Title"] = "LIFF 認證入口";
+    ViewBag.Redirect = Url.Action("Index", "Wallet", new { area = "Customer" });
+}
+<script>alert('【LiffAuthEntry 頁】即將導向 ' + "@ViewBag.Redirect");</script>
+
+<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<script>
+    liff.init({ liffId: "2007537903-r3pknwbl" })
+        .then(() => {
+            if (!liff.isLoggedIn()) liff.login();
+            else {
+                // 登入完自動導向
+                window.location.href = "@ViewBag.Redirect";
+            }
+        });
+</script>

@@ -1,44 +1,71 @@
 ﻿@model TeaTimeDemo.Models.PendingInvite
 
-<form id="claimForm" method="post">
+@{
+    ViewData["Title"] = "LINE 領取";
+}
+<script>
+    alert('【Claim 頁】Token=' + '@Model.Token');
+</script>
+
+<form id="claimForm" method="post" autocomplete="off">
     <input type="hidden" name="token" value="@Model.Token" />
     <input type="hidden" name="lineUserId" id="lineUserId" value="" />
-    <button type="submit">領取</button>
+    <button type="submit" class="btn btn-success w-100 mt-4">領取點數</button>
 </form>
 
-@section Scripts {
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
-    <script>
-        const ua = navigator.userAgent;
-        if (!/Line/i.test(ua)) {
-            alert("請從 LINE 聊天室內點開連結才能完成領取！");
-        }
+<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<script>
+    // 頁面一載入 alert
+    alert("Claim 頁 JS 已經載入");
 
-        // ⭐⭐ LIFF 初始化 + login 判斷 ⭐⭐
-        liff.init({ liffId: "2007537903-r3pknwbl" })
-            .then(() => {
-                // ⭐⭐ 確保登入（避免非LINE瀏覽器時失敗）⭐⭐
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-                return liff.getProfile();
-            })
-            .then(profile => {
-                if (profile) {
-                    $('#lineUserId').val(profile.userId);
-                }
-            })
-            .catch(err => {
-                alert("請使用 LINE 開啟此頁面以完成領取！");
-            });
+    // =============== (1) 優先嘗試用 LIFF 取得真實 LINE UserId ===============
+    const liffId = "2007537903-r3pknwbl";
+    function isLiff() {
+        return navigator.userAgent.includes("Line");
+    }
 
-        // 表單送出時檢查是否有 userId
-        $('#claimForm').on('submit', function (e) {
-            if (!$('#lineUserId').val()) {
-                alert('請使用 LINE 開啟此頁面以完成領取！');
-                e.preventDefault();
+    (async function () {
+        // 若是在 LIFF 環境下自動取得 userId
+        if (isLiff()) {
+            await liff.init({ liffId });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
             }
-        });
-    </script>
-}
+            try {
+                const profile = await liff.getProfile();
+                document.getElementById('lineUserId').value = profile.userId;
+                alert("已取得 LINE UserId: " + profile.userId);
+            } catch (err) {
+                alert("取得 LINE Profile 失敗！" + (err.message || err));
+            }
+        } else {
+            // 如果不是 LINE 環境（測試用），填入假 userId
+            document.getElementById('lineUserId').value = "testUserId";
+            alert("非LINE環境，userId設為 testUserId");
+        }
+    })();
+
+    // =============== (2) 攔截 submit 走 AJAX ===============
+    document.getElementById('claimForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        alert("submit事件被攔截！");
+
+        var token = document.querySelector('input[name="token"]').value;
+        var lineUserId = document.querySelector('input[name="lineUserId"]').value;
+
+        alert("即將發送 token: " + token + "\nuserId: " + lineUserId);
+
+        // AJAX發送
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", window.location.pathname, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () {
+            alert("伺服器回應: " + xhr.responseText);
+            if (xhr.responseText.indexOf("成功") >= 0) {
+                window.location.href = "/Customer/Wallet";
+            }
+        };
+        xhr.send("token=" + encodeURIComponent(token) + "&lineUserId=" + encodeURIComponent(lineUserId));
+    });
+</script>

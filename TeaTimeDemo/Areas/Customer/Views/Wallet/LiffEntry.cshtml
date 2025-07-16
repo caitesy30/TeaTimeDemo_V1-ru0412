@@ -1,15 +1,14 @@
-﻿// Customer/Wallet/LiffEntry.cshtml
-@{
-    Layout = null; // 不用主版面
+﻿@{
+    Layout = null; // 不用主版面，避免多餘資源浪費
 }
 <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 <script>
-    // 1. 讀取token
+    // 讀取token
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
+    const mode = urlParams.get('mode');
 
-    // 2. 自動導向正確頁面
-    if (token) {
+    if (mode === 'claim' && token) {
         window.location.href = `/Customer/Wallet/Claim?token=${encodeURIComponent(token)}`;
     } else {
         window.location.href = '/Customer/Wallet';
