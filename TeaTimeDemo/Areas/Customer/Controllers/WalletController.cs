@@ -40,9 +40,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                 if (isLiff)
                 {
                     // LIFF 流量來時，允許訪客模式，userId 設 null
-                    // 或：你可以顯示「請先LINE授權」提示
-                    // 或：引導到 LINE Login 頁面（可擴充）
-                    // 這裡預設訪客模式，userId=null，查不到個人資料
+                    // 可以提示請先LINE授權，或留空
                 }
                 else
                 {
@@ -53,6 +51,9 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             else
             {
                 userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                // ★★ 新增：自動補發所有待領幣 ★★
+                ClaimPendingCoinsIfAny(userId);
             }
 
             // 幣種/異動紀錄查詢
@@ -108,6 +109,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 
             return View(vm);
         }
+
 
 
         // ============ 返還步驟一：顯示返還幣列表（圖二） ============
@@ -495,22 +497,29 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         [IgnoreAntiforgeryToken]
         public IActionResult TransferToLine(TransferCoinVM model)
         {
-            // 檢查餘額等略
-            string token = Guid.NewGuid().ToString("N");
+            // 產生一組唯一 Token，給好友領取用
+            var token = Guid.NewGuid().ToString("N");
+
+            // PendingInvite 用 token，PendingCoin 一開始不一定有 LineUserId
             var invite = new PendingInvite
             {
                 FromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                Token = token,
                 CurrencyTypeId = model.CurrencyTypeId,
                 Quantity = model.TransferQty,
                 Note = model.Note,
-                Token = token,
                 CreatedAt = DateTime.Now,
                 IsClaimed = false
+                // ToLineUserId 先空白
             };
             _unitOfWork.PendingInvite.Add(invite);
             _unitOfWork.Save();
+
+            // 回傳 token 給前端
             return Json(new { success = true, token });
         }
+
+
 
 
         // ========== 支援訪客模式的 Claim 頁 ==========
@@ -585,7 +594,29 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return Content("領取成功！");
         }
 
-
+        private void ClaimPendingCoinsIfAny(string lineUserId)
+        {
+            var pendings = _unitOfWork.PendingCoin.GetAll(x => x.LineUserId == lineUserId && !x.IsClaimed).ToList();
+            foreach (var pc in pendings)
+            {
+                var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == pc.CurrencyTypeId)
+                    .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                int oldBalance = last?.BalanceAfter ?? 0;
+                _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+                {
+                    UserId = lineUserId,
+                    CurrencyTypeId = pc.CurrencyTypeId,
+                    Quantity = pc.Quantity,
+                    BalanceAfter = oldBalance + pc.Quantity,
+                    Action = "自動補發",
+                    Memo = string.IsNullOrWhiteSpace(pc.Memo) ? "LINE自動領取" : pc.Memo,
+                    CreatedAt = DateTime.Now
+                });
+                pc.IsClaimed = true;
+                pc.ClaimedAt = DateTime.Now;
+            }
+            _unitOfWork.Save();
+        }
 
 
 

@@ -80,6 +80,8 @@ namespace TeaTimeDemo.DataAccess.Repository.IRepository
 
         IRepository<PendingInvite> PendingInvite { get; }
 
+        IRepository<PendingCoin> PendingCoin { get; }
+
         void Save();
         // void DeleteEntity();
 

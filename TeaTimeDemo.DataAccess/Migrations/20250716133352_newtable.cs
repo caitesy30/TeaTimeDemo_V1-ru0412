@@ -204,6 +204,26 @@ namespace TeaTimeDemo.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PendingCoin",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    LineUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CurrencyTypeId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    FromUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Memo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsClaimed = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ClaimedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PendingCoin", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PendingInvites",
                 columns: table => new
                 {
@@ -1327,6 +1347,9 @@ namespace TeaTimeDemo.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrderDetails");
+
+            migrationBuilder.DropTable(
+                name: "PendingCoin");
 
             migrationBuilder.DropTable(
                 name: "PendingInvites");

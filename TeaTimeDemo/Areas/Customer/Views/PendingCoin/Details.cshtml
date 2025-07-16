@@ -1,0 +1,44 @@
+﻿@model TeaTimeDemo.Models.PendingCoin
+@{
+    ViewData["Title"] = "檢視待領幣";
+    Layout = "_Layout";
+}
+<div class="container mt-4" style="max-width:480px">
+    <h3 class="mb-4"><i class="bi bi-eye"></i> 待領幣詳情</h3>
+    <dl class="row">
+        <dt class="col-5">LINE UserId</dt>
+        <dd class="col-7">@Model.LineUserId</dd>
+
+        <dt class="col-5">幣種ID</dt>
+        <dd class="col-7">@Model.CurrencyTypeId</dd>
+
+        <dt class="col-5">數量</dt>
+        <dd class="col-7">@Model.Quantity</dd>
+
+        <dt class="col-5">來源</dt>
+        <dd class="col-7">@Model.FromUserId</dd>
+
+        <dt class="col-5">備註</dt>
+        <dd class="col-7">@Model.Memo</dd>
+
+        <dt class="col-5">已領</dt>
+        <dd class="col-7">
+            @if (Model.IsClaimed)
+            {
+                <span class="badge bg-success">已領取</span>
+            }
+            else
+            {
+
+                <span class="badge bg-warning text-dark">待領取</span>
+            }
+        </dd>
+
+        <dt class="col-5">建立時間</dt>
+        <dd class="col-7">@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</dd>
+
+        <dt class="col-5">領取時間</dt>
+        <dd class="col-7">@((Model.ClaimedAt?.ToString("yyyy/MM/dd HH:mm")) ?? "-")</dd>
+    </dl>
+    <a asp-action="Index" class="btn btn-link w-100">返回管理</a>
+</div>

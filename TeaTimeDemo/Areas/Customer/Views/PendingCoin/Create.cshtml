@@ -1,0 +1,32 @@
+﻿@model TeaTimeDemo.Models.PendingCoin
+@{
+    ViewData["Title"] = "新增待領幣";
+    Layout = "_Layout";
+}
+<div class="container mt-4" style="max-width:480px">
+    <h3 class="mb-4"><i class="bi bi-plus-circle"></i> 新增待領幣</h3>
+    <form asp-action="Create" method="post">
+        <div class="mb-3">
+            <label class="form-label">LINE UserId <span class="text-danger">*</span></label>
+            <input asp-for="LineUserId" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">幣種ID <span class="text-danger">*</span></label>
+            <input asp-for="CurrencyTypeId" class="form-control" required />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">數量 <span class="text-danger">*</span></label>
+            <input asp-for="Quantity" class="form-control" required min="1" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">來源會員（可空白）</label>
+            <input asp-for="FromUserId" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">備註</label>
+            <input asp-for="Memo" class="form-control" maxlength="100" />
+        </div>
+        <button type="submit" class="btn btn-success w-100">新增</button>
+        <a asp-action="Index" class="btn btn-link w-100 mt-2">返回管理</a>
+    </form>
+</div>

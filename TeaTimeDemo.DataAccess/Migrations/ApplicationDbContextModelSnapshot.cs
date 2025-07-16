@@ -1080,6 +1080,43 @@ namespace TeaTimeDemo.DataAccess.Migrations
                     b.ToTable("OrderHeaders");
                 });
 
+            modelBuilder.Entity("TeaTimeDemo.Models.PendingCoin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ClaimedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrencyTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FromUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsClaimed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LineUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Memo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PendingCoin");
+                });
+
             modelBuilder.Entity("TeaTimeDemo.Models.PendingInvite", b =>
                 {
                     b.Property<int>("Id")

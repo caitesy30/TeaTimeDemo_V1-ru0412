@@ -1,0 +1,103 @@
+﻿@model IEnumerable<TeaTimeDemo.Models.PendingCoin>
+@{
+    ViewData["Title"] = "待領幣管理";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3><i class="bi bi-coin"></i> 待領幣管理</h3>
+        <a asp-action="Create" class="btn btn-success"><i class="bi bi-plus-circle"></i> 新增待領幣</a>
+    </div>
+    <input type="search" class="form-control mb-3" placeholder="搜尋LineUserId、幣種或註記" id="pendingCoinSearch" />
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="pendingCoinTable">
+            <thead class="table-light">
+                <tr>
+                    <th>LINE UserId</th>
+                    <th>幣種</th>
+                    <th>數量</th>
+                    <th>來源</th>
+                    <th>備註</th>
+                    <th>已領</th>
+                    <th>建立時間</th>
+                    <th>領取時間</th>
+                    <th style="width:120px">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.LineUserId</td>
+                        <td>@item.CurrencyTypeId</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.FromUserId</td>
+                        <td>@item.Memo</td>
+                        <td>
+                            @if (item.IsClaimed)
+                            {
+                                <span class="badge bg-success">已領取</span>
+                            }
+                            else
+                            {
+
+                                <span class="badge bg-warning text-dark">待領取</span>
+                            }
+                        </td>
+                        <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                        <td>@(item.ClaimedAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete(@item.Id)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- jQuery -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="~/lib/package/dist/sweetalert2.min.js"></script>
+    <!-- Bootstrap Icons: 已於 Layout 引入可省略 -->
+    <script>
+        // 搜尋功能
+        $('#pendingCoinSearch').on('keyup', function () {
+            let val = this.value.trim();
+            $('#pendingCoinTable tbody tr').each(function () {
+                let txt = $(this).text();
+                $(this).toggle(txt.indexOf(val) > -1);
+            });
+        });
+
+        // 刪除彈窗
+        function confirmDelete(id) {
+            Swal.fire({
+                title: '確定要刪除這筆待領幣？',
+                text: "刪除後將無法復原！",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '刪除',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // 用 POST 避免 CSRF
+                    $('<form>', {
+                        method: 'POST',
+                        action: '/Customer/PendingCoin/Delete/' + id
+                    }).appendTo('body').submit();
+                }
+            });
+        }
+    </script>
+}

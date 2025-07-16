@@ -69,6 +69,9 @@ namespace TeaTimeDemo.DataAccess.Data
 
         public DbSet<PendingInvite> PendingInvites { get; set; } // 待領取的邀請
 
+        public DbSet<PendingCoin> PendingCoin { get; set; }
+
+
         /// <summary>
         /// 覆寫 SaveChanges 方法，實現軟刪除邏輯
         /// </summary>

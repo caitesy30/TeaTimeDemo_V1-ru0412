@@ -68,6 +68,8 @@ namespace TeaTimeDemo.DataAccess.Repository
         public IRepository<UserCurrencyLog> UserCurrencyLog { get; private set; }
         public IRepository<PendingInvite> PendingInvite { get; private set; }
 
+        public IRepository<PendingCoin> PendingCoin { get; private set; }
+
         public UnitOfWork(ApplicationDbContext db)
         {
             _db = db;
@@ -115,6 +117,8 @@ namespace TeaTimeDemo.DataAccess.Repository
             UserCurrencyLog = new Repository<UserCurrencyLog>(_db);
 
             PendingInvite = new Repository<PendingInvite>(_db);
+
+            PendingCoin = new Repository<PendingCoin>(_db);
 
         }
         public void Save()
