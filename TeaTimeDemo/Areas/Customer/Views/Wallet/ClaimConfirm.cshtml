@@ -1,0 +1,14 @@
+﻿@model TeaTimeDemo.Models.PendingCoin
+@{
+    ViewData["Title"] = "點數領取人工確認";
+}
+<div class="container mt-5">
+    <h4>點數領取人工確認</h4>
+    <p>這筆待領幣記錄的暱稱為：<b>@Model.NickName</b></p>
+    <p>如果確定是你的，請按下「確認領取」繼續。</p>
+    <form method="post" asp-action="ClaimManual">
+        <input type="hidden" name="pendingCoinId" value="@ViewBag.PendingCoinId" />
+        <button class="btn btn-success">確認領取</button>
+    </form>
+    <a asp-action="Index" class="btn btn-outline-secondary mt-3">返回</a>
+</div>

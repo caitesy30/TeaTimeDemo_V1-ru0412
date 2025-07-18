@@ -10,6 +10,7 @@ namespace TeaTimeDemo.Models.ViewModels
 {
     public class UserCurrencyLogVM
     {
+        public string Name { get; set; }                // 新增會員姓名
         public DateTime CreatedAt { get; set; }         // 異動時間
         public string CurrencyTypeName { get; set; }    // 幣種名稱（由後端查出來）
         public int Quantity { get; set; }               // 異動數量

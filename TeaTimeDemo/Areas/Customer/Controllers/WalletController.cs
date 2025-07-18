@@ -492,32 +492,65 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         }
 
 
-        // TransferToLine, 貼繁體中文註解
+        // Transfer 給 LINE 好友時：預扣一筆，並建立 PendingCoin 等對方領取
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public IActionResult TransferToLine(TransferCoinVM model)
         {
-            // 產生一組唯一 Token，給好友領取用
+            // 取得目前登入者的 UserId
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // 產生一組唯一 Token（可選，但這版本不使用 Token）
             var token = Guid.NewGuid().ToString("N");
 
-            // PendingInvite 用 token，PendingCoin 一開始不一定有 LineUserId
-            var invite = new PendingInvite
+            // === 1. 預扣自己的點數 ===
+            var nowQty = _unitOfWork.UserCurrencyLog.GetAll()
+                .Where(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                .Sum(x => x.Quantity);
+
+            if (model.TransferQty > nowQty)
             {
-                FromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                Token = token,
+                return Json(new { success = false, message = "持有數量不足，無法轉讓" });
+            }
+
+            var lastLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+
+            int oldBalance = lastLog?.BalanceAfter ?? nowQty;
+            int newBalance = oldBalance - model.TransferQty;
+
+            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = model.CurrencyTypeId,
+                Quantity = -model.TransferQty,
+                BalanceAfter = newBalance,
+                Action = "LINE好友預約轉讓",
+                Memo = $"轉讓給LINE好友：{model.TargetLineFriendName}",
+                CreatedAt = DateTime.Now
+            });
+
+            // === 2. 建立 PendingCoin ===
+            var pendingCoin = new PendingCoin
+            {
+                Token = token,                                 // 新增：唯一token
+                NickName = model.TargetLineFriendName ?? "",   // 新增：好友暱稱
+                FromUserId = userId,
                 CurrencyTypeId = model.CurrencyTypeId,
                 Quantity = model.TransferQty,
-                Note = model.Note,
-                CreatedAt = DateTime.Now,
-                IsClaimed = false
-                // ToLineUserId 先空白
+                LineUserId = model.TargetLineFriendId, // 若還沒授權也可先空著
+                Memo = $"轉讓給LINE好友：{model.TargetLineFriendName}",
+                IsClaimed = false,
+                CreatedAt = DateTime.Now
             };
-            _unitOfWork.PendingInvite.Add(invite);
+            _unitOfWork.PendingCoin.Add(pendingCoin);
+
+            // === 3. 儲存 ===
             _unitOfWork.Save();
 
-            // 回傳 token 給前端
             return Json(new { success = true, token });
         }
+
 
 
 
@@ -529,18 +562,54 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         {
             if (!User.Identity.IsAuthenticated)
             {
-                // 自動 challenge LINE Login
                 var properties = new AuthenticationProperties
                 {
                     RedirectUri = $"/Customer/Wallet/Claim?token={Uri.EscapeDataString(token)}"
                 };
                 return Challenge(properties, LineAuthenticationDefaults.AuthenticationScheme);
             }
-            var invite = _unitOfWork.PendingInvite.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
-            if (invite == null)
+            // ⭐ 取得 pendingCoin
+            var pending = _unitOfWork.PendingCoin.GetFirstOrDefault(x => x.Token == token && !x.IsClaimed);
+            if (pending == null)
                 return View("ClaimError");
-            return View(invite);
+
+            // 取得目前登入者LINE UserId
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // === 【1. 自動對應】===
+            if (!string.IsNullOrEmpty(pending.LineUserId) && pending.LineUserId == userId)
+            {
+                // 補發入帳流程
+                var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == pending.CurrencyTypeId)
+                    .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                int oldBalance = last?.BalanceAfter ?? 0;
+
+                _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+                {
+                    UserId = userId,
+                    CurrencyTypeId = pending.CurrencyTypeId,
+                    Quantity = pending.Quantity,
+                    BalanceAfter = oldBalance + pending.Quantity,
+                    Action = "LINE好友領取",
+                    Memo = string.IsNullOrWhiteSpace(pending.Memo) ? "LINE自動領取" : pending.Memo,
+                    CreatedAt = DateTime.Now
+                });
+
+                pending.IsClaimed = true;
+                pending.ClaimedAt = DateTime.Now;
+                _unitOfWork.Save();
+
+                ViewBag.Message = "領取成功！點數已自動入帳。";
+                return View("ClaimResult"); // 你可以自訂成功頁
+            }
+
+            // === 【2. 無法自動，顯示暱稱人工確認】===
+            ViewBag.NickName = pending.NickName;
+            ViewBag.Token = pending.Token;
+            ViewBag.PendingCoinId = pending.Id;
+            return View("ClaimConfirm", pending);
         }
+
 
 
 
@@ -618,6 +687,37 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             _unitOfWork.Save();
         }
 
+        [HttpPost]
+        public IActionResult ClaimManual(int pendingCoinId)
+        {
+            var pending = _unitOfWork.PendingCoin.GetById(pendingCoinId);
+            if (pending == null || pending.IsClaimed)
+                return Content("這筆點數已被領取或不存在！");
+
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // 入帳
+            var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == pending.CurrencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int oldBalance = last?.BalanceAfter ?? 0;
+
+            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = pending.CurrencyTypeId,
+                Quantity = pending.Quantity,
+                BalanceAfter = oldBalance + pending.Quantity,
+                Action = "人工核對領取",
+                Memo = string.IsNullOrWhiteSpace(pending.Memo) ? "人工確認領取" : pending.Memo,
+                CreatedAt = DateTime.Now
+            });
+            pending.IsClaimed = true;
+            pending.ClaimedAt = DateTime.Now;
+            _unitOfWork.Save();
+
+            ViewBag.Message = "領取成功（人工確認）！";
+            return View("ClaimResult");
+        }
 
 
         // 加在 WalletController.cs

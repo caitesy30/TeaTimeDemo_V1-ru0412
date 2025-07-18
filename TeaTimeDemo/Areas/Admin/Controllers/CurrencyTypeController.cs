@@ -66,6 +66,7 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
                 }
                 model.IssuedAt = DateTime.Now;
                 model.UpdatedAt = DateTime.Now;
+                model.RemainQuantity = model.TotalIssued; // 新增時剩餘數量=發行數量
 
                 _unitOfWork.CurrencyType.Add(model);
                 _unitOfWork.Save();
@@ -100,6 +101,7 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
                 dbItem.ExchangeRate = model.ExchangeRate;
                 dbItem.IssuedAt = model.IssuedAt;
                 dbItem.UpdatedAt = DateTime.Now;
+                dbItem.RemainQuantity = model.RemainQuantity; // 編輯時也一起修改
 
                 // 處理圖示檔案
                 if (iconFile != null && iconFile.Length > 0)
@@ -126,16 +128,30 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
         }
 
         // 刪除
+      
         [HttpPost]
         public IActionResult Delete(int id)
         {
             var item = _unitOfWork.CurrencyType.GetById(id);
             if (item == null) return NotFound();
+
+            // 刪除圖示實體檔案
+            if (!string.IsNullOrEmpty(item.IconPath))
+            {
+                string filePath = Path.Combine(_webHostEnv.WebRootPath, item.IconPath.TrimStart('/').Replace("/", "\\"));
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+            }
+
             _unitOfWork.CurrencyType.Remove(item);
             _unitOfWork.Save();
+            TempData["SUCCESS"] = $"已成功刪除幣種：{item.Name}";
             return RedirectToAction(nameof(Index));
         }
 
+ 
 
         // 匯出 Excel（全部欄位）
         public IActionResult ExportExcel()
@@ -148,12 +164,13 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
                 ws.Cell(1, 1).Value = "排序";
                 ws.Cell(1, 2).Value = "名稱";
                 ws.Cell(1, 3).Value = "發行數量";
-                ws.Cell(1, 4).Value = "說明";
-                ws.Cell(1, 5).Value = "抵押兌換率";
-                ws.Cell(1, 6).Value = "發行日期";
-                ws.Cell(1, 7).Value = "圖示路徑";
-                ws.Cell(1, 8).Value = "Id"; // 匯出Id以防還原
-                ws.Cell(1, 9).Value = "更新日期";
+                ws.Cell(1, 4).Value = "剩餘數量"; // <-- 新增
+                ws.Cell(1, 5).Value = "說明";
+                ws.Cell(1, 6).Value = "抵押兌換率";
+                ws.Cell(1, 7).Value = "發行日期";
+                ws.Cell(1, 8).Value = "圖示路徑";
+                ws.Cell(1, 9).Value = "Id";
+                ws.Cell(1, 10).Value = "更新日期";
 
                 // 寫入資料
                 for (int i = 0; i < items.Count; i++)
@@ -162,13 +179,15 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
                     ws.Cell(i + 2, 1).Value = it.SortOrder;
                     ws.Cell(i + 2, 2).Value = it.Name;
                     ws.Cell(i + 2, 3).Value = it.TotalIssued;
-                    ws.Cell(i + 2, 4).Value = it.Description;
-                    ws.Cell(i + 2, 5).Value = it.ExchangeRate;
-                    ws.Cell(i + 2, 6).Value = it.IssuedAt.ToString("yyyy-MM-dd");
-                    ws.Cell(i + 2, 7).Value = it.IconPath;
-                    ws.Cell(i + 2, 8).Value = it.Id;
-                    ws.Cell(i + 2, 9).Value = it.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss");
+                    ws.Cell(i + 2, 4).Value = it.RemainQuantity; // <-- 新增
+                    ws.Cell(i + 2, 5).Value = it.Description;
+                    ws.Cell(i + 2, 6).Value = it.ExchangeRate;
+                    ws.Cell(i + 2, 7).Value = it.IssuedAt.ToString("yyyy-MM-dd");
+                    ws.Cell(i + 2, 8).Value = it.IconPath;
+                    ws.Cell(i + 2, 9).Value = it.Id;
+                    ws.Cell(i + 2, 10).Value = it.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss");
                 }
+
                 using (var ms = new MemoryStream())
                 {
                     wb.SaveAs(ms);
@@ -217,21 +236,30 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
                                 entity.SortOrder = row.Cell(1).GetValue<int>();
                                 entity.Name = row.Cell(2).GetString();
                                 entity.TotalIssued = row.Cell(3).GetValue<int>();
-                                entity.Description = row.Cell(4).GetString();
-                                entity.ExchangeRate = row.Cell(5).GetValue<int>();
+                                // -------- RemainQuantity --------
+                                int remain = 0;
+                                if (int.TryParse(row.Cell(4).GetString(), out remain) || int.TryParse(row.Cell(4).GetValue<string>(), out remain))
+                                    entity.RemainQuantity = remain;
+                                else if (row.Cell(4).TryGetValue<int>(out remain))
+                                    entity.RemainQuantity = remain;
+                                else
+                                    entity.RemainQuantity = entity.TotalIssued; // 若沒填，預設等於發行數量
+                                                                                // -------- Description --------
+                                entity.Description = row.Cell(5).GetString();
+                                entity.ExchangeRate = row.Cell(6).GetValue<int>();
 
-                                // 日期防呆（自動解析格式）
+                                // 日期防呆
                                 DateTime issuedAt;
-                                if (row.Cell(6).DataType == XLDataType.DateTime)
-                                    issuedAt = row.Cell(6).GetDateTime();
-                                else if (!DateTime.TryParse(row.Cell(6).GetString(), out issuedAt))
+                                if (row.Cell(7).DataType == XLDataType.DateTime)
+                                    issuedAt = row.Cell(7).GetDateTime();
+                                else if (!DateTime.TryParse(row.Cell(7).GetString(), out issuedAt))
                                     issuedAt = DateTime.Now;
                                 entity.IssuedAt = issuedAt;
 
-                                entity.IconPath = row.Cell(7).GetString();
-                                // Id略過，不處理
+                                entity.IconPath = row.Cell(8).GetString();
+                                // Id略過
                                 DateTime updatedAt;
-                                entity.UpdatedAt = DateTime.TryParse(row.Cell(9).GetString(), out updatedAt) ? updatedAt : (DateTime?)null;
+                                entity.UpdatedAt = DateTime.TryParse(row.Cell(10).GetString(), out updatedAt) ? updatedAt : (DateTime?)null;
 
                                 _unitOfWork.CurrencyType.Add(entity);
                                 success++;
@@ -276,13 +304,15 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
         // 目的：管理員發幣給會員，寫一筆 UserCurrencyLog
         // ==========================
 
+   
+
+        // 發幣時檢查剩餘
         [HttpPost]
         public IActionResult SendCurrency(string userId, int currencyTypeId, int quantity, string memo)
         {
             if (string.IsNullOrEmpty(userId) || quantity <= 0)
                 return Json(new { success = false, message = "請輸入正確資料" });
 
-            // 取得會員
             var member = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.Id == userId);
             if (member == null)
                 return Json(new { success = false, message = "會員不存在" });
@@ -291,13 +321,14 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
             if (currency == null)
                 return Json(new { success = false, message = "幣種不存在" });
 
-            // 找出目前這位會員的該幣種最新餘額
+            if (currency.RemainQuantity < quantity)
+                return Json(new { success = false, message = "剩餘數量不足，無法發幣！" });
+
             var lastLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == currencyTypeId)
                 .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
             int oldBalance = lastLog?.BalanceAfter ?? 0;
             int newBalance = oldBalance + quantity;
 
-            // 寫一筆 log
             _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
             {
                 UserId = userId,
@@ -309,11 +340,12 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
                 BalanceAfter = newBalance
             });
 
+            currency.RemainQuantity -= quantity;
+            _unitOfWork.CurrencyType.Update(currency);
+
             _unitOfWork.Save();
             return Json(new { success = true });
         }
-
-
 
     }
 }

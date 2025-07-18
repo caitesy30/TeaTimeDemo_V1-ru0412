@@ -24,6 +24,14 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return View(list);
         }
 
+        // 明細頁
+        public IActionResult Details(int id)
+        {
+            var item = _unitOfWork.PendingCoin.GetById(id);
+            if (item == null) return NotFound();
+            return View(item);
+        }
+
         // 新增一筆待領幣（管理/測試用）
         [HttpGet]
         public IActionResult Create()
@@ -40,32 +48,42 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return RedirectToAction("Index");
         }
 
-        // 編輯
+        // 編輯頁
         [HttpGet]
         public IActionResult Edit(int id)
         {
-            var item = _unitOfWork.PendingCoin.GetFirstOrDefault(x => x.Id == id);
+            var item = _unitOfWork.PendingCoin.GetById(id);
             if (item == null) return NotFound();
             return View(item);
         }
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Edit(PendingCoin model)
         {
-            var item = _unitOfWork.PendingCoin.GetFirstOrDefault(x => x.Id == model.Id);
-            if (item == null) return NotFound();
-            item.Quantity = model.Quantity;
-            item.CurrencyTypeId = model.CurrencyTypeId;
-            item.LineUserId = model.LineUserId;
-            item.Memo = model.Memo;
-            _unitOfWork.Save();
-            return RedirectToAction("Index");
+            if (ModelState.IsValid)
+            {
+                var dbItem = _unitOfWork.PendingCoin.GetById(model.Id);
+                if (dbItem == null) return NotFound();
+                dbItem.LineUserId = model.LineUserId;
+                dbItem.CurrencyTypeId = model.CurrencyTypeId;
+                dbItem.Quantity = model.Quantity;
+                dbItem.FromUserId = model.FromUserId;
+                dbItem.Memo = model.Memo;
+                dbItem.IsClaimed = model.IsClaimed;
+                dbItem.CreatedAt = model.CreatedAt;
+                dbItem.ClaimedAt = model.ClaimedAt;
+                _unitOfWork.PendingCoin.Update(dbItem);
+                _unitOfWork.Save();
+                return RedirectToAction("Index");
+            }
+            return View(model);
         }
 
         // 刪除
         [HttpPost]
         public IActionResult Delete(int id)
         {
-            var item = _unitOfWork.PendingCoin.GetFirstOrDefault(x => x.Id == id);
+            var item = _unitOfWork.PendingCoin.GetById(id);
             if (item == null) return NotFound();
             _unitOfWork.PendingCoin.Remove(item);
             _unitOfWork.Save();

@@ -20,6 +20,7 @@
         <table id="pointLogTable" class="table table-sm table-bordered w-100">
             <thead class="table-light">
                 <tr>
+                    <th>姓名</th> <!-- 新增 -->
                     <th>時間</th>
                     <th>幣種</th>
                     <th>異動數量</th>
@@ -34,6 +35,7 @@
                     foreach (var log in Model.Logs)
                     {
                         <tr>
+                            <td>@log.Name</td> <!-- 新增 -->
                             <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
                             <td>@log.CurrencyTypeName</td>
                             <td>@log.Quantity</td>
@@ -46,10 +48,10 @@
                 else
                 {
                     <tr>
-                        <td colspan="6" class="text-center">暫無點數記錄</td>
+                        <td colspan="7" class="text-center">暫無點數記錄</td>
                     </tr>
                 }
-            </tbody>
+            </tbody>;f
         </table>
       
     </div>

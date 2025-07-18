@@ -15,6 +15,7 @@
                 <th>Icon</th>
                 <th>名稱</th>
                 <th>發行數量</th>
+                <th>剩餘數量</th> <!-- 新增 -->
                 <th>說明</th>
                 <th>抵押兌換率</th>
                 <th>發行日期</th>
@@ -29,12 +30,13 @@
                     <td><img src="@item.IconPath" style="width:40px;height:40px;" /></td>
                     <td>@item.Name</td>
                     <td>@item.TotalIssued</td>
+                    <td>@item.RemainQuantity</td> <!-- 新增 -->
                     <td>@item.Description</td>
                     <td>@item.ExchangeRate:1</td>
                     <td>@item.IssuedAt.ToString("yyyy-MM-dd")</td>
                     <td>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-success btn-sm">編輯</a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">刪除</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-success btn-sm">編輯</a>                     
+                        <button type="button" class="btn btn-danger btn-sm" onclick="CurrencyDelete(@item.Id)">刪除</button>
 
                         <!-- 發幣按鈕，帶幣種Id和名稱 -->
                         <button type="button"
@@ -56,6 +58,46 @@
 </div>
 
 @section Scripts {
+
+    <script>
+        class CurrencyActions {
+            static delete(id) {
+                Swal.fire({
+                    title: '你確定要刪除嗎？',
+                    text: "刪除後將無法復原！",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '是的，刪除！',
+                    cancelButtonText: '取消'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // 建立 POST 表單動態提交
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '/Admin/CurrencyType/Delete';
+
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'id';
+                        input.value = id;
+                        form.appendChild(input);
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            }
+        }
+
+        function CurrencyDelete(id) {
+            CurrencyActions.delete(id);
+        }
+    </script>
+
+
+
     <link href="~/lib/DataTables/datatables.min.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/css/currency-manage.css" rel="stylesheet" asp-append-version="true" />
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>

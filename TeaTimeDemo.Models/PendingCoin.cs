@@ -18,5 +18,7 @@ namespace TeaTimeDemo.Models
         public bool IsClaimed { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ClaimedAt { get; set; }
+        public string? Token { get; set; }     // 唯一領取token
+        public string? NickName { get; set; }  // 好友暱稱
     }
 }

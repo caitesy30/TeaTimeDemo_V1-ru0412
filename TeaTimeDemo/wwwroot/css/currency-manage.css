@@ -3,8 +3,8 @@
     vertical-align: middle !important;
 }
 
-    #currencyTable th:nth-child(5),
-    #currencyTable td:nth-child(5) {
+    #currencyTable th:nth-child(6),
+    #currencyTable td:nth-child(6) {
         text-align: left !important;
     }
 
