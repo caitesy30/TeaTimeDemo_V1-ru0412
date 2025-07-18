@@ -2,7 +2,12 @@
 
 @{
     ViewData["Title"] = "我的錢包";
+    var token = Context.Request.Query["token"].ToString();
 }
+
+<div id="tokenBar" style="position:fixed;top:0;right:0;background:#ffd;padding:6px 12px;z-index:9999;font-size:1.2rem">
+    <b>【錢包首頁】</b>token=<span id="showToken" style="color:#c00;">@token</span>
+</div>
 
 @section Styles {
     <link rel="stylesheet" href="~/css/wallet.css" asp-append-version="true" />

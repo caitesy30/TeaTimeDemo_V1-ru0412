@@ -2,21 +2,38 @@
 
 @{
     ViewData["Title"] = "LINE 領取";
+    var token = Context.Request.Query["token"].ToString();
 }
-<script>
-    alert('【Claim 頁】Token=' + '@Model.Token');
-</script>
+<div style="position:fixed;top:0;right:0;background:#fffae0;padding:8px 20px;z-index:9999;font-size:1.2rem">
+    <b>【Claim頁】</b>
+    token=<span id="claimToken" style="color:#d00;"></span>
+</div>
 
-<form id="claimForm" method="post" autocomplete="off">
-    <input type="hidden" name="token" value="@Model.Token" />
-    <input type="hidden" name="lineUserId" id="lineUserId" value="" />
-    <button type="submit" class="btn btn-success w-100 mt-4">領取點數</button>
-</form>
+<div class="container mt-5">
+    <div id="tokenStatus" class="text-center my-4" style="font-size:2rem;font-weight:bold;">
+        <!-- 動態插入 -->
+    </div>
+    <form id="claimForm" method="post" autocomplete="off">
+        <input type="hidden" name="token" value="@token" />
+        <input type="hidden" name="lineUserId" id="lineUserId" value="" />
+        <button type="submit" class="btn btn-success w-100 mt-4">領取點數</button>
+    </form>
+</div>
 
 <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 <script>
     // 頁面一載入 alert
     alert("Claim 頁 JS 已經載入");
+
+     // 顯示token
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    document.getElementById('claimToken').innerText = token || "(無)";
+    document.getElementById('tokenStatus').innerHTML = token ?
+        `<span style="color:#15c;">本次邀請Token：${token}</span>` :
+        `<span style="color:#fff;background:#d00;padding:8px 24px;border-radius:8px;">⚠️ 沒帶到token！</span>`;
+
+    // LIFF取得userId的程式...（你原本那段可以保留）
 
     // =============== (1) 優先嘗試用 LIFF 取得真實 LINE UserId ===============
     const liffId = "2007537903-r3pknwbl";

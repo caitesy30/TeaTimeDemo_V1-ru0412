@@ -39,16 +39,7 @@
 
 
                 <div class="tab-pane fade" id="tab-content-line" role="tabpanel">
-                    <div class="mb-2">
-                        <select class="form-select" id="LineFriendId">
-                            <option value="">請選擇LINE好友</option>
-                            @foreach (var f in ViewBag.LineFriendList as List<SelectListItem>)
-                            {
-                                <option value="@f.Value">@f.Text</option>
-                            }
-                        </select>
-                        <input type="hidden" id="LineFriendName" />
-                    </div>
+                
 
                     <div class="alert alert-info">
                         點選下方「LINE好友真實分享邀請」或「掃描對方收款QR」按鈕
@@ -140,16 +131,16 @@
             let targetId = $('#LineFriendId').val();
             let targetNick = $('#LineFriendName').val();
 
-            if (!targetId || targetId === "") {
-                alert('請選擇LINE好友！');
-                $('#LineFriendId').focus();
-                return;
-               }
+            // if (!targetId || targetId === "") {
+            //     alert('請選擇LINE好友！');
+            //     $('#LineFriendId').focus();
+            //     return;
+            //    }
 
-            if (!targetNick || targetNick === "請選擇LINE好友") {
-                 alert('好友暱稱有問題，請重新選擇！');
-                 return;
-               }
+            // if (!targetNick || targetNick === "請選擇LINE好友") {
+            //      alert('好友暱稱有問題，請重新選擇！');
+            //      return;
+            //    }
 
 
             if (!transferQty || transferQty <= 0) {
