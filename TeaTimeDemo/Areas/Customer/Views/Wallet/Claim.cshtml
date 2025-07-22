@@ -1,88 +1,41 @@
-﻿@model TeaTimeDemo.Models.PendingInvite
-
-@{
+﻿@{
     ViewData["Title"] = "LINE 領取";
-    var token = Context.Request.Query["token"].ToString();
 }
-<div style="position:fixed;top:0;right:0;background:#fffae0;padding:8px 20px;z-index:9999;font-size:1.2rem">
-    <b>【Claim頁】</b>
-    token=<span id="claimToken" style="color:#d00;"></span>
-</div>
+<div id="claimResult" class="text-center mt-5" style="font-size:2rem;font-weight:bold;"></div>
 
-<div class="container mt-5">
-    <div id="tokenStatus" class="text-center my-4" style="font-size:2rem;font-weight:bold;">
-        <!-- 動態插入 -->
-    </div>
-    <form id="claimForm" method="post" autocomplete="off">
-        <input type="hidden" name="token" value="@token" />
-        <input type="hidden" name="lineUserId" id="lineUserId" value="" />
-        <button type="submit" class="btn btn-success w-100 mt-4">領取點數</button>
-    </form>
-</div>
-
+<!-- 引入 LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 <script>
-    // 頁面一載入 alert
-    alert("Claim 頁 JS 已經載入");
+    const liffId = "2007537903-r3pknwbl"; // 你的LIFF_ID
 
-     // 顯示token
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    document.getElementById('claimToken').innerText = token || "(無)";
-    document.getElementById('tokenStatus').innerHTML = token ?
-        `<span style="color:#15c;">本次邀請Token：${token}</span>` :
-        `<span style="color:#fff;background:#d00;padding:8px 24px;border-radius:8px;">⚠️ 沒帶到token！</span>`;
-
-    // LIFF取得userId的程式...（你原本那段可以保留）
-
-    // =============== (1) 優先嘗試用 LIFF 取得真實 LINE UserId ===============
-    const liffId = "2007537903-r3pknwbl";
-    function isLiff() {
-        return navigator.userAgent.includes("Line");
-    }
+    document.getElementById('claimResult').innerText = "正在驗證身份，請稍候...";
 
     (async function () {
-        // 若是在 LIFF 環境下自動取得 userId
-        if (isLiff()) {
+        try {
+            // 初始化 LIFF
             await liff.init({ liffId });
             if (!liff.isLoggedIn()) {
                 liff.login();
                 return;
             }
-            try {
-                const profile = await liff.getProfile();
-                document.getElementById('lineUserId').value = profile.userId;
-                alert("已取得 LINE UserId: " + profile.userId);
-            } catch (err) {
-                alert("取得 LINE Profile 失敗！" + (err.message || err));
-            }
-        } else {
-            // 如果不是 LINE 環境（測試用），填入假 userId
-            document.getElementById('lineUserId').value = "testUserId";
-            alert("非LINE環境，userId設為 testUserId");
+            // 取得 LINE 使用者資料
+            const profile = await liff.getProfile();
+            const lineUserId = profile.userId;
+            // 呼叫後端API領取點數
+            fetch('/Customer/Wallet/ClaimByUserId', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lineUserId })
+            })
+            .then(res => res.text())
+            .then(msg => {
+                document.getElementById('claimResult').innerText = msg;
+            })
+            .catch(err => {
+                document.getElementById('claimResult').innerText = "發生錯誤：" + err;
+            });
+        } catch (err) {
+            document.getElementById('claimResult').innerText = "LIFF初始化失敗：" + (err.message || err);
         }
     })();
-
-    // =============== (2) 攔截 submit 走 AJAX ===============
-    document.getElementById('claimForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        alert("submit事件被攔截！");
-
-        var token = document.querySelector('input[name="token"]').value;
-        var lineUserId = document.querySelector('input[name="lineUserId"]').value;
-
-        alert("即將發送 token: " + token + "\nuserId: " + lineUserId);
-
-        // AJAX發送
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", window.location.pathname, true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function () {
-            alert("伺服器回應: " + xhr.responseText);
-            if (xhr.responseText.indexOf("成功") >= 0) {
-                window.location.href = "/Customer/Wallet";
-            }
-        };
-        xhr.send("token=" + encodeURIComponent(token) + "&lineUserId=" + encodeURIComponent(lineUserId));
-    });
 </script>

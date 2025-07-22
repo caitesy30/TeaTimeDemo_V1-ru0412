@@ -9,6 +9,7 @@ using AspNet.Security.OAuth.Line;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
@@ -719,6 +720,47 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return View("ClaimResult");
         }
 
+
+        public class ClaimRequestVM
+        {
+            public string lineUserId { get; set; }
+        }
+
+        [HttpPost]
+        public IActionResult ClaimByUserId([FromBody] ClaimRequestVM req)
+        {
+            if (string.IsNullOrEmpty(req.lineUserId))
+                return Content("未取得LINE UserId，請用LINE APP開啟本頁。");
+
+            // 查找此人尚未領取的PendingInvite（也可改PendingCoin，看你DB）
+            var pending = _unitOfWork.PendingInvite.GetFirstOrDefault(
+                x => x.ToLineUserId == req.lineUserId && !x.IsClaimed);
+
+            if (pending == null)
+                return Content("你目前沒有可領取的點數邀請～");
+
+            // 加入錢包紀錄
+            var last = _unitOfWork.UserCurrencyLog.GetAll(
+                x => x.UserId == req.lineUserId && x.CurrencyTypeId == pending.CurrencyTypeId)
+                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            int balance = last?.BalanceAfter ?? 0;
+            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            {
+                UserId = req.lineUserId,
+                CurrencyTypeId = pending.CurrencyTypeId,
+                Quantity = pending.Quantity,
+                Action = "LINE好友領取",
+                Memo = $"來自：{pending.FromUserId}",
+                CreatedAt = DateTime.Now,
+                BalanceAfter = balance + pending.Quantity
+            });
+
+            // 標記已領取
+            pending.IsClaimed = true;
+            _unitOfWork.Save();
+
+            return Content("領取成功！點數已入帳 🎉");
+        }
 
         // 加在 WalletController.cs
         [HttpGet]
