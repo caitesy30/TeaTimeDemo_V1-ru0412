@@ -561,6 +561,9 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         [HttpGet]
         public IActionResult Claim(string token)
         {
+
+            TempData["DebugMsg"] = $"Claim Action！token={token}, login={User.Identity.IsAuthenticated}";
+
             if (!User.Identity.IsAuthenticated)
             {
                 var properties = new AuthenticationProperties

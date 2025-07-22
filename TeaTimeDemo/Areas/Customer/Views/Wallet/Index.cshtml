@@ -108,6 +108,21 @@
 
 
 @section Scripts {
+
+    <script>
+        // --------- token自動導流機制 ---------
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let token = urlParams.get('token');
+            // 只要網址有 token 但現在不是在 Claim 頁面，就自動跳轉！
+            if (token && !window.location.pathname.toLowerCase().includes("claim")) {
+                window.location.href = `/Customer/Wallet/Claim?token=${encodeURIComponent(token)}`;
+            }
+        }
+        // --------- end token自動導流 ---------
+    </script>xqxsj
+
+
     <!-- jQuery (確保先載入) -->
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
     <!-- DataTables JS -->

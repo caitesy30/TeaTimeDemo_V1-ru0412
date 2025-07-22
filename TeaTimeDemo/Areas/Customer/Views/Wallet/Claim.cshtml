@@ -10,6 +10,31 @@
 
     document.getElementById('claimResult').innerText = "正在驗證身份，請稍候...";
 
+       // ====== Token偵錯、補救機制 Start ======
+    // 1. 先用alert顯示目前網址
+    alert("目前網址：" + window.location.href);
+
+        // 2. 取得網址參數token
+    const urlParams = new URLSearchParams(window.location.search);
+    let token = urlParams.get('token');
+    alert("目前解析到的 token：" + token);
+
+        // 3. 若沒有token，自動補回（用localStorage或sessionStorage救回token）
+    if (!token) {
+        // 先檢查 localStorage
+        token = localStorage.getItem('claimToken');
+        if (token) {
+            alert("自動補上 token，頁面將重新導向！");
+            location.href = location.pathname + "?token=" + encodeURIComponent(token);
+        } else {
+            alert("token 參數遺失！請重新點擊LINE分享連結！");
+        }
+    } else {
+        // 有 token，寫入 localStorage 方便下次自動補回
+        localStorage.setItem('claimToken', token);
+    }
+    // ====== Token偵錯、補救機制 End ======
+
     (async function () {
         try {
             // 初始化 LIFF
@@ -21,6 +46,10 @@
             // 取得 LINE 使用者資料
             const profile = await liff.getProfile();
             const lineUserId = profile.userId;
+
+               // 【進階】也alert給你看 lineUserId
+            alert("你的 LINE userId: " + lineUserId);
+
             // 呼叫後端API領取點數
             fetch('/Customer/Wallet/ClaimByUserId', {
                 method: 'POST',
