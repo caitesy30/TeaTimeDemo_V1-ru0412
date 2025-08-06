@@ -1,10 +1,15 @@
 ﻿@{
     Layout = null; // 不用主版面
 }
-<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<!-- 更新到最新版 LIFF SDK，預設支援 Concatenate 模式 -->
+<script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
+
 <div id="tokenBar" style="position:fixed;top:0;right:0;background:#ffd;padding:6px 12px;z-index:9999;font-size:1.2rem">
-    <b>【LiffEntry頁】</b>token=<span id="showToken" style="color:#c00;"></span>
+    <b>【LiffEntry頁】</b>
+    mode=<span id="showMode" style="color:#070;"></span>,
+    token=<span id="showToken" style="color:#c00;"></span>
 </div>
+
 <script>
     // ⭐ 一進來先存token！
     (function() {
@@ -19,6 +24,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const mode = urlParams.get('mode');
+    document.getElementById('showMode').innerText = mode || "(無)";
+    document.getElementById('showToken').innerText = token || "(無)";
     alert('【LiffEntry】啟動, mode=' + mode + ', token=' + token);
 
     // 右上顯示 token

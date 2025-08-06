@@ -6,6 +6,11 @@
 }
 
 <h1>@ViewData["Title"]</h1>
+
+<!-- 新增除錯顯示區塊 -->
+<div id="debugInfo" class="alert alert-info" style="display:none;"></div>
+
+
 <div class="row">
     <!-- 左側：本地帳號登入 -->
     <div class="col-md-4">
@@ -95,4 +100,23 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // DebugHelper：解析 query string 並顯示 mode 與 token
+        class DebugHelper {
+            static showParams() {
+                const params = new URLSearchParams(window.location.search);
+                const mode = params.get('mode');
+                const token = params.get('token');
+                const debugDiv = document.getElementById('debugInfo');
+                if (mode || token) {
+                    debugDiv.style.display = 'block';
+                    debugDiv.innerHTML = `偵測到參數 → mode: <strong>${mode || '無'}</strong>, token: <strong>${token || '無'}</strong>`;
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            DebugHelper.showParams();
+        });
+    </script>
 }
+
