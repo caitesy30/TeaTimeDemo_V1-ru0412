@@ -10,6 +10,8 @@
     token=<span id="showToken" style="color:#c00;"></span>
 </div>
 
+<div style="color:green;">mode: <span id="m"></span> | token: <span id="t"></span></div>
+
 <script>
     // ⭐ 一進來先存token！
     (function() {
@@ -39,4 +41,15 @@
         alert('準備導向 Wallet 頁');
         window.location.href = `/Customer/Wallet?token=${encodeURIComponent(token)}`;
     }
+</script>
+
+<script>
+    class LiffEntryDebug {
+        static show() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('m').innerText = params.get('mode') || '';
+            document.getElementById('t').innerText = params.get('token') || '';
+        }
+    }
+    LiffEntryDebug.show();
 </script>

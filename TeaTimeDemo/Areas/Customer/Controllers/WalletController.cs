@@ -778,7 +778,12 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             if (!User.Identity.IsAuthenticated)
             {
                 // 自動觸發 LINE Login（也可考慮在前端 JS 判斷 LIFF 直接調用 liff.login）
-                return Redirect("/Identity/Account/Login");
+                //return Redirect("/Identity/Account/Login");
+                // 將目前的 LiffEntry 參數打包成 returnUrl
+                var thisUrl = $"/Customer/Wallet/LiffEntry?mode={mode}&token={token}";
+                var loginUrl = $"/Identity/Account/Login?returnUrl={Uri.EscapeDataString(thisUrl)}";
+                return Redirect(loginUrl);
+
             }
 
             // 依 mode 跳到正確畫面

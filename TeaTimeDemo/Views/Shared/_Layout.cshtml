@@ -170,7 +170,10 @@
     })();
 </script>
 
-
+<!-- 除錯用：顯示網址參數 -->
+<div style="color:blue;background:#ffd;padding:6px;margin-bottom:1em;">
+    mode: <span id="showMode"></span>, token: <span id="showToken"></span>
+</div>
 
 <body>
     <header class="no-print">   
@@ -445,16 +448,8 @@
         }
     })();
 </script>
-
-}
-
-<!-- 全局除錯顯示區塊 -->
-<div id="globalDebugInfo" style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;"></div>
-</body>
-</html>
-
 <script>
-// GlobalDebug：全站解析並顯示 mode 與 token
+<!--// GlobalDebug：全站解析並顯示 mode 與 token-->
 class GlobalDebug {
     static show() {
         const params = new URLSearchParams(window.location.search);
@@ -469,3 +464,24 @@ class GlobalDebug {
 }
 document.addEventListener('DOMContentLoaded', () => GlobalDebug.show());
 </script>
+
+<script>
+    // class 寫法
+    class DebugBar {
+        static show() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('showMode').innerText = params.get('mode') || '';
+            document.getElementById('showToken').innerText = params.get('token') || '';
+        }
+    }
+    DebugBar.show();
+</script>
+
+}
+
+<!-- 全局除錯顯示區塊 -->
+<div id="globalDebugInfo" style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;"></div>
+</body>
+</html>
+
+
