@@ -38,17 +38,22 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             string userId = null;
             if (!User.Identity.IsAuthenticated)
             {
-                if (isLiff)
+                var mode = Request.Query["mode"].ToString();
+                var token = Request.Query["token"].ToString();
+
+                if (!string.IsNullOrEmpty(token))
                 {
-                    // LIFF 流量來時，允許訪客模式，userId 設 null
-                    // 可以提示請先LINE授權，或留空
+                    // 可以將 token 存入 ViewBag 或 TempData，在 View 顯示提示
+                    ViewBag.LiffToken = token;
+                    ViewBag.LiffMode = mode;
                 }
-                else
+
+                if (!isLiff)
                 {
-                    // 原本沒登入自動導回登入頁
                     return RedirectToAction("Login", "Account");
                 }
             }
+
             else
             {
                 userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

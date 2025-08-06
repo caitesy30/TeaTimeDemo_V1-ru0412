@@ -448,6 +448,24 @@
 
 }
 
-
+<!-- 全局除錯顯示區塊 -->
+<div id="globalDebugInfo" style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;"></div>
 </body>
 </html>
+
+<script>
+// GlobalDebug：全站解析並顯示 mode 與 token
+class GlobalDebug {
+    static show() {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('mode');
+        const token = params.get('token');
+        const debugDiv = document.getElementById('globalDebugInfo');
+        if (mode || token) {
+            debugDiv.style.display = 'block';
+            debugDiv.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', () => GlobalDebug.show());
+</script>
