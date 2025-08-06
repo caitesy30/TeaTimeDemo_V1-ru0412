@@ -1,8 +1,8 @@
 ﻿@model TeaTimeDemo.Models.ViewModels.TransferCoinVM
 @{
     ViewData["Title"] = "點數轉讓";
-
 }
+
 <div class="container mt-4" style="max-width:420px">
     <h4 class="mb-3">點數轉讓</h4>
     <div class="text-center mb-3">
@@ -36,11 +36,7 @@
                         }
                     </select>
                 </div>
-
-
                 <div class="tab-pane fade" id="tab-content-line" role="tabpanel">
-                
-
                     <div class="alert alert-info">
                         點選下方「LINE好友真實分享邀請」或「掃描對方收款QR」按鈕
                     </div>
@@ -51,19 +47,20 @@
             </div>
         </div>
 
+        <!-- 轉讓數量 -->
         <div class="mb-3">
             <label for="TransferQty" class="form-label">轉讓數量：</label>
             <input type="number" class="form-control" name="TransferQty" id="TransferQty" min="1" max="@Model.Quantity"
                    value="@Model.TransferQty" required />
         </div>
 
-
+        <!-- 註記 -->
         <div class="mb-3">
             <label for="Note" class="form-label">註記（選填）：</label>
             <input type="text" class="form-control" name="Note" id="Note" maxlength="100" />
         </div>
 
-        <!-- 只在會員頁顯示 -->
+        <!-- 會員送出按鈕（LINE 好友時隱藏） -->
         <button type="submit" class="btn btn-success w-100" id="submitMemberBtn">送出（內部會員）</button>
     </form>
     @if (!ViewData.ModelState.IsValid)
@@ -78,18 +75,7 @@
 
     <script>
         $(function () {
-
-                 $('#LineFriendId').on('change', function () {
-                    let nick = $(this).find('option:selected').text();
-                    if (nick === "請選擇LINE好友") {
-                        $('#LineFriendName').val("");
-                    } else {
-                        $('#LineFriendName').val(nick);
-                    }
-                 });
-
-
-            // Tab切換時切換按鈕顯示
+            // Tab 切換顯示按鈕
             $('#transferTab button').on('shown.bs.tab', function (e) {
                 let tab = $(e.target).attr('id');
                 if (tab === 'tab-member') {
@@ -103,12 +89,12 @@
                 }
             });
 
-            // 預設會員tab顯示
+            // 預設會員頁顯示
             $('#submitMemberBtn').show();
             $('#shareLineInviteBtn').hide();
             $('#scanQrBtn').hide();
 
-            // 內部會員送出檢查
+            // 內部會員送出驗證
             $('#transferForm').on('submit', function (e) {
                 let activeTab = $('#transferTab .nav-link.active').attr('id');
                 if (activeTab === 'tab-member' && !$('#TargetUserId').val()) {
@@ -116,100 +102,82 @@
                     e.preventDefault();
                 }
                 if (activeTab === 'tab-line') {
-                    e.preventDefault(); // 防止送出
+                    e.preventDefault(); // 防止送出，由 LIFF 分享流程處理
                 }
             });
 
-           
-               // =========== LINE 好友分享邀請 ===========
-        $('#shareLineInviteBtn').off('click').on('click', function (e) {
-            e.preventDefault();
+            // ===== LINE 好友分享邀請 =====
+            $('#shareLineInviteBtn').off('click').on('click', function (e) {
+                e.preventDefault();
 
-            let currencyTypeId = $('[name="CurrencyTypeId"]').val();
-            let transferQty = $('[name="TransferQty"]').val();
-            let note = $('[name="Note"]').val() || '';
-            let name = $('[name="Name"]').val();
+                let currencyTypeId = $('[name="CurrencyTypeId"]').val();
+                let transferQty = $('[name="TransferQty"]').val();
+                let note = $('[name="Note"]').val() || '';
+                let name = $('[name="Name"]').val();
 
-            let targetId = $('#LineFriendId').val();
-            let targetNick = $('#LineFriendName').val();
-
-            // if (!targetId || targetId === "") {
-            //     alert('請選擇LINE好友！');
-            //     $('#LineFriendId').focus();
-            //     return;
-            //    }
-
-            // if (!targetNick || targetNick === "請選擇LINE好友") {
-            //      alert('好友暱稱有問題，請重新選擇！');
-            //      return;
-            //    }
-
-
-            if (!transferQty || transferQty <= 0) {
-                alert('請輸入正確的轉讓數量');
-                return;
-            }
-
-            // AJAX產生邀請token
-            $.ajax({
-                url: '/Customer/Wallet/TransferToLine',
-                type: 'POST',
-                data: {
-                    CurrencyTypeId: currencyTypeId,
-                    TransferQty: transferQty,
-                    Note: note,
-                    Name: name,
-                    TargetLineFriendId: targetId,
-                    TargetLineFriendName: targetNick
-                },
-             success: function (res) {
-            if (res && res.token) {
-                const liffEntryUrl = `https://liff.line.me/2007537903-r3pknwbl?mode=claim&token=${res.token}`;
-                liff.init({ liffId: "2007537903-r3pknwbl" })
-                    .then(() => {
-                        return liff.shareTargetPicker([{
-                            type: "text",
-                            text: `你收到來自【${name}】的點數轉讓邀請！\n數量：${transferQty}\n註記：${note}\n【請點這裡領取】👉 ${liffEntryUrl}`
-                        }]);
-                    })
-                    .then(() => {
-                        window.location.href = '/Customer/Wallet/TransferResult?msg=' +
-                            encodeURIComponent('已預約轉讓給LINE好友，等對方領取後才會扣點！');
-                    })
-                    .catch(err => {
-                        alert('LIFF 分享或初始化失敗：' + err.message);
-                    });
-            } else {
-                alert('產生邀請失敗，請稍後重試');
-            }
-        }  ,
-                error: function (xhr, status, error) {
-                    alert('伺服器錯誤，無法產生邀請');
+                if (!transferQty || transferQty <= 0) {
+                    alert('請輸入正確的轉讓數量');
+                    return;
                 }
+
+                // 向後端產生邀請 token
+                $.ajax({
+                    url: '/Customer/Wallet/TransferToLine',
+                    type: 'POST',
+                    data: {
+                        CurrencyTypeId: currencyTypeId,
+                        TransferQty: transferQty,
+                        Note: note,
+                        Name: name,
+                        TargetLineFriendId: $('#LineFriendId').val(),
+                        TargetLineFriendName: $('#LineFriendName').val()
+                    },
+                    success: function (res) {
+                        if (res && res.token) {
+                            const liffEntryUrl = `https://liff.line.me/2007537903-r3pknwbl?mode=claim&token=${res.token}`;
+                            liff.init({ liffId: "2007537903-r3pknwbl" })
+                                .then(() => {
+                                    // 分享訊息（含 token）
+                                    return liff.shareTargetPicker([{
+                                        type: "text",
+                                        text: `你收到來自【${name}】的點數轉讓邀請！\n數量：${transferQty}\n註記：${note}\n【請點這裡領取】👉 ${liffEntryUrl}`
+                                    }]);
+                                })
+                                .then(() => {
+                                    // 分享成功後導向結果頁
+                                    window.location.href = '/Customer/Wallet/TransferResult?msg=' +
+                                        encodeURIComponent('已預約轉讓給 LINE 好友，等對方領取後才會扣點！');
+                                })
+                                .catch(err => {
+                                    alert('LIFF 分享或初始化失敗：' + err.message);
+                                });
+                        } else {
+                            alert('產生邀請失敗，請稍後重試');
+                        }
+                    },
+                    error: function () {
+                        alert('伺服器錯誤，無法產生邀請');
+                    }
+                });
             });
-        });
 
-
-            // =========== 掃描對方收款QR ===========
+            // ===== 掃描對方收款 QR =====
             $('#scanQrBtn').off('click').on('click', function () {
                 liff.init({ liffId: "2007537903-r3pknwbl" })
                     .then(() => {
                         return liff.scanCode();
                     })
                     .then(result => {
-                        // result.value = QR內容（你設計的token或userId）
                         if (result && result.value) {
-                            // 自動帶入頁面或送出
                             window.location.href = `/Customer/Wallet/Transfer?token=${result.value}`;
                         } else {
-                            alert('未掃到有效QR碼');
+                            alert('未掃到有效 QR 碼');
                         }
                     })
                     .catch(err => {
-                        alert('掃描失敗，請用LINE APP操作');
+                        alert('掃描失敗，請用 LINE APP 操作');
                     });
             });
-
         });
     </script>
 }

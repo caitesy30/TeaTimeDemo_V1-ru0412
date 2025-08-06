@@ -6,34 +6,33 @@
 <!-- 引入 LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 <script>
-    const liffId = "2007537903-r3pknwbl"; // 你的LIFF_ID
+    const liffId = "2007537903-r3pknwbl"; // 你的 LIFF_ID
 
     document.getElementById('claimResult').innerText = "正在驗證身份，請稍候...";
 
-       // ====== Token偵錯、補救機制 Start ======
-    // 1. 先用alert顯示目前網址
+    // ===== Token 偵錯、補救機制 Start =====
+    // 1. 顯示目前網址
     alert("目前網址：" + window.location.href);
 
-        // 2. 取得網址參數token
+    // 2. 取得網址參數 token
     const urlParams = new URLSearchParams(window.location.search);
     let token = urlParams.get('token');
     alert("目前解析到的 token：" + token);
 
-        // 3. 若沒有token，自動補回（用localStorage或sessionStorage救回token）
+    // 3. 若沒有 token，改從 localStorage 補回
     if (!token) {
-        // 先檢查 localStorage
         token = localStorage.getItem('claimToken');
         if (token) {
             alert("自動補上 token，頁面將重新導向！");
             location.href = location.pathname + "?token=" + encodeURIComponent(token);
         } else {
-            alert("token 參數遺失！請重新點擊LINE分享連結！");
+            alert("token 參數遺失！請重新點擊 LINE 分享連結！");
         }
     } else {
-        // 有 token，寫入 localStorage 方便下次自動補回
+        // 有 token 時寫入 localStorage 方便下次自動補回
         localStorage.setItem('claimToken', token);
     }
-    // ====== Token偵錯、補救機制 End ======
+    // ===== Token 偵錯、補救機制 End =====
 
     (async function () {
         try {
@@ -47,10 +46,10 @@
             const profile = await liff.getProfile();
             const lineUserId = profile.userId;
 
-               // 【進階】也alert給你看 lineUserId
+            // 顯示使用者 ID（可去除）
             alert("你的 LINE userId: " + lineUserId);
 
-            // 呼叫後端API領取點數
+            // 呼叫後端 API 領取點數
             fetch('/Customer/Wallet/ClaimByUserId', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -64,7 +63,7 @@
                 document.getElementById('claimResult').innerText = "發生錯誤：" + err;
             });
         } catch (err) {
-            document.getElementById('claimResult').innerText = "LIFF初始化失敗：" + (err.message || err);
+            document.getElementById('claimResult').innerText = "LIFF 初始化失敗：" + (err.message || err);
         }
     })();
 </script>

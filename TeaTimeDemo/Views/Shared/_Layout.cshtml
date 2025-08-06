@@ -476,6 +476,14 @@ document.addEventListener('DOMContentLoaded', () => GlobalDebug.show());
     }
     DebugBar.show();
 </script>
+<script>
+    // 顯示當前網址的 mode 與 token
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('showMode').innerText = params.get('mode') || '';
+        document.getElementById('showToken').innerText = params.get('token') || '';
+    });
+</script>
 
 }
 

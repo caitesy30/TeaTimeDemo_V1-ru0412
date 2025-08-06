@@ -771,22 +771,21 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         }
 
         // 加在 WalletController.cs
+        // 加在 WalletController.cs
+
         [HttpGet]
         public IActionResult LiffEntry(string mode = null, string token = null)
         {
-            // 如果沒登入，可自動啟動 LINE Login 或顯示提示
+            // 若未登入，強制登入並帶回 mode、token
             if (!User.Identity.IsAuthenticated)
             {
-                // 自動觸發 LINE Login（也可考慮在前端 JS 判斷 LIFF 直接調用 liff.login）
-                //return Redirect("/Identity/Account/Login");
-                // 將目前的 LiffEntry 參數打包成 returnUrl
+                // 目前的 LiffEntry 參數打包成 returnUrl
                 var thisUrl = $"/Customer/Wallet/LiffEntry?mode={mode}&token={token}";
                 var loginUrl = $"/Identity/Account/Login?returnUrl={Uri.EscapeDataString(thisUrl)}";
                 return Redirect(loginUrl);
-
             }
 
-            // 依 mode 跳到正確畫面
+            // 已登入，依 mode 跳轉到正確畫面
             switch (mode)
             {
                 case "wallet":
@@ -798,6 +797,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                     return RedirectToAction("TransferList");
             }
         }
+
 
 
 

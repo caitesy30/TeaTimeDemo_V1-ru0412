@@ -1,19 +1,20 @@
 ﻿@{
-    Layout = null; // 不用主版面
+    Layout = null; // 不使用共用版面
 }
-<!-- 更新到最新版 LIFF SDK，預設支援 Concatenate 模式 -->
+<!-- 更新到最新版 LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
 
+<!-- 右上顯示 mode 與 token -->
 <div id="tokenBar" style="position:fixed;top:0;right:0;background:#ffd;padding:6px 12px;z-index:9999;font-size:1.2rem">
     <b>【LiffEntry頁】</b>
     mode=<span id="showMode" style="color:#070;"></span>,
     token=<span id="showToken" style="color:#c00;"></span>
 </div>
-
+<!-- 下方除錯顯示 -->
 <div style="color:green;">mode: <span id="m"></span> | token: <span id="t"></span></div>
 
 <script>
-    // ⭐ 一進來先存token！
+    // ⭐ 一進來先存 token 到 localStorage，便於後續頁面補救
     (function() {
         const urlParams = new URLSearchParams(window.location.search);
         let token = urlParams.get('token');
@@ -22,16 +23,18 @@
         }
     })();
 
-    // ======= 原本自動跳轉邏輯 =======
+    // 讀取網址參數
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const mode = urlParams.get('mode');
+
+    // 顯示參數
     document.getElementById('showMode').innerText = mode || "(無)";
     document.getElementById('showToken').innerText = token || "(無)";
-    alert('【LiffEntry】啟動, mode=' + mode + ', token=' + token);
+    document.getElementById('m').innerText = mode || '';
+    document.getElementById('t').innerText = token || '';
 
-    // 右上顯示 token
-    document.getElementById('showToken').innerText = token || "(無)";
+    alert('【LiffEntry】啟動, mode=' + mode + ', token=' + token);
 
     // 自動跳轉
     if (mode === 'claim' && token) {
@@ -41,15 +44,4 @@
         alert('準備導向 Wallet 頁');
         window.location.href = `/Customer/Wallet?token=${encodeURIComponent(token)}`;
     }
-</script>
-
-<script>
-    class LiffEntryDebug {
-        static show() {
-            const params = new URLSearchParams(window.location.search);
-            document.getElementById('m').innerText = params.get('mode') || '';
-            document.getElementById('t').innerText = params.get('token') || '';
-        }
-    }
-    LiffEntryDebug.show();
 </script>
