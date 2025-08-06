@@ -73,7 +73,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2.22/sdk.js"></script>
     <script>
         $(function () {
 
@@ -178,8 +178,7 @@
                         alert('LIFF 分享或初始化失敗：' + err.message);
                     });
             } else {
-                alert('產生邀請失敗，請稍後重試');
-            }
+                alert('產生邀請失敗，請稍後重試');           }
         }  ,
                 error: function (xhr, status, error) {
                     alert('伺服器錯誤，無法產生邀請');

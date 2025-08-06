@@ -5,7 +5,31 @@
     ViewData["Title"] = "Log in";
 }
 
+
 <h1>@ViewData["Title"]</h1>
+
+<!-- 這裡插入 -->
+@if (Request.Query["msg"].Any())
+{
+    <div style="background:#ffe;border:1px solid #f90;padding:12px;font-weight:bold">
+        @Request.Query["msg"]
+    </div>
+}
+@if (Request.Query["mode"].Any())
+{
+    <div style="background:#e0f7fa;border:1px solid #00bcd4;padding:12px;">
+        mode: <b>@Request.Query["mode"]</b>
+    </div>
+}
+@if (Request.Query["token"].Any())
+{
+    <div style="background:#fff9c4;border:1px solid #ffeb3b;padding:12px;">
+        token: <b>@Request.Query["token"]</b>
+    </div>
+}
+
+
+
 <div class="row">
     <!-- 左側：本地帳號登入 -->
     <div class="col-md-4">

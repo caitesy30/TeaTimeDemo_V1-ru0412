@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Linq;
+using System.Web; // ASP.NET Core 可用 Microsoft.AspNetCore.WebUtilities
 using System.Security.Claims;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models;
@@ -769,25 +770,34 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         [HttpGet]
         public IActionResult LiffEntry(string mode = null, string token = null)
         {
-            // 如果沒登入，可自動啟動 LINE Login 或顯示提示
             if (!User.Identity.IsAuthenticated)
             {
-                // 自動觸發 LINE Login（也可考慮在前端 JS 判斷 LIFF 直接調用 liff.login）
-                return Redirect("/Identity/Account/Login");
+                // 編碼
+                string urlMode = System.Net.WebUtility.UrlEncode(mode ?? "");
+                string urlToken = System.Net.WebUtility.UrlEncode(token ?? "");
+                string returnUrl = $"/Customer/Wallet/LiffEntry?mode={urlMode}&token={urlToken}";
+                string msg = "登入失敗，請用LINE授權";
+                string urlMsg = System.Net.WebUtility.UrlEncode(msg);
+
+                // <<-- 加入 mode, token
+                string loginUrl = $"/Identity/Account/Login?msg={urlMsg}&mode={urlMode}&token={urlToken}&returnUrl={System.Net.WebUtility.UrlEncode(returnUrl)}";
+                return Redirect(loginUrl);
             }
 
-            // 依 mode 跳到正確畫面
+
+            // 登入後依 mode 處理
             switch (mode)
             {
-                case "wallet":
-                default:
-                    return RedirectToAction("Index");
                 case "claim":
                     return RedirectToAction("Claim", new { token });
                 case "transfer":
                     return RedirectToAction("TransferList");
+                case "wallet":
+                default:
+                    return RedirectToAction("Index");
             }
         }
+
 
 
 
