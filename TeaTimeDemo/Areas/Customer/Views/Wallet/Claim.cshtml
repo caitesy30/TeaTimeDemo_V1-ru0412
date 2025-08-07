@@ -4,7 +4,7 @@
 <div id="claimResult" class="text-center mt-5" style="font-size:2rem;font-weight:bold;"></div>
 
 <!-- 引入 LIFF SDK -->
-<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
 <script>
     const liffId = "2007537903-r3pknwbl"; // 你的 LIFF_ID
 
@@ -66,4 +66,23 @@
             document.getElementById('claimResult').innerText = "LIFF 初始化失敗：" + (err.message || err);
         }
     })();
+</script>
+<script>
+    class LiffHelper {
+        static async initAndGetToken() {
+            await liff.init({ liffId: '你的 LIFF_ID' });
+            // 取得環境資訊，如 utou/group/external 等:contentReference[oaicite:6]{index=6}
+            const ctx = liff.getContext();
+            console.log('LIFF context:', ctx);
+
+            // 取得使用者 AccessToken，通常用於向後端驗證身分
+            const accessToken = liff.getAccessToken();
+            console.log('AccessToken:', accessToken);
+
+            // ... 可將 accessToken 帶到後端做身份驗證
+        }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        LiffHelper.initAndGetToken();
+    });
 </script>

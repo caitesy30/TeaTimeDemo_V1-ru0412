@@ -771,7 +771,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return Content("領取成功！點數已入帳 🎉");
         }
 
-        // 加在 WalletController.cs
+       
         // 加在 WalletController.cs
 
         [HttpGet]
