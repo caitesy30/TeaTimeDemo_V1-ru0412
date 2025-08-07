@@ -15,6 +15,7 @@ using System.Security.Claims;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models;
 using TeaTimeDemo.Models.ViewModels;
+using Microsoft.AspNetCore.Http; // 確保有引入命名空間
 
 namespace TeaTimeDemo.Areas.Customer.Controllers
 {
@@ -776,25 +777,40 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         [HttpGet]
         public IActionResult LiffEntry(string mode = null, string token = null)
         {
-            // 若未登入，強制登入並帶回 mode、token
+            // 【新增】將傳入的 mode/token 儲存到 Session 中，避免登入或導向時遺失
+            if (!string.IsNullOrEmpty(mode))
+            {
+                HttpContext.Session.SetString("liff_mode", mode);
+            }
+            if (!string.IsNullOrEmpty(token))
+            {
+                HttpContext.Session.SetString("liff_token", token);
+            }
+
+            // 如果使用者尚未登入
             if (!User.Identity.IsAuthenticated)
             {
-                // 目前的 LiffEntry 參數打包成 returnUrl
-                var thisUrl = $"/Customer/Wallet/LiffEntry?mode={mode}&token={token}";
-                var loginUrl = $"/Identity/Account/Login?returnUrl={Uri.EscapeDataString(thisUrl)}";
+                // 將回來的路徑設成沒有 query string 的 LiffEntry，
+                // 讓登入完回來時由 Session 取回 mode/token
+                var returnUrl = "/Customer/Wallet/LiffEntry";
+                var loginUrl = $"/Identity/Account/Login?returnUrl={Uri.EscapeDataString(returnUrl)}";
                 return Redirect(loginUrl);
             }
 
-            // 已登入，依 mode 跳轉到正確畫面
+            // 使用者已登入 → 從 Session 補回 mode/token（若當前 query 為空）
+            mode ??= HttpContext.Session.GetString("liff_mode");
+            token ??= HttpContext.Session.GetString("liff_token");
+
+            // 依 mode 決定導向頁面
             switch (mode)
             {
-                case "wallet":
-                default:
-                    return RedirectToAction("Index");
                 case "claim":
                     return RedirectToAction("Claim", new { token });
                 case "transfer":
                     return RedirectToAction("TransferList");
+                case "wallet":
+                default:
+                    return RedirectToAction("Index");
             }
         }
 
