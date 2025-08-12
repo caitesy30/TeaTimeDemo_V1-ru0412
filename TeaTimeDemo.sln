@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaTimeDemo.Utility", "TeaT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaTimeDemo.Hubs", "TeaTimeDemo.Hub\TeaTimeDemo.Hubs.csproj", "{94635E58-5E5D-49B6-A387-9428D572A5D5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaTimeDemo.Services", "ClassLibrary1\TeaTimeDemo.Services.csproj", "{1FF35BB8-F62D-4F0F-ADD7-B907B2064C86}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeaTimeDemo.Services", "TeaTimeDemo.Services\TeaTimeDemo.Services.csproj", "{6428493C-59A7-48BB-A913-12840641A2F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,18 +41,18 @@ Global
 		{94635E58-5E5D-49B6-A387-9428D572A5D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94635E58-5E5D-49B6-A387-9428D572A5D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94635E58-5E5D-49B6-A387-9428D572A5D5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1FF35BB8-F62D-4F0F-ADD7-B907B2064C86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1FF35BB8-F62D-4F0F-ADD7-B907B2064C86}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1FF35BB8-F62D-4F0F-ADD7-B907B2064C86}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1FF35BB8-F62D-4F0F-ADD7-B907B2064C86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6428493C-59A7-48BB-A913-12840641A2F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6428493C-59A7-48BB-A913-12840641A2F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6428493C-59A7-48BB-A913-12840641A2F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6428493C-59A7-48BB-A913-12840641A2F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_CultureCountyOverrides = 
-		SolutionGuid = {13CECBB2-B771-4FC6-A7CB-21B927D9B9C2}
 		RESX_NeutralResourcesLanguage = zh-TW
+		SolutionGuid = {13CECBB2-B771-4FC6-A7CB-21B927D9B9C2}
+		RESX_CultureCountyOverrides = 
+		RESX_AutoCreateNewLanguageFiles = True
 	EndGlobalSection
 EndGlobal

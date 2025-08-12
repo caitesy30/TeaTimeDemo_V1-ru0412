@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TeaTimeDemo.DataAccess\TeaTimeDemo.DataAccess.csproj" />
+    <ProjectReference Include="..\TeaTimeDemo.Hub\TeaTimeDemo.Hubs.csproj" />
+    <ProjectReference Include="..\TeaTimeDemo.Models\TeaTimeDemo.Models.csproj" />
+    <ProjectReference Include="..\TeaTimeDemo.Utility\TeaTimeDemo.Utility.csproj" />
+    <ProjectReference Include="..\TeaTimeDemo\TeaTimeDemo.csproj" />
+  </ItemGroup>
+
+</Project>

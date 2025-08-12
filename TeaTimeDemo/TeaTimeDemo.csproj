@@ -41,6 +41,7 @@
     <ProjectReference Include="..\TeaTimeDemo.Hub\TeaTimeDemo.Hubs.csproj" />
     <ProjectReference Include="..\TeaTimeDemo.Models\TeaTimeDemo.Models.csproj" />
     <ProjectReference Include="..\TeaTimeDemo.Utility\TeaTimeDemo.Utility.csproj" />
+    <ProjectReference Include="..\TeaTimeDemo.Services\TeaTimeDemo.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

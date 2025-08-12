@@ -12,10 +12,13 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models;
 using TeaTimeDemo.Models.ViewModels;
 using Microsoft.AspNetCore.Http; // 確保有引入命名空間
+using TeaTimeDemo.Services;
+using TeaTimeDemo.DataAccess.Data;
 
 namespace TeaTimeDemo.Areas.Customer.Controllers
 {
