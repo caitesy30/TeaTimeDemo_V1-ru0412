@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Caching.Memory;
+//using Microsoft.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Globalization;
@@ -82,6 +83,8 @@ builder.Services.ConfigureApplicationCookie(opts =>
     opts.LoginPath = "/Identity/Account/Login";
     opts.LogoutPath = "/Identity/Account/Logout";
     opts.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    opts.Cookie.SameSite = SameSiteMode.None; // <— 第三方跳轉必須 None
+    opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 // (5) CORS
@@ -159,6 +162,12 @@ builder.Services.AddSession(opts =>
 
 var app = builder.Build();
 
+app.UseCookiePolicy(new CookiePolicyOptions
+{
+    MinimumSameSitePolicy = SameSiteMode.None,
+    Secure = CookieSecurePolicy.Always
+});
+            
 //── 二、中介軟體順序 ───────────────────────────────────────//
 
 // 1. Forwarded Headers：處理 Cloudflare / 反向 Proxy

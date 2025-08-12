@@ -1,21 +1,70 @@
-﻿@* LiffAuthEntyController的index *@
-@{
+﻿@{
     Layout = null;
+    var redirect = (string)ViewBag.Redirect ?? "/Customer/Wallet";
 }
-@{
-    ViewData["Title"] = "LIFF 認證入口";
-    ViewBag.Redirect = Url.Action("Index", "Wallet", new { area = "Customer" });
-}
-<script>alert('【LiffAuthEntry 頁】即將導向 ' + "@ViewBag.Redirect");</script>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LINE 快速登入中</title>
+    <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
+</head>
+<body style="margin:0;background:#0b1726;color:#fff;font-family:system-ui,Segoe UI,Microsoft JhengHei,Arial">
+    <script>
+        class LiffAuthEntryPage {
+            static liffId = "2007537903-r3pknwbl"; // ← 你專案紀錄的 LIFF ID
+            static targetRedirect = decodeURIComponent("@redirect".replaceAll("&amp;", "&"));
 
-<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
-<script>
-    liff.init({ liffId: "2007537903-r3pknwbl" })
-        .then(() => {
-            if (!liff.isLoggedIn()) liff.login();
-            else {
-                // 登入完自動導向
-                window.location.href = "@ViewBag.Redirect";
+            // 產生極簡 UI
+            static render() {
+                const root = document.createElement('div');
+                root.style.cssText = "min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;";
+                root.innerHTML = `
+                  <div style="opacity:.9">正在連線 LINE，請稍候…</div>
+                  <div id="hint" style="font-size:12px;opacity:.6">若未跳轉，請點擊下方按鈕</div>
+                  <button id="btnLogin" style="padding:10px 16px;border-radius:12px;border:none;background:#06c755;color:#001c0f;font-weight:700;cursor:pointer;">使用 LINE 登入</button>
+                `;
+                document.body.appendChild(root);
+                document.getElementById('btnLogin').addEventListener('click', () => this.login());
             }
-        });
-</script>
+
+            // 起手式
+            static async boot() {
+                this.render();
+                try {
+                    await liff.init({ liffId: this.liffId });
+                    if (!liff.isLoggedIn()) {
+                        // 在 LINE WebView 內 → 直接呼叫 login，ReturnUrl 帶上 redirect
+                        return this.login();
+                    }
+                    // 已是 LINE session：直接交給後端（你站台的登入狀態可能還沒建立）
+                    window.location.replace(this.makeDotnetLoginUrl());
+                } catch (err) {
+                    document.getElementById('hint').innerText = '初始化失敗，請點按上方按鈕重試。';
+                    console.error(err);
+                }
+            }
+
+            // 叫 .NET 的 LINE Login（Identity 外部登入），並把 redirect 原封帶回
+            static makeDotnetLoginUrl() {
+                // 這裡用你現行外部登入端點（給你兩種擇一）：
+                // 1) 使用 Identity 的 ExternalLogin (常見路徑)
+                // return `/Identity/Account/ExternalLogin?handler=Challenge&provider=LINE&returnUrl=${encodeURIComponent(this.targetRedirect)}`;
+
+                // 2) 你曾用 Challenge(...) 直接指定 LINE Scheme 的情境
+                //    做一個你自己的入口：/Auth/Line/Login?returnUrl=...
+                return `/Auth/Line/Login?returnUrl=${encodeURIComponent(this.targetRedirect)}`;
+            }
+
+            static login() {
+                // 走 LINE 的 OIDC，最終會回到 /signin-line（或你設定的 Callback）
+                // .NET 接回後，請記得把 ReturnUrl 設為 targetRedirect
+                window.location.href = this.makeDotnetLoginUrl();
+            }
+        }
+
+        LiffAuthEntryPage.boot();
+    </script>
+</body>
+</html>

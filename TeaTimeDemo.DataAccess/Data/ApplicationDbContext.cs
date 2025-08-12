@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using System.Linq.Expressions;
 using TeaTimeDemo.Models;
+using TeaTimeDemo.Models.DBEntity;
 
 
 
@@ -70,6 +71,9 @@ namespace TeaTimeDemo.DataAccess.Data
         public DbSet<PendingInvite> PendingInvites { get; set; } // 待領取的邀請
 
         public DbSet<PendingCoin> PendingCoin { get; set; }
+
+        public DbSet<WalletRedemptionIntent> WalletRedemptionIntents { get; set; }
+
 
 
         /// <summary>
