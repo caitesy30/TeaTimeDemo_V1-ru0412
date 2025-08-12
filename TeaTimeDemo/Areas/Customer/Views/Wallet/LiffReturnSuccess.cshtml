@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "兌換成功";
+    var rid = ViewBag.Rid?.ToString() ?? "";
+    var mode = ViewBag.Mode?.ToString() ?? "";
+}
+<div id="successArea"></div>
+<script>
+    class LiffReturnSuccessView {
+      static render(containerId, rid, mode) {
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.innerHTML = `
+          <div style="padding:24px;border-radius:16px;background:#f6ffed;border:1px solid #b7eb8f;">
+            <h4 style="margin:0 0 8px 0;">🎉 兌換成功！</h4>
+            <div style="font-size:14px;color:#555;">這段資訊僅供除錯，正式上線可移除</div>
+            <div>rid：<code>${rid}</code></div>
+            <div>mode：<code>${mode}</code></div>
+            <div style="margin-top:10px;color:#666;">提示：後續頁面不需要再帶任何 mode/token。</div>
+            <button style="margin-top:16px;padding:8px 14px;border-radius:10px;border:1px solid #69c069;background:#52c41a;color:#fff;"
+                    onclick="location.href='/Customer/Wallet/Index'">回錢包</button>
+          </div>
+        `;
+      }
+    }
+    LiffReturnSuccessView.render("successArea", "@rid", "@mode");
+</script>

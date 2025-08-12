@@ -1,0 +1,21 @@
+﻿@{
+    ViewData["Title"] = "兌換失敗";
+}
+<div id="invalidArea"></div>
+<script>
+    class LiffReturnInvalidView {
+      static render(containerId) {
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.innerHTML = `
+          <div style="padding:24px;border-radius:16px;background:#fff1f0;border:1px solid #ffa39e;">
+            <h4 style="margin:0 0 8px 0;">😢 兌換已失效或已被使用</h4>
+            <div>請重新點擊新的分享連結，或聯絡客服。</div>
+            <button style="margin-top:16px;padding:8px 14px;border-radius:10px;border:1px solid #999;background:#fff;color:#333;"
+                    onclick="location.href='/'">回首頁</button>
+          </div>
+        `;
+      }
+    }
+    LiffReturnInvalidView.render("invalidArea");
+</script>

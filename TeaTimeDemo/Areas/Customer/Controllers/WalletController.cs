@@ -37,62 +37,41 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        /// <summary>
-        /// 分享進來的入口：/Customer/Wallet/Start?mode=gift&token=abc123
-        /// 1) 後端建立 rid（WRI）
-        /// 2) 302 到 LiffAuthEntry/Login，returnUrl 指到 LiffReturn?rid=...
-        /// </summary>
+        /// 分享入口：/Customer/Wallet/Start?mode=gift&token=abc123
+        /// 建 rid → 302 到 LiffAuthEntry/Login?returnUrl=/Customer/Wallet/LiffReturn?rid={rid}
         [HttpGet]
         public async Task<IActionResult> Start(string mode, string token)
         {
-            // 1. 建立意圖（把 mode/token 安全存 DB）
             var rid = await _intentSvc.CreateAsync(mode, token);
-
-            // 2. 導去做 LINE Login（外部登入），完成後回到 LiffReturn
             var returnUrl = $"/Customer/Wallet/LiffReturn?rid={rid}";
             return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
         }
 
-        /// <summary>
-        /// LINE Login 完成後回來：/Customer/Wallet/LiffReturn?rid=...
-        /// 後端：
-        ///   - 以 rid 找意圖，單次核銷、綁定使用者
-        ///   - 依 Mode/Token 發幣或其他動作
-        ///   - 顯示成功頁
-        /// </summary>
+        /// LINE Login 回來：以 rid 單次核銷，加幣後顯示成功頁
         [HttpGet]
-        [Authorize] // 必須已經成功 LINE 登入
+        [Authorize]
         public async Task<IActionResult> LiffReturn(Guid rid)
         {
-            // 取得當前使用者（LINE）UserId（因你專案先前已導 LINE Login）
             var lineUserId = User.FindFirst("urn:line:userid")?.Value
                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? string.Empty;
-
             if (string.IsNullOrEmpty(lineUserId))
             {
-                // 若意外沒有，保險：再送去登入一次（理論上不會進來）
                 var me = $"/Customer/Wallet/LiffReturn?rid={rid}";
                 return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(me)}");
             }
 
             var consumed = await _intentSvc.ConsumeAsync(rid, lineUserId);
-            if (consumed == null)
-            {
-                // 無效/過期/已核銷
-                return View("LiffReturnInvalid"); // 你可以做一個簡單失敗頁
-            }
+            if (consumed == null) return View("LiffReturnInvalid");
 
-            // TODO: 在這裡依 consumed.Mode / consumed.Token 執行「核銷、加幣」
-            // 你專案看起來有 Wallet / Point / PendingCoin 模組，請在這裡呼叫你的服務方法：
-            // e.g. await _walletSvc.AddCoinAsync(lineUserId, consumed.Token);
+            // TODO: 這裡依 consumed.Mode/Token 做「核銷、加幣」
+            // ex: 查 PendingCoin by token → 入帳 → 標記已領
 
-            // 成功頁（不再帶任何 mode/token，只顯示成功資訊）
             ViewBag.Rid = rid;
             ViewBag.Mode = consumed.Mode;
-            return View("LiffReturnSuccess"); // 做個簡單成功頁：恭喜加幣成功！
+            return View("LiffReturnSuccess");
         }
-    
+
 
 
 
