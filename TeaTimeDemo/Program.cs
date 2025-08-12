@@ -16,6 +16,7 @@ using Microsoft.Extensions.Caching.Memory;
 //using Microsoft.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.WebUtilities;       // QueryHelpers
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
@@ -27,6 +28,7 @@ using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Mapping;
 using TeaTimeDemo.Models;
 using TeaTimeDemo.Utility;
+using TeaTimeDemo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 // ── 新增：讓應用程式在 HTTP 80 端口也能接收請求（對應 cloudflared 預設的 ingress 轉送）
@@ -35,12 +37,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 //── 一、服務註冊 ─────────────────────────────────────────//
 
-// (0) 轉發標頭：讀取 Cloudflare 或反向代理傳來的 X-Forwarded-* 標頭
+
+// --- (A) Forwarded Headers：信任代理，把 X-Forwarded-* 還原為 Request 的原始資訊 ---
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
-                             | ForwardedHeaders.XForwardedProto;
-    // 如有需要，可設定 KnownProxies/KnownNetworks
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedFor;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 // (1) 本地化
@@ -85,7 +88,21 @@ builder.Services.ConfigureApplicationCookie(opts =>
     opts.AccessDeniedPath = "/Identity/Account/AccessDenied";
     opts.Cookie.SameSite = SameSiteMode.None; // <— 第三方跳轉必須 None
     opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    opts.Cookie.HttpOnly = true; // 防止 JavaScript 存取 Cookie
+    opts.Events = new CookieAuthenticationEvents
+    {
+        // 可依需要處理 OnRedirectToLogin 等事件
+    };
 });
+
+// 你若有其他 Cookie（TempData/Antiforgery）也要設 None+Secure
+builder.Services.AddAntiforgery(o =>
+{
+    o.Cookie.SameSite = SameSiteMode.None;
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
+
 
 // (5) CORS
 builder.Services.AddCors(o => o.AddPolicy("AllowAll",
@@ -97,6 +114,8 @@ builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+// 加入我們的 Intent 服務
+builder.Services.AddScoped<RedemptionIntentService>();
 
 // (7) 其他：HttpClient、MemoryCache、SignalR、RazorPages、AutoMapper
 builder.Services.AddHttpClient();
@@ -115,35 +134,63 @@ builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization()
     .AddViewLocalization();
 
-// (9) LINE OAuth 設定
+// (9) LINE OAuth 設定（重點：強制 https + 正確 Host）
 builder.Services
   .AddAuthentication(options =>
   {
       options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
       options.DefaultChallengeScheme = LineAuthenticationDefaults.AuthenticationScheme;
   })
-  .AddCookie() // Identity 已自動註冊，此行可留或移除都行
+  .AddCookie()
   .AddLine(LineAuthenticationDefaults.AuthenticationScheme, "LINE 帳號登入", options =>
   {
       options.ClientId = builder.Configuration["LineLogin:ChannelId"];
       options.ClientSecret = builder.Configuration["LineLogin:ChannelSecret"];
+
+      // 固定 CallbackPath，等等會把 redirect_uri 改寫成 https://{外部Host}{CallbackPath}
       options.CallbackPath = "/signin-line";
 
-      // 要求 openid, profile, email 權限
+      // 要求 openid/profile/email 權限
       options.Scope.Add("openid");
       options.Scope.Add("profile");
       options.Scope.Add("email");
 
-      // 將 email claim 取出
       options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
-
       options.SaveTokens = true;
 
-      // 調試：印出最終 OAuth URL
+      // ★關鍵：把 LINE 授權網址中的 redirect_uri 參數，強制換成 https + 外部 Host
       options.Events.OnRedirectToAuthorizationEndpoint = context =>
       {
-          Console.WriteLine("LINE OAuth URL: " + context.RedirectUri);
-          context.Response.Redirect(context.RedirectUri);
+          var req = context.Request;
+
+          // 1) 取外部 Host（優先 X-Forwarded-Host）
+          var forwardedHost = req.Headers["X-Forwarded-Host"].ToString();
+          var host = string.IsNullOrWhiteSpace(forwardedHost) ? req.Host.Value : forwardedHost;
+          var finalCallback = $"https://{host}{options.CallbackPath}"; // 一律 https
+
+          // 2) 解析授權網址，改寫 redirect_uri
+          var uri = new Uri(context.RedirectUri);
+          var parsed = QueryHelpers.ParseQuery(uri.Query);
+          if (parsed.ContainsKey("redirect_uri"))
+          {
+              var dict = parsed.ToDictionary(k => k.Key, v => v.Value.ToString());
+              dict["redirect_uri"] = finalCallback;
+
+              var newQuery = string.Join("&", dict.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+              var authBase = $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? "" : ":" + uri.Port)}{uri.AbsolutePath}";
+              var finalAuthUrl = $"{authBase}?{newQuery}";
+
+              // （可選）記錄實際導向網址，方便偵錯
+              Console.WriteLine("LINE OAuth URL (final): " + finalAuthUrl);
+
+              context.Response.Redirect(finalAuthUrl);
+          }
+          else
+          {
+              // 守備：如果沒有 redirect_uri 參數，原樣導向
+              Console.WriteLine("LINE OAuth URL (as-is): " + context.RedirectUri);
+              context.Response.Redirect(context.RedirectUri);
+          }
           return Task.CompletedTask;
       };
   });
@@ -167,11 +214,26 @@ app.UseCookiePolicy(new CookiePolicyOptions
     MinimumSameSitePolicy = SameSiteMode.None,
     Secure = CookieSecurePolicy.Always
 });
-            
-//── 二、中介軟體順序 ───────────────────────────────────────//
 
 // 1. Forwarded Headers：處理 Cloudflare / 反向 Proxy
 app.UseForwardedHeaders();
+
+// 強制 Https Redirection（配合代理）
+app.Use(async (ctx, next) =>
+{
+    // 若是代理端已還原 https，但 ASP.NET 覺得是 http，就改成 https
+    if (ctx.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto) && proto == "https")
+    {
+        ctx.Request.Scheme = "https";
+    }
+    await next();
+});
+
+
+            
+//── 二、中介軟體順序 ───────────────────────────────────────//
+
+
 
 // 2. 強制 HTTPS
 app.UseHttpsRedirection();
@@ -201,7 +263,7 @@ app.UseAuthorization();
 // 8. Session
 app.UseSession();
 
-// 9. Endpoint 映射
+// 9. 路由
 app.MapControllerRoute(
     name: "default",
     pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
@@ -210,11 +272,13 @@ app.MapControllerRoute(
     name: "areaRoute",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-// 加一條短網址自動轉去正確的 area
+// 短網址
 app.MapControllerRoute(
     name: "claimShortcut",
     pattern: "Wallet/Claim",
     defaults: new { area = "Customer", controller = "Wallet", action = "Claim" });
+
+
 
 app.MapRazorPages();
 app.MapControllers();
