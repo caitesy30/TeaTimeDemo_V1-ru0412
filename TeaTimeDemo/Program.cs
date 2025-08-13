@@ -116,6 +116,7 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 // 加入我們的 Intent 服務
 builder.Services.AddScoped<RedemptionIntentService>();
+builder.Services.AddScoped<WalletCreditService>();
 
 // (7) 其他：HttpClient、MemoryCache、SignalR、RazorPages、AutoMapper
 builder.Services.AddHttpClient();
@@ -123,6 +124,10 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 builder.Services.AddRazorPages();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+// 背景服務
+builder.Services.AddHostedService<PendingRefundWorker>();
+builder.Services.AddHostedService<OutboxDispatcher>();
 
 // (8) MVC + JSON + Localization
 builder.Services.AddControllersWithViews()

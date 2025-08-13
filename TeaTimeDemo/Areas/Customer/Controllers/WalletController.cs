@@ -50,11 +50,12 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         /// LINE Login 回來：以 rid 單次核銷，加幣後顯示成功頁
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> LiffReturn(Guid rid)
+        public async Task<IActionResult> LiffReturn(Guid rid, [FromServices] WalletCreditService credit)
         {
             var lineUserId = User.FindFirst("urn:line:userid")?.Value
-                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? string.Empty;
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? string.Empty;
+
             if (string.IsNullOrEmpty(lineUserId))
             {
                 var me = $"/Customer/Wallet/LiffReturn?rid={rid}";
@@ -64,13 +65,32 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             var consumed = await _intentSvc.ConsumeAsync(rid, lineUserId);
             if (consumed == null) return View("LiffReturnInvalid");
 
-            // TODO: 這裡依 consumed.Mode/Token 做「核銷、加幣」
-            // ex: 查 PendingCoin by token → 入帳 → 標記已領
+            if (string.Equals(consumed.Mode, "gift", StringComparison.OrdinalIgnoreCase))
+            {
+                var result = await credit.AddCoinByTokenAsync(consumed.Token, lineUserId, rid);
+                if (result.Result == WalletCreditService.ClaimResult.Success)
+                    return View("LiffReturnSuccess");
 
-            ViewBag.Rid = rid;
-            ViewBag.Mode = consumed.Mode;
+                if (result.Result is WalletCreditService.ClaimResult.Already or WalletCreditService.ClaimResult.NotFoundOrExpired)
+                    return View("LiffReturnInvalid");
+
+                // 非指定領取人 → 導人工確認
+                if (result.Result == WalletCreditService.ClaimResult.NotYourInvite)
+                {
+                    var pc = _unitOfWork.PendingCoin.GetFirstOrDefault(x => x.Token == consumed.Token);
+                    ViewBag.NickName = pc?.NickName;
+                    ViewBag.Token = pc?.Token;
+                    ViewBag.PendingCoinId = pc?.Id;
+                    return View("ClaimConfirm", pc);
+                }
+
+                return View("LiffReturnInvalid");
+            }
+
+            // 其他模式先顯示成功或依需求擴充
             return View("LiffReturnSuccess");
         }
+
 
 
 
@@ -587,16 +607,19 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             // === 2. 建立 PendingCoin ===
             var pendingCoin = new PendingCoin
             {
-                Token = token,                                 // 新增：唯一token
-                NickName = model.TargetLineFriendName ?? "",   // 新增：好友暱稱
+                Token = token,
+                NickName = model.TargetLineFriendName ?? "",
                 FromUserId = userId,
                 CurrencyTypeId = model.CurrencyTypeId,
                 Quantity = model.TransferQty,
-                LineUserId = model.TargetLineFriendId, // 若還沒授權也可先空著
+                LineUserId = model.TargetLineFriendId, // 可為空
                 Memo = $"轉讓給LINE好友：{model.TargetLineFriendName}",
                 IsClaimed = false,
-                CreatedAt = DateTime.Now
+                Status = 0,
+                CreatedAt = DateTime.Now,
+                ExpiresAt = DateTime.UtcNow.AddHours(24) // 你可改 48/72h
             };
+
             _unitOfWork.PendingCoin.Add(pendingCoin);
 
             // === 3. 儲存 ===
@@ -722,7 +745,7 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 
         private void ClaimPendingCoinsIfAny(string lineUserId)
         {
-            var pendings = _unitOfWork.PendingCoin.GetAll(x => x.LineUserId == lineUserId && !x.IsClaimed).ToList();
+            var pendings = _unitOfWork.PendingCoin.GetAll(x => x.LineUserId == lineUserId && x.Status == 0 && x.ExpiresAt > DateTime.UtcNow).ToList();
             foreach (var pc in pendings)
             {
                 var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == pc.CurrencyTypeId)
