@@ -74,6 +74,9 @@ namespace TeaTimeDemo.DataAccess.Data
 
         public DbSet<WalletRedemptionIntent> WalletRedemptionIntents { get; set; }
 
+        public DbSet<OutboxMessage> OutboxMessages { get; set; }
+
+
 
 
         /// <summary>
@@ -356,7 +359,19 @@ namespace TeaTimeDemo.DataAccess.Data
                 .HasForeignKey(stg => stg.LayerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-     
+            modelBuilder.Entity<PendingCoin>()
+           .HasIndex(x => x.Token)
+           .IsUnique()
+           .HasFilter("[Token] IS NOT NULL");
+
+            modelBuilder.Entity<OutboxMessage>()
+                .HasIndex(x => new { x.ProcessedUtc, x.NotBeforeUtc });
+
+            modelBuilder.Entity<UserCurrencyLog>()
+                .HasIndex(x => x.IdempotencyKey)
+                .IsUnique()
+                .HasFilter("[IdempotencyKey] IS NOT NULL");
+
 
         }
     }

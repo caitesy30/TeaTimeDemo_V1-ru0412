@@ -26,5 +26,7 @@ namespace TeaTimeDemo.Models
         public string Action { get; set; }          // 進/出/消費/贈送
         public string Memo { get; set; }            // 備註
         public DateTime CreatedAt { get; set; }     // 異動時間
+        public string? IdempotencyKey { get; set; } // 例如 claim:{pendingId} / refund:{pendingId}
+
     }
 }
