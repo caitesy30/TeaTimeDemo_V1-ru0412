@@ -117,6 +117,7 @@ builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 // 加入我們的 Intent 服務
 builder.Services.AddScoped<RedemptionIntentService>();
 builder.Services.AddScoped<WalletCreditService>();
+builder.Services.AddScoped<ChannelUserLinkService>();
 
 // (7) 其他：HttpClient、MemoryCache、SignalR、RazorPages、AutoMapper
 builder.Services.AddHttpClient();

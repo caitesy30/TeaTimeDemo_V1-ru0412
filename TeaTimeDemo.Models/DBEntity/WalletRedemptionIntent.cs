@@ -33,5 +33,12 @@ namespace TeaTimeDemo.Models.DBEntity
         /// 安全起見，意圖只在短時間內有效（例如 30 分鐘）
         /// </summary>
         public DateTime ExpiresUtc { get; set; } = DateTime.UtcNow.AddMinutes(30);
+
+        // Models/DBEntity/WalletRedemptionIntent.cs （新增兩欄）
+        [MaxLength(64)] public string? SourceLiffId { get; set; }     // 來源 LIFF ID
+        [MaxLength(50)] public string? SourceChannelId { get; set; }  // 來源 LINE ChannelId
+
+
+
     }
 }

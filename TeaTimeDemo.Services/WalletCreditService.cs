@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Linq;
 using System.Text.Json;
 using TeaTimeDemo.DataAccess.Data;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
@@ -23,15 +24,20 @@ namespace TeaTimeDemo.Services
         public sealed record ClaimOutcome(ClaimResult Result, string Message);
 
         // =============== 領取入帳（含重入保障＋Outbox） ===============
-        public async Task<ClaimOutcome> AddCoinByTokenAsync(string token, string lineUserId, Guid rid)
+        // ✅ 新版簽章：用全域會員入帳 + 可選的 claimedLineUserId（供「指定領取人」核對）
+        public async Task<ClaimOutcome> AddCoinByTokenAsync(
+            string token,
+            string globalUserId,
+            Guid rid,
+            string? claimedLineUserId = null)
         {
-            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(lineUserId))
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(globalUserId))
                 return new ClaimOutcome(ClaimResult.Invalid, "缺少必要參數");
 
             await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-
             var nowUtc = DateTime.UtcNow;
 
+            // 1) 取待領幣
             var pending = _uow.PendingCoin.GetFirstOrDefault(x => x.Token == token);
             if (pending == null || pending.Status != 0 || pending.ExpiresAt <= nowUtc)
                 return new ClaimOutcome(ClaimResult.NotFoundOrExpired, "連結不存在或已過期");
@@ -39,62 +45,85 @@ namespace TeaTimeDemo.Services
             if (pending.IsClaimed || pending.ClaimedAt.HasValue)
                 return new ClaimOutcome(ClaimResult.Already, "此連結已被使用");
 
-            if (!string.IsNullOrEmpty(pending.LineUserId) && pending.LineUserId != lineUserId)
+            // 2) 指定領取人檢查（若 PendingCoin 有指定 LineUserId，就要與實際登入者一致）
+            if (!string.IsNullOrEmpty(pending.LineUserId) &&
+                !string.IsNullOrEmpty(claimedLineUserId) &&
+                pending.LineUserId != claimedLineUserId)
+            {
                 return new ClaimOutcome(ClaimResult.NotYourInvite, "非指定領取人");
+            }
 
-            // ===== 計算餘額（以最後一筆 BalanceAfter 為準）=====
-            var lastLog = _uow.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == pending.CurrencyTypeId)
-                        .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            // 3) 餘額計算（以最後一筆 BalanceAfter 為主，若無則用加總）
+            var lastLog = _uow.UserCurrencyLog.GetAll(x => x.UserId == globalUserId && x.CurrencyTypeId == pending.CurrencyTypeId)
+                          .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+
             var oldBal = lastLog?.BalanceAfter
-                        ?? _uow.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == pending.CurrencyTypeId)
-                                               .Sum(x => x.Quantity);
+                      ?? _uow.UserCurrencyLog.GetAll(x => x.UserId == globalUserId && x.CurrencyTypeId == pending.CurrencyTypeId)
+                                             .Sum(x => x.Quantity);
+
             var newBal = oldBal + pending.Quantity;
 
+            // 4) 入帳（冪等鍵避免重複寫入）
             var idem = $"claim:{pending.Id}";
-            // 若曾經寫過（重試/重入），會被唯一索引擋掉
             _uow.UserCurrencyLog.Add(new UserCurrencyLog
             {
-                UserId = lineUserId,
+                UserId = globalUserId,                    // ✅ 一律記全域會員
                 CurrencyTypeId = pending.CurrencyTypeId,
                 Quantity = pending.Quantity,
                 BalanceAfter = newBal,
                 Action = "LINE好友領取",
-                Memo = $"token:{pending.Token} rid:{rid} from:{pending.FromUserId} note:{pending.Memo}",
+                Memo = string.IsNullOrWhiteSpace(pending.Memo) ? "LINE自動領取" : pending.Memo,
                 CreatedAt = DateTime.Now,
                 IdempotencyKey = idem
             });
 
-            // 標記核銷
+            // 5) 標記待領幣已領
             pending.IsClaimed = true;
             pending.ClaimedAt = DateTime.Now;
             pending.Status = 1;
-            pending.ClaimedByLineUserId = lineUserId;
             pending.ClaimedRid = rid;
-            if (string.IsNullOrEmpty(pending.LineUserId))
-                pending.LineUserId = lineUserId;
+            pending.ClaimedByLineUserId = claimedLineUserId;
 
-            _uow.PendingCoin.Update(pending);
-
-            // 寫 Outbox（領取成功）
+            // 6) Outbox（可用於下游通知）
             _db.OutboxMessages.Add(new OutboxMessage
             {
                 Type = "PendingCoinClaimed",
-                PayloadJson = JsonSerializer.Serialize(new
+                PayloadJson = System.Text.Json.JsonSerializer.Serialize(new
                 {
                     pending.Id,
-                    pending.Token,
+                    GlobalUserId = globalUserId,
                     pending.CurrencyTypeId,
-                    pending.Quantity,
-                    lineUserId,
-                    rid
+                    pending.Quantity
                 })
             });
 
-            await _uow.SaveAsync();
-            await tx.CommitAsync();
 
-            return new ClaimOutcome(ClaimResult.Success, "領取成功");
+            try
+            {
+                await _uow.SaveAsync();
+                await tx.CommitAsync();
+                return new ClaimOutcome(ClaimResult.Success, "入帳成功");
+            }
+            catch (DbUpdateException ex)
+            {
+                // 若是 IdempotencyKey 唯一鍵衝突，視為已處理（重送/重入）
+                var msg = ex.InnerException?.Message ?? ex.Message;
+                if (msg.Contains("IX_UserCurrencyLogs_IdempotencyKey", StringComparison.OrdinalIgnoreCase)
+                 || msg.Contains("IdempotencyKey", StringComparison.OrdinalIgnoreCase))
+                {
+                    await tx.RollbackAsync();
+                    return new ClaimOutcome(ClaimResult.Already, "此連結已核銷");
+                }
+                await tx.RollbackAsync();
+                throw; // 其他例外往外丟，由全域例外處理
+            }
+
         }
+
+        // ✅ 方便保留舊呼叫（3 參數）相容：自動轉呼新版
+        public Task<ClaimOutcome> AddCoinByTokenAsync(string token, string globalUserId, Guid rid)
+            => AddCoinByTokenAsync(token, globalUserId, rid, null);
+    
 
         // =============== 逾期退回（給排程呼叫） ===============
         public async Task<int> RefundExpiredPendingsOnceAsync(int take = 100)

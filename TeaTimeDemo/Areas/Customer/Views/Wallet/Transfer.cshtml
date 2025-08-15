@@ -43,6 +43,11 @@
                     <button type="button" id="shareLineInviteBtn" class="btn btn-success mt-2 w-100">LINE 好友真實分享邀請</button>
                     <button type="button" id="scanQrBtn" class="btn btn-secondary mt-2 w-100">掃描對方收款QR</button>
                     <input type="hidden" id="pendingToken" value="" />
+
+                    <!-- 補上兩個欄位（即使暫時沒用，避免取值 undefined） -->
+                    <input type="hidden" id="LineFriendId" name="TargetLineFriendId" value="" />
+                    <input type="hidden" id="LineFriendName" name="TargetLineFriendName" value="" />
+
                 </div>
             </div>
         </div>
@@ -70,105 +75,137 @@
 </div>
 
 @section Scripts {
-    <!-- 更新到最新版 LIFF SDK，預設支援 Concatenate 模式 -->
-    <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
-
+  
     <script>
-        $(function () {
+        (function () {
+          const LIFF_ID = "2007537903-r3pknwbl";
+
+          // 切 Tab 顯示 / 隱藏按鈕
+          $(function () {
             $('#transferTab button').on('shown.bs.tab', function (e) {
-                let tab = $(e.target).attr('id');
-                if (tab === 'tab-member') {
-                    $('#submitMemberBtn').show();
-                    $('#shareLineInviteBtn').hide();
-                    $('#scanQrBtn').hide();
-                } else {
-                    $('#submitMemberBtn').hide();
-                    $('#shareLineInviteBtn').show();
-                    $('#scanQrBtn').show();
-                }
+              const id = $(e.target).attr('id');
+              const isMember = (id === 'tab-member');
+              $('#submitMemberBtn').toggle(isMember);
+              $('#shareLineInviteBtn, #scanQrBtn').toggle(!isMember);
             });
-
+            // 預設
             $('#submitMemberBtn').show();
-            $('#shareLineInviteBtn').hide();
-            $('#scanQrBtn').hide();
+            $('#shareLineInviteBtn, #scanQrBtn').hide();
 
+            // 送出會員轉讓（原樣）
             $('#transferForm').on('submit', function (e) {
-                let activeTab = $('#transferTab .nav-link.active').attr('id');
-                if (activeTab === 'tab-member' && !$('#TargetUserId').val()) {
-                    alert('請選擇會員');
-                    e.preventDefault();
-                }
-                if (activeTab === 'tab-line') {
-                    e.preventDefault();
-                }
-            });
-
-            // ===== LINE 好友分享邀請（改走 rid 萬用入口） =====
-            $('#shareLineInviteBtn').off('click').on('click', function (e) {
+              const active = $('#transferTab .nav-link.active').attr('id');
+              if (active === 'tab-member' && !$('#TargetUserId').val()) {
+                alert('請選擇會員');
                 e.preventDefault();
-
-                let currencyTypeId = $('[name="CurrencyTypeId"]').val();
-                let transferQty = $('[name="TransferQty"]').val();
-                let note = $('[name="Note"]').val() || '';
-                let name = $('[name="Name"]').val();
-
-                if (!transferQty || transferQty <= 0) {
-                    alert('請輸入正確的轉讓數量');
-                    return;
-                }
-
-                $.ajax({
-                    url: '/Customer/Wallet/TransferToLine',
-                    type: 'POST',
-                    data: {
-                        CurrencyTypeId: currencyTypeId,
-                        TransferQty: transferQty,
-                        Note: note,
-                        Name: name,
-                        TargetLineFriendId: $('#LineFriendId').val(),
-                        TargetLineFriendName: $('#LineFriendName').val()
-                    },
-                    success: function (res) {
-                        if (res && res.token) {
-                            // ★ 關鍵：分享的連結改成「後端 Start」→ 建 rid → LINE Login → LiffReturn
-                            const host = window.location.origin;
-                            const startUrl = `${host}/Customer/Wallet/Start?mode=gift&token=${encodeURIComponent(res.token)}`;
-
-                            liff.init({ liffId: "2007537903-r3pknwbl" })
-                                .then(() => liff.shareTargetPicker([{
-                                    type: "text",
-                                    text: `你收到來自【${name}】的點數轉讓邀請！\n數量：${transferQty}\n註記：${note}\n【請點這裡領取】👉 ${startUrl}`
-                                }]))
-                                .then(() => {
-                                    window.location.href = '/Customer/Wallet/TransferResult?msg=' +
-                                        encodeURIComponent('已預約轉讓給 LINE 好友，等對方領取後才會扣點！');
-                                })
-                                .catch(err => alert('LIFF 分享或初始化失敗：' + err.message));
-                        } else {
-                            alert('產生邀請失敗，請稍後重試');
-                        }
-                    },
-                    error: function () {
-                        alert('伺服器錯誤，無法產生邀請');
-                    }
-                });
+              }
+              if (active === 'tab-line') e.preventDefault(); // LINE 好友走分享流程
             });
 
-            // ===== 掃碼保留：掃到 token 也會被導向 Start → rid → LiffReturn =====
-            $('#scanQrBtn').off('click').on('click', function () {
-                liff.init({ liffId: "2007537903-r3pknwbl" })
-                    .then(() => liff.scanCode())
-                    .then(result => {
-                        if (result && result.value) {
-                            const host = window.location.origin;
-                            const startUrl = `${host}/Customer/Wallet/Start?mode=gift&token=${encodeURIComponent(result.value)}`;
-                            window.location.href = startUrl;
-                        } else {
-                            alert('未掃到有效 QR 碼');
-                        }
-                    })
-                    .catch(err => alert('掃描失敗，請用 LINE APP 操作'));
+            // ===== 真實分享：產 Token → 分享 =====
+                   $('#shareLineInviteBtn').off('click').on('click', async function (e) {
+          e.preventDefault();
+
+          const currencyTypeId = $('[name=CurrencyTypeId]').val();
+          const transferQty    = Number($('[name=TransferQty]').val());
+          const note           = ($('[name=Note]').val() || '').trim();
+          const name           = ($('[name=Name]').val() || '').trim();
+
+          if (!transferQty || transferQty <= 0) { alert('請輸入正確的轉讓數量'); return; }
+
+          try {
+            // 1) 先向後端建立 Pending + 預扣，拿 token
+            const res = await $.ajax({
+              url: '/Customer/Wallet/TransferToLine',
+              type: 'POST',
+              dataType: 'json',
+              data: {
+                CurrencyTypeId: currencyTypeId,
+                TransferQty: transferQty,
+                Note: note,
+                Name: name,
+                TargetLineFriendId: $('#LineFriendId').val() || '',
+                TargetLineFriendName: $('#LineFriendName').val() || ''
+              }
             });
+
+            if (!res || !res.success || !res.token) { alert('產生邀請失敗，請稍後重試'); return; }
+
+            // 2) 組 Start URL（走後端 Start→rid→LiffReturn）
+            const startUrl =
+              `${location.origin}/Customer/Wallet/Start?mode=gift&token=${encodeURIComponent(res.token)}&liffId=${encodeURIComponent(LIFF_ID)}`;
+
+            // 3) 非 LINE App 直接走備援：複製連結 + 開新分頁（不要硬 init LIFF）
+            if (!window.isInLineApp()) {
+              try { await navigator.clipboard.writeText(startUrl); } catch {}
+              alert('已產生邀請連結（目前不在 LINE 內），已幫你複製，請貼給好友。');
+              window.open(startUrl, '_blank');
+              // 轉結果頁
+              location.href = '/Customer/Wallet/TransferResult?msg=' + encodeURIComponent('已預約轉讓，請把連結分享給好友！');
+              return;
+            }
+
+            // 4) 在 LINE 內 → 初始化 LIFF 後用 shareTargetPicker
+            try {
+              const liff = await ensureLiff(LIFF_ID);
+              if (!liff.isLoggedIn()) { liff.login(); return; }
+
+              const canShare = liff.isApiAvailable('shareTargetPicker');
+              if (canShare) {
+                const text =
+                  `你收到來自【${name || '朋友'}】的點數轉讓邀請！\n` +
+                  `數量：${transferQty}\n註記：${note || '（無）'}\n` +
+                  `【請點這裡領取】👉 ${startUrl}`;
+
+                const result = await liff.shareTargetPicker([{ type: 'text', text }]);
+                // 使用者取消分享時 result 可能是 undefined，這不是錯誤
+              } else {
+                // 版本或裝置不支援 → 備援
+                try { await navigator.clipboard.writeText(startUrl); } catch {}
+                alert('目前裝置不支援分享選擇器，連結已複製，請貼給好友。');
+                window.location.href = startUrl;
+              }
+            } catch (err) {
+              console.error('LIFF error:', err);
+              const msg = (err && (err.message || (err.type ? `SDK載入失敗(${err.type})` : String(err)))) || '初始化失敗';
+              alert('LIFF 分享或初始化失敗：' + msg);
+              // 再給一次備援
+              try { await navigator.clipboard.writeText(startUrl); } catch {}
+              window.location.href = startUrl;
+            }
+
+            // 5) 結束頁
+            location.href = '/Customer/Wallet/TransferResult?msg=' +
+              encodeURIComponent('已預約轉讓給 LINE 好友，等對方領取後才會扣點！');
+
+          } catch (xhr) {
+            if (xhr && xhr.status === 401) {
+              const returnUrl = encodeURIComponent(location.pathname + location.search);
+              location.href = `/Customer/LiffAuthEntry/Login?returnUrl=${returnUrl}`;
+              return;
+            }
+            alert('伺服器錯誤，無法產生邀請');
+          }
         });
+
+               // === 掃碼 ===
+            $('#scanQrBtn').off('click').on('click', async function () {
+              try {
+                const liff = await ensureLiff(LIFF_ID);
+                const result = await liff.scanCode();
+                if (!result || !result.value) { alert('未掃到有效 QR 碼'); return; }
+
+                const v = result.value;
+                const url = /^https?:\/\//i.test(v)
+                  ? v
+                  : `${location.origin}/Customer/Wallet/Start?mode=gift&token=${encodeURIComponent(v)}&liffId=${encodeURIComponent(LIFF_ID)}`;
+                location.href = url;
+              } catch {
+                alert('掃描失敗，請用 LINE APP 操作');
+              }
+            });
+          });
+        })();
     </script>
 }
+

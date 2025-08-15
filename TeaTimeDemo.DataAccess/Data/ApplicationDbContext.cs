@@ -76,6 +76,8 @@ namespace TeaTimeDemo.DataAccess.Data
 
         public DbSet<OutboxMessage> OutboxMessages { get; set; }
 
+        public DbSet<LineChannelAccount> LineChannelAccounts { get; set; } // ← 新增
+
 
 
 
@@ -372,7 +374,12 @@ namespace TeaTimeDemo.DataAccess.Data
                 .IsUnique()
                 .HasFilter("[IdempotencyKey] IS NOT NULL");
 
+            modelBuilder.Entity<LineChannelAccount>()
+     　　　　　  .HasIndex(x => new { x.ChannelId, x.LineUserId })
+       　　　　　.IsUnique(); // 同一 Channel 同一 userId 僅能對到單一全域帳號
 
+            modelBuilder.Entity<LineChannelAccount>()
+                .HasIndex(x => x.GlobalUserId); // 方便查同一全域帳號綁了哪些 Channel
         }
     }
 }

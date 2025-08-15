@@ -1,88 +1,25 @@
 ﻿@{
     ViewData["Title"] = "LINE 領取";
+    // 你的 LIFF ID（若未來要更動，可只改這裡）
+    var liffId = "2007537903-r3pknwbl";
 }
-<div id="claimResult" class="text-center mt-5" style="font-size:2rem;font-weight:bold;"></div>
+<div id="claimResult" class="text-center mt-5" style="font-size:2rem;font-weight:bold;">
+    正在前往領取頁面，請稍候…
+</div>
 
-<!-- 引入 LIFF SDK -->
-<script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
 <script>
-    const liffId = "2007537903-r3pknwbl"; // 你的 LIFF_ID
+    (function () {
+      // 如果網址含 token，就直接導去 Start（後端會處理 rid → LiffReturn → 入帳）
+      const p = new URLSearchParams(location.search);
+      const token = p.get('token');
 
-    document.getElementById('claimResult').innerText = "正在驗證身份，請稍候...";
-
-    // ===== Token 偵錯、補救機制 Start =====
-    // 1. 顯示目前網址
-    alert("目前網址：" + window.location.href);
-
-    // 2. 取得網址參數 token
-    const urlParams = new URLSearchParams(window.location.search);
-    let token = urlParams.get('token');
-    alert("目前解析到的 token：" + token);
-
-    // 3. 若沒有 token，改從 localStorage 補回
-    if (!token) {
-        token = localStorage.getItem('claimToken');
-        if (token) {
-            alert("自動補上 token，頁面將重新導向！");
-            location.href = location.pathname + "?token=" + encodeURIComponent(token);
-        } else {
-            alert("token 參數遺失！請重新點擊 LINE 分享連結！");
-        }
-    } else {
-        // 有 token 時寫入 localStorage 方便下次自動補回
-        localStorage.setItem('claimToken', token);
-    }
-    // ===== Token 偵錯、補救機制 End =====
-
-    (async function () {
-        try {
-            // 初始化 LIFF
-            await liff.init({ liffId });
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
-            // 取得 LINE 使用者資料
-            const profile = await liff.getProfile();
-            const lineUserId = profile.userId;
-
-            // 顯示使用者 ID（可去除）
-            alert("你的 LINE userId: " + lineUserId);
-
-            // 呼叫後端 API 領取點數
-            fetch('/Customer/Wallet/ClaimByUserId', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lineUserId })
-            })
-            .then(res => res.text())
-            .then(msg => {
-                document.getElementById('claimResult').innerText = msg;
-            })
-            .catch(err => {
-                document.getElementById('claimResult').innerText = "發生錯誤：" + err;
-            });
-        } catch (err) {
-            document.getElementById('claimResult').innerText = "LIFF 初始化失敗：" + (err.message || err);
-        }
+      if (token) {
+        const liffId = "@liffId";
+        const url = `/Customer/Wallet/Start?mode=gift&token=${encodeURIComponent(token)}&liffId=${encodeURIComponent(liffId)}`;
+        // 用 replace 避免使用者「上一頁」又回到中繼頁
+        location.replace(url);
+      } else {
+        document.getElementById('claimResult').innerText = "token 遺失，請重新點擊分享連結";
+      }
     })();
-</script>
-<script>
-    class LiffHelper {
-        static async initAndGetToken() {
-            await liff.init({ liffId: '你的 LIFF_ID' });
-            // 取得環境資訊，如 utou/group/external 等:contentReference[oaicite:6]{index=6}
-            const ctx = liff.getContext();
-            console.log('LIFF context:', ctx);
-
-            // 取得使用者 AccessToken，通常用於向後端驗證身分
-            const accessToken = liff.getAccessToken();
-            console.log('AccessToken:', accessToken);
-
-            // ... 可將 accessToken 帶到後端做身份驗證
-        }
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-        LiffHelper.initAndGetToken();
-    });
 </script>

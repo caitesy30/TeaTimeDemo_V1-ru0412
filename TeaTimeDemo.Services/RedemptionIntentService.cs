@@ -21,17 +21,20 @@ namespace TeaTimeDemo.Services
         /// <summary>
         /// 建立意圖，回 rid
         /// </summary>
-        public async Task<Guid> CreateAsync(string mode, string token)
+        public async Task<Guid> CreateAsync(string mode, string token, string? sourceLiffId, string? sourceChannelId)
         {
             var entity = new WalletRedemptionIntent
             {
                 Mode = mode ?? string.Empty,
-                Token = token ?? string.Empty
+                Token = token ?? string.Empty,
+                SourceLiffId = sourceLiffId,
+                SourceChannelId = sourceChannelId
             };
             _db.WalletRedemptionIntents.Add(entity);
             await _db.SaveChangesAsync();
             return entity.Id;
         }
+
 
         /// <summary>
         /// 以 rid 取得有效意圖（未核銷、未過期）

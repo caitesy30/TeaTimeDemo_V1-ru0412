@@ -4,15 +4,18 @@
 // 日期：2024-06-05
 // 目的：會員點數異動紀錄專屬頁
 // ================================
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models.ViewModels;
+using TeaTimeDemo.Utility;
 
 namespace TeaTimeDemo.Areas.Customer.Controllers
 {
     [Area("Customer")]
+    [Authorize] // ← 需要登入
     public class PointLogController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -22,42 +25,67 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         }
 
         // GET: /Customer/PointLog/Index
+        [HttpGet]
         public IActionResult Index()
         {
-            // 取得目前登入會員ID
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction("Login", "Account", new { area = "Identity", returnUrl = Url.Action(nameof(Index), "PointLog", new { area = "Customer" }) });
 
-            // 取得所有會員ID+Name (只需查一次)
-            var users = _unitOfWork.ApplicationUser.GetAll().ToList();
-
-            // 取得所有幣種（名稱查找用）
+            // 只查需要的資料
+            var meName = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.Id == userId)?.Name ?? "";
             var coins = _unitOfWork.CurrencyType.GetAll().ToList();
 
-            var userDict = users.ToDictionary(u => u.Id, u => u.Name);
-
-            // 抓所有點數異動紀錄，JOIN 幣種名稱
-            var logs = _unitOfWork.UserCurrencyLog.GetAll()
+            var myLogs = _unitOfWork.UserCurrencyLog
+                .GetAll(x => x.UserId == userId) // ← 只抓自己的
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new UserCurrencyLogVM
                 {
-                    Name = userDict.ContainsKey(x.UserId) ? userDict[x.UserId] : "",
+                    Name = meName, // View 有「姓名」欄，就填自己的名字
                     CreatedAt = x.CreatedAt,
                     CurrencyTypeName = coins.FirstOrDefault(c => c.Id == x.CurrencyTypeId)?.Name ?? "",
                     Quantity = x.Quantity,
                     BalanceAfter = x.BalanceAfter,
                     Action = x.Action,
-                    Memo = ReplaceUserIdWithName(x.Memo, userDict)
+                    Memo = x.Memo
                 })
                 .ToList();
 
-            // ViewModel 只需要 Logs
-            var vm = new PointLogViewModel
-            {
-                Logs = logs
-            };
-
-            return View(vm);
+            return View(new PointLogViewModel { Logs = myLogs });
         }
+
+        // 同檔案內新增一個 Admin 專用動作
+        [HttpGet]
+        [Authorize(Roles = SD.Role_Admin)] // ← 只有 Admin 能看全部
+        public IActionResult All(string? userId = null)
+        {
+            var logsQuery = _unitOfWork.UserCurrencyLog.GetAll();
+
+            if (!string.IsNullOrEmpty(userId))
+                logsQuery = logsQuery.Where(x => x.UserId == userId);
+
+            var users = _unitOfWork.ApplicationUser.GetAll().ToList();
+            var userDict = users.ToDictionary(u => u.Id, u => u.Name);
+            var coins = _unitOfWork.CurrencyType.GetAll().ToList();
+
+            var logs = logsQuery
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new UserCurrencyLogVM
+                {
+                    Name = userDict.TryGetValue(x.UserId, out var name) ? name : "",
+                    CreatedAt = x.CreatedAt,
+                    CurrencyTypeName = coins.FirstOrDefault(c => c.Id == x.CurrencyTypeId)?.Name ?? "",
+                    Quantity = x.Quantity,
+                    BalanceAfter = x.BalanceAfter,
+                    Action = x.Action,
+                    Memo = x.Memo
+                })
+                .ToList();
+
+            return View("Index", new PointLogViewModel { Logs = logs }); // 共用同一個 View
+        }
+
+
 
         private static string ReplaceUserIdWithName(string memo, Dictionary<string, string> userDict)
         {

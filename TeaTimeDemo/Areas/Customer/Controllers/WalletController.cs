@@ -8,18 +8,20 @@
 using AspNet.Security.OAuth.Line;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http; // 確保有引入命名空間
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using TeaTimeDemo.DataAccess.Data;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Models;
 using TeaTimeDemo.Models.ViewModels;
-using Microsoft.AspNetCore.Http; // 確保有引入命名空間
 using TeaTimeDemo.Services;
-using TeaTimeDemo.DataAccess.Data;
 
 namespace TeaTimeDemo.Areas.Customer.Controllers
 {
@@ -40,9 +42,14 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         /// 分享入口：/Customer/Wallet/Start?mode=gift&token=abc123
         /// 建 rid → 302 到 LiffAuthEntry/Login?returnUrl=/Customer/Wallet/LiffReturn?rid={rid}
         [HttpGet]
-        public async Task<IActionResult> Start(string mode, string token)
+        public async Task<IActionResult> Start(string mode, string token, string? liffId, [FromServices] IConfiguration cfg)
         {
-            var rid = await _intentSvc.CreateAsync(mode, token);
+            // 依 LIFF ID 找對應的 ChannelId（appsettings.json 的對照表）
+            var channelId = string.IsNullOrWhiteSpace(liffId)
+                ? null
+                : cfg[$"Line:LiffToChannel:{liffId}"];
+
+            var rid = await _intentSvc.CreateAsync(mode, token, liffId, channelId);
             var returnUrl = $"/Customer/Wallet/LiffReturn?rid={rid}";
             return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
         }
@@ -50,44 +57,44 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         /// LINE Login 回來：以 rid 單次核銷，加幣後顯示成功頁
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> LiffReturn(Guid rid, [FromServices] WalletCreditService credit)
-        {
-            var lineUserId = User.FindFirst("urn:line:userid")?.Value
-                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                           ?? string.Empty;
+        public async Task<IActionResult> LiffReturn(
+          Guid rid,
+          [FromServices] WalletCreditService credit,
+          [FromServices] ChannelUserLinkService linkSvc)
+           {
+            // 1) 取得 LINE userId（身分供映射用）
+            var lineUserId = User.FindFirst("urn:line:userid")?.Value ?? string.Empty;
 
-            if (string.IsNullOrEmpty(lineUserId))
-            {
-                var me = $"/Customer/Wallet/LiffReturn?rid={rid}";
-                return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(me)}");
-            }
+            // 2) 取得全域會員 Id（Identity 內部主鍵）
+            var globalUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(globalUserId))
+                return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString($"/Customer/Wallet/LiffReturn?rid={rid}")}");
 
+            // 3) 取出意圖，並綁定 (ChannelId, LineUserId) → GlobalUserId
             var consumed = await _intentSvc.ConsumeAsync(rid, lineUserId);
             if (consumed == null) return View("LiffReturnInvalid");
 
+            if (!string.IsNullOrWhiteSpace(consumed.SourceChannelId) && !string.IsNullOrWhiteSpace(lineUserId))
+            {
+                await linkSvc.BindAsync(consumed.SourceChannelId, lineUserId, globalUserId);
+            }
+
+            // 4) 用全域會員入帳（錢包一律記 ApplicationUser.Id）
             if (string.Equals(consumed.Mode, "gift", StringComparison.OrdinalIgnoreCase))
             {
-                var result = await credit.AddCoinByTokenAsync(consumed.Token, lineUserId, rid);
-                if (result.Result == WalletCreditService.ClaimResult.Success)
-                    return View("LiffReturnSuccess");
-
+                var result = await credit.AddCoinByTokenAsync(consumed.Token, globalUserId, rid, claimedLineUserId: lineUserId);
+                if (result.Result == WalletCreditService.ClaimResult.Success) return View("LiffReturnSuccess");
                 if (result.Result is WalletCreditService.ClaimResult.Already or WalletCreditService.ClaimResult.NotFoundOrExpired)
                     return View("LiffReturnInvalid");
-
-                // 非指定領取人 → 導人工確認
                 if (result.Result == WalletCreditService.ClaimResult.NotYourInvite)
                 {
                     var pc = _unitOfWork.PendingCoin.GetFirstOrDefault(x => x.Token == consumed.Token);
-                    ViewBag.NickName = pc?.NickName;
-                    ViewBag.Token = pc?.Token;
-                    ViewBag.PendingCoinId = pc?.Id;
+                    ViewBag.NickName = pc?.NickName; ViewBag.Token = pc?.Token; ViewBag.PendingCoinId = pc?.Id;
                     return View("ClaimConfirm", pc);
                 }
-
                 return View("LiffReturnInvalid");
             }
 
-            // 其他模式先顯示成功或依需求擴充
             return View("LiffReturnSuccess");
         }
 
@@ -126,9 +133,14 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             {
                 userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                // ★★ 新增：自動補發所有待領幣 ★★
-                ClaimPendingCoinsIfAny(userId);
+                // ★★ 自動補發所有待領幣（用 LINE userId 而不是全域會員 Id）★★
+                var lineUserIdForAutoClaim = User.FindFirst("urn:line:userid")?.Value;
+                if (!string.IsNullOrEmpty(lineUserIdForAutoClaim))
+                {
+                    ClaimPendingCoinsIfAny(lineUserIdForAutoClaim);
+                }
             }
+
 
             // 幣種/異動紀錄查詢
             var coins = _unitOfWork.CurrencyType.GetAll().ToList();
@@ -182,6 +194,20 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             };
 
             return View(vm);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public IActionResult AutoClaimPendingByLine()
+        {
+            var lineUserId = User.FindFirst("urn:line:userid")?.Value;
+            if (string.IsNullOrEmpty(lineUserId))
+                return Json(new { claimedCount = 0 });
+
+            // ✅ 現在方法會回傳 int
+            var claimed = ClaimPendingCoinsIfAny(lineUserId);
+            return Json(new { claimedCount = claimed });
         }
 
 
@@ -422,9 +448,11 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
             {
-                // 換成專屬 LIFF 登入入口，登入後自動回 TransferList
-                return Redirect($"/Customer/LiffAuthEntry?redirect=/Customer/Wallet/TransferList");
+                // 正確：明確呼叫 Login 動作，並帶回跳網址
+                var returnUrl = Url.Action(nameof(TransferList), "Wallet", new { area = "Customer" })!;
+                return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
+
             var coins = _unitOfWork.CurrencyType.GetAll().ToList();
             var items = coins.Select(ct => new TransferCoinVM
             {
@@ -436,8 +464,9 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                     .Sum(x => x.Quantity)
             }).Where(x => x.Quantity > 0).ToList();
 
-            return View(items); // 對應 TransferList.cshtml
+            return View(items);
         }
+
 
         // ========== 轉讓步驟二：輸入會員 or 選LINE好友＋數量 ==========
         [HttpGet]
@@ -446,7 +475,8 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
             {
-                return Redirect($"/Customer/LiffAuthEntry?redirect=/Customer/Wallet/Transfer/{id}");
+                var returnUrl = Url.Action(nameof(Transfer), "Wallet", new { area = "Customer", id, qty })!;
+                return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
             var coin = _unitOfWork.CurrencyType.GetById(id);
             var quantity = _unitOfWork.UserCurrencyLog.GetAll()
@@ -490,11 +520,26 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         public IActionResult Transfer(TransferCoinVM model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null) return Unauthorized();
             if (model.TransferQty <= 0)
                 return View(model);
 
             bool isLineFriend = !string.IsNullOrEmpty(model.TargetLineFriendId);
             bool isMember = !string.IsNullOrEmpty(model.TargetUserId);
+
+            // 🚧【C 方案守門】這支只允許「會員即時入帳」；LINE 好友一律走 AJAX 的 TransferToLine
+            if (!isMember && !isLineFriend)
+            {
+                ModelState.AddModelError("", "請選擇收方（會員或 LINE 好友分享）");
+                // 回填你原本的下拉清單資料…
+                return View(model);
+            }
+            if (isLineFriend)
+            {
+                // 不接受 LINE 好友從這支進來，避免「扣了但沒建 Pending」
+                return BadRequest("請使用 LINE 分享按鈕產生邀請。");
+            }
 
             // 檢查餘額
             var nowQty = _unitOfWork.UserCurrencyLog.GetAll()
@@ -568,65 +613,67 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 
         // Transfer 給 LINE 好友時：預扣一筆，並建立 PendingCoin 等對方領取
         [HttpPost]
+        [Authorize]
         [IgnoreAntiforgeryToken]
-        public IActionResult TransferToLine(TransferCoinVM model)
+        public async Task<IActionResult> TransferToLine(TransferCoinVM model, [FromServices] ApplicationDbContext db)
         {
-            // 取得目前登入者的 UserId
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
 
-            // 產生一組唯一 Token（可選，但這版本不使用 Token）
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+            // 1) 檢查餘額（用最後一筆 BalanceAfter 或加總）
+            var nowQty = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId).Sum(x => x.Quantity);
+            if (model.TransferQty > nowQty) return Json(new { success = false, message = "持有數量不足，無法轉讓" });
+
+            // 2) 先建立 Pending（LineUserId 可為 null →「未指定收方」）
             var token = Guid.NewGuid().ToString("N");
-
-            // === 1. 預扣自己的點數 ===
-            var nowQty = _unitOfWork.UserCurrencyLog.GetAll()
-                .Where(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
-                .Sum(x => x.Quantity);
-
-            if (model.TransferQty > nowQty)
-            {
-                return Json(new { success = false, message = "持有數量不足，無法轉讓" });
-            }
-
-            var lastLog = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
-                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
-
-            int oldBalance = lastLog?.BalanceAfter ?? nowQty;
-            int newBalance = oldBalance - model.TransferQty;
-
-            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
-            {
-                UserId = userId,
-                CurrencyTypeId = model.CurrencyTypeId,
-                Quantity = -model.TransferQty,
-                BalanceAfter = newBalance,
-                Action = "LINE好友預約轉讓",
-                Memo = $"轉讓給LINE好友：{model.TargetLineFriendName}",
-                CreatedAt = DateTime.Now
-            });
-
-            // === 2. 建立 PendingCoin ===
-            var pendingCoin = new PendingCoin
+            var pending = new PendingCoin
             {
                 Token = token,
                 NickName = model.TargetLineFriendName ?? "",
                 FromUserId = userId,
                 CurrencyTypeId = model.CurrencyTypeId,
                 Quantity = model.TransferQty,
-                LineUserId = model.TargetLineFriendId, // 可為空
-                Memo = $"轉讓給LINE好友：{model.TargetLineFriendName}",
+                LineUserId = string.IsNullOrWhiteSpace(model.TargetLineFriendId) ? null : model.TargetLineFriendId,
+                Memo = string.IsNullOrWhiteSpace(model.Note) ? "預約轉讓" : model.Note,
                 IsClaimed = false,
                 Status = 0,
-                CreatedAt = DateTime.Now,
-                ExpiresAt = DateTime.UtcNow.AddHours(24) // 你可改 48/72h
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24)
             };
+            _unitOfWork.PendingCoin.Add(pending);
+            await _unitOfWork.SaveAsync(); // 取得 pending.Id
 
-            _unitOfWork.PendingCoin.Add(pendingCoin);
+            // 3) 預扣（冪等鍵 prededuct:{pending.Id}）
+            var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == userId && x.CurrencyTypeId == model.CurrencyTypeId)
+                          .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+            var oldBal = last?.BalanceAfter ?? nowQty;
+            _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+            {
+                UserId = userId,
+                CurrencyTypeId = model.CurrencyTypeId,
+                Quantity = -model.TransferQty,
+                BalanceAfter = oldBal - model.TransferQty,
+                Action = "LINE好友預約轉讓（預扣）",
+                Memo = $"pending:{pending.Id} token:{pending.Token} {(string.IsNullOrWhiteSpace(model.Note) ? "" : $"｜{model.Note}")}",
+                CreatedAt = DateTime.UtcNow,
+                IdempotencyKey = $"prededuct:{pending.Id}"
+            });
 
-            // === 3. 儲存 ===
-            _unitOfWork.Save();
+            // 4) Outbox：建立事件（可用來通知/推播）
+            _unitOfWork.DbContext.OutboxMessages.Add(new OutboxMessage
+            {
+                Type = "PendingCoinCreated",
+                PayloadJson = System.Text.Json.JsonSerializer.Serialize(new { pending.Id, pending.Token, pending.CurrencyTypeId, pending.Quantity, pending.FromUserId })
+            });
+
+            await _unitOfWork.SaveAsync();
+            await tx.CommitAsync();
 
             return Json(new { success = true, token });
         }
+
 
 
 
@@ -743,15 +790,24 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
             return Content("領取成功！");
         }
 
-        private void ClaimPendingCoinsIfAny(string lineUserId)
+        private int ClaimPendingCoinsIfAny(string lineUserId)
         {
-            var pendings = _unitOfWork.PendingCoin.GetAll(x => x.LineUserId == lineUserId && x.Status == 0 && x.ExpiresAt > DateTime.UtcNow).ToList();
+            var pendings = _unitOfWork.PendingCoin
+                .GetAll(x => x.LineUserId == lineUserId && x.Status == 0 && x.ExpiresAt > DateTime.UtcNow)
+                .ToList();
+
+            var claimedCount = 0;
+
             foreach (var pc in pendings)
             {
+                // 取使用者該幣最後餘額
                 var last = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == lineUserId && x.CurrencyTypeId == pc.CurrencyTypeId)
-                    .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                    .OrderByDescending(x => x.CreatedAt)
+                    .FirstOrDefault();
+
                 int oldBalance = last?.BalanceAfter ?? 0;
-                _unitOfWork.UserCurrencyLog.Add(new TeaTimeDemo.Models.UserCurrencyLog
+
+                _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
                 {
                     UserId = lineUserId,
                     CurrencyTypeId = pc.CurrencyTypeId,
@@ -761,11 +817,20 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                     Memo = string.IsNullOrWhiteSpace(pc.Memo) ? "LINE自動領取" : pc.Memo,
                     CreatedAt = DateTime.Now
                 });
+
                 pc.IsClaimed = true;
                 pc.ClaimedAt = DateTime.Now;
+
+                // 如果你有用 Status 表示已完成，也可以順便標記
+                 pc.Status = 1;
+
+                claimedCount++;
             }
+
             _unitOfWork.Save();
+            return claimedCount;
         }
+
 
         [HttpPost]
         public IActionResult ClaimManual(int pendingCoinId)
@@ -803,22 +868,35 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
         public class ClaimRequestVM
         {
             public string lineUserId { get; set; }
+            public string? liffId { get; set; }
+            public string? idToken { get; set; } // TODO: 未來可驗 JWT 與 aud=你的 ChannelId
         }
 
+
         [HttpPost]
-        public IActionResult ClaimByUserId([FromBody] ClaimRequestVM req)
+        public async Task<IActionResult> ClaimByUserId(
+        [FromBody] ClaimRequestVM req,
+        [FromServices] IConfiguration cfg,
+        [FromServices] ChannelUserLinkService linkSvc)
         {
             if (string.IsNullOrEmpty(req.lineUserId))
                 return Content("未取得LINE UserId，請用LINE APP開啟本頁。");
 
-            // 查找此人尚未領取的PendingInvite（也可改PendingCoin，看你DB）
+            // 這段就是你問的程式：把 (ChannelId, LineUserId) 綁到 GlobalUserId
+            var globalUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var channelId = string.IsNullOrWhiteSpace(req.liffId) ? null : cfg[$"Line:LiffToChannel:{req.liffId}"];
+            if (!string.IsNullOrEmpty(channelId) && !string.IsNullOrEmpty(globalUserId))
+            {
+                await linkSvc.BindAsync(channelId, req.lineUserId, globalUserId);
+            }
+
+            // （以下保持你原本的流程）
             var pending = _unitOfWork.PendingInvite.GetFirstOrDefault(
                 x => x.ToLineUserId == req.lineUserId && !x.IsClaimed);
 
             if (pending == null)
                 return Content("你目前沒有可領取的點數邀請～");
 
-            // 加入錢包紀錄
             var last = _unitOfWork.UserCurrencyLog.GetAll(
                 x => x.UserId == req.lineUserId && x.CurrencyTypeId == pending.CurrencyTypeId)
                 .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
@@ -834,14 +912,14 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                 BalanceAfter = balance + pending.Quantity
             });
 
-            // 標記已領取
             pending.IsClaimed = true;
             _unitOfWork.Save();
 
             return Content("領取成功！點數已入帳 🎉");
         }
 
-       
+
+
         // 加在 WalletController.cs
 
         [HttpGet]

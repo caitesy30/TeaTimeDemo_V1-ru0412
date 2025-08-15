@@ -11,7 +11,7 @@
 <head class="no-print">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - 路由共享</title>
+    <title>@ViewData["Title"] - 居希恩共享</title>
 
     <!-- Bootstrap and site CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" asp-append-version="true" />
@@ -31,6 +31,8 @@
     <!--Select2 下拉式選單-->
     <link rel="stylesheet" href="~/lib/select2/select2.css" asp-append-version="true" />
 
+       <!-- 建議加速：對 LINE CDN 預連線 -->
+    <link rel="preconnect" href="https://static.line-scdn.net">
 
     <!-- i18next (註解掉) -->
     @* 
@@ -40,32 +42,15 @@
     <link rel="stylesheet" href="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true" />
      *@
 
-    <style>
+     <style>
         /* 功能視窗樣式 */
-        #functionWindow {
-            width: 150px;
-            height: auto;
-            cursor: move; /* 顯示拖動手勢 */
-            z-index: 1050; /* 確保在其他元素之上 */
-        }
+        #functionWindow { width:150px; height:auto; cursor:move; z-index:1050; }
+        #mainEditor { margin-bottom:20px; }
+        #functionWindow button { width:100%; }
 
-        /* 主編輯視窗和功能視窗的佈局調整 */
-        #mainEditor {
-            margin-bottom: 20px;
-        }
-
-        #functionWindow button {
-            width: 100%;
-        }
-
-        /* Google Translate CSS (可選) */
-        .goog-te-gadget {
-            color: transparent;
-        }
-
-            .goog-te-gadget .goog-te-menu-value span {
-                color: #000; /* 設定翻譯文字的顏色 */
-            }
+        /* Google Translate (可選) */
+        .goog-te-gadget { color: transparent; }
+        .goog-te-gadget .goog-te-menu-value span { color:#000; }
     </style>
 
     <!-- Google Translate 小工具的初始化腳本 -->
@@ -77,9 +62,7 @@
                 layout: google.translate.TranslateElement.InlineLayout.SIMPLE
             }, 'google_translate_element');
         }
-    </script>
-    @* <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script> *@
-    <script>
+  
         (async function () {
             try {
                 // 嘗試向 Google Translate 發出 HEAD / no-cors 請求
@@ -112,7 +95,7 @@
 
 </head>
 
-<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+@* <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
 <script>
     // 💡 你的LIFF ID（根據頁面換成對應的）
     const liffId = "2007537903-r3pknwbl";
@@ -168,12 +151,10 @@
             // window.location.href = '/Identity/Account/Login';
         }
     })();
-</script>
+</script> *@
 
 <!-- 除錯用：顯示網址參數 -->
-<!--<div style="color:blue;background:#ffd;padding:6px;margin-bottom:1em;">
-    mode: <span id="showMode"></span>, token: <span id="showToken"></span>
-</div> --!>
+
 
 <body>
     <header class="no-print">   
@@ -182,7 +163,15 @@
 
             <div class="container-fluid">
 
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">路由共享</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">點數管理</a>
+
+                    <!-- ====================== LINE LIFF 用戶資料區塊 ======================= -->
+@* <div id="lineUserSection" class="text-center mb-4" style="display:none;">
+    <!-- 大頭貼圖片 -->
+    <img id="linePictureImg" src="" alt="LINE頭像" width="64" height="64" class="rounded-circle mb-2" style="object-fit:cover;border:2px solid #6cf;" />
+    <!-- 歡迎詞 -->
+    <div id="helloLineUser" class="mb-2" style="font-weight:bold;font-size:1.15rem;color:#1a936f;"></div>
+</div> *@
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -256,10 +245,15 @@
                                     {
                                         <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="User" asp-action="Index" data-i18n="使用者管理">使用者管理</a>
                                        
+                                       
 
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item text-danger" asp-area="Admin" asp-controller="CurrencyType" asp-action="Index">
                                             <i class="bi bi-currency-exchange"></i> 幣種/點數管理
+                                        </a>
+
+                                         <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PointLog" asp-action="All" class="btn btn-outline-secondary">
+                                           查看全部紀錄（管理）
                                         </a>
 
                                         <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PendingCoin" asp-action="Index">
@@ -351,13 +345,7 @@
         </nav>
     </header>
 
-    <!-- ====================== LINE LIFF 用戶資料區塊 ======================= -->
-<div id="lineUserSection" class="text-center mb-4" style="display:none;">
-    <!-- 大頭貼圖片 -->
-    <img id="linePictureImg" src="" alt="LINE頭像" width="64" height="64" class="rounded-circle mb-2" style="object-fit:cover;border:2px solid #6cf;" />
-    <!-- 歡迎詞 -->
-    <div id="helloLineUser" class="mb-2" style="font-weight:bold;font-size:1.15rem;color:#1a936f;"></div>
-</div>
+
 
 <!-- LIFF自動填值的隱藏欄位 -->
 <input type="hidden" id="lineUserId" name="lineUserId" />
@@ -376,15 +364,16 @@
 
     <footer class="border-top footer text-muted no-print" >
         <div class="container">
-            &copy; 2024 - TeaTimeDemo <i class="bi bi-1-circle"></i><i class="bi bi-check2-square"></i>- <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2025 - GCN-Demo <i class="bi bi-1-circle"></i><i class="bi bi-check2-square"></i>- <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
     <!-- jQuery and Bootstrap JS -->   
-    <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>   
+    @* <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>    *@
     
-    <script src="~/lib/popper/popper.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/popper/popper.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
 
     <!-- Site JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
@@ -408,87 +397,128 @@
     <script src="~/js/i18n/i18n.js" asp-append-version="true"></script>
     *@
 
+ <!-- ✅ 只在這裡載一次 LIFF SDK -->
+    @* <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js" id="liff-sdk"></script> *@
+    <script>
+
+          // 友善轉字串：把 Event 物件轉成可讀訊息
+       function describeError(e) {
+         if (!e) return '未知錯誤';
+          if (e.message) return e.message;
+          if (e.type && e.target && e.target.src) return `SDK載入失敗：${e.type} ${e.target.src}`;
+          return String(e);
+         }
+
+        // ---- LIFF SDK 候選來源（先 pinned 版，失敗再退回 major 版）----
+        const LIFF_SDK_CANDIDATES = [
+            'https://static.line-scdn.net/liff/edge/2.27.1/sdk.js',
+            'https://static.line-scdn.net/liff/edge/2.1/sdk.js'
+        ];
+
+
+      // ---- 動態載 script，含逾時 ----
+        function loadScript(src, timeoutMs = 8000) {
+            return new Promise((resolve, reject) => {
+                const el = document.createElement('script');
+                let done = false;
+                const timer = setTimeout(() => {
+                    if (done) return;
+                    done = true; el.remove();
+                    reject(new Error(`SDK載入逾時：${src}`));
+                }, timeoutMs);
+                el.async = true;
+                el.src = src;
+                el.onload = () => { if (done) return; done = true; clearTimeout(timer); resolve(); };
+                el.onerror = (ev) => { if (done) return; done = true; clearTimeout(timer); reject(new Error(describeError(ev))); };
+                document.head.appendChild(el);
+            });
+        }
+
+        // ---- 全域 LIFF 初始化（支援多 LIFF ID + 來源 fallback）----
+        window.ensureLiff = (() => {
+            let initedId = null;
+            return async (liffId) => {
+                // 若頁面上有舊的 <script id="liff-sdk">，先移除避免影響
+                (function(){ var s=document.getElementById('liff-sdk'); if(s) s.remove(); })();
+
+                if (typeof window.liff === 'undefined') {
+                    let lastErr;
+                    for (const url of LIFF_SDK_CANDIDATES) {
+                        try { await loadScript(url); break; }
+                        catch (e) { lastErr = e; console.warn(e?.message || e); }
+                    }
+                    if (typeof window.liff === 'undefined') {
+                        throw lastErr || new Error('LIFF SDK 無法載入，可能被網路或 CSP 擋下。');
+                    }
+                }
+
+                if (!initedId || initedId !== liffId) {
+                    await window.liff.init({ liffId });
+                    initedId = liffId;
+                }
+                return window.liff;
+            };
+        })();
+
+        // ---- 是否在 LINE App WebView ----
+        window.isInLineApp = () => /Line/i.test(navigator.userAgent);
+        function isLiff(){ return window.isInLineApp(); }
+
+        // ---- 預設：若在 LINE 內，嘗試取得個人資料並填到隱藏欄位 + 頁首 ----
+        (async function () {
+            const DEFAULT_LIFF_ID = "2007537903-r3pknwbl"; // ← 需要時改成你的 LIFF ID
+            if (!isLiff()) return;
+
+            try {
+                const liff = await ensureLiff(DEFAULT_LIFF_ID);
+
+                if (!liff.isLoggedIn()) {
+                    // 使用目前頁面做回跳，避免登入後停在空白頁
+                    liff.login({ redirectUri: window.location.href });
+                    return;
+                }
+
+                const profile = await liff.getProfile();
+                const $id = document.getElementById('lineUserId');
+                const $name = document.getElementById('lineDisplayName');
+                const $pic = document.getElementById('linePictureUrl');
+
+                if ($id)   $id.value = profile.userId;
+                if ($name) $name.value = profile.displayName;
+                if ($pic)  $pic.value = profile.pictureUrl || '';
+
+                const hello = document.getElementById('helloLineUser');
+                if (hello) hello.innerText = `歡迎回來，${profile.displayName}！`;
+                if (profile.pictureUrl) {
+                    const img = document.getElementById('linePictureImg');
+                    if (img) img.src = profile.pictureUrl;
+                }
+                const sec = document.getElementById('lineUserSection');
+                if (sec) sec.style.display = '';
+            } catch (err) {
+                console.warn('LIFF 初始化或取用戶資料失敗：', describeError(err));
+            }
+        })();
+
+        // ---- 全域除錯浮窗（帶 mode / token 時顯示）----
+        (function () {
+            const params = new URLSearchParams(location.search);
+            const mode = params.get('mode');
+            const token = params.get('token');
+            if (mode || token) {
+                const d = document.getElementById('globalDebugInfo');
+                if (d) {
+                    d.style.display = 'block';
+                    d.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
+                }
+            }
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 
-    @section Scripts {
-    <!-- 你原本的 JS ... -->
-   <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
-<script>
-    // 1. 換成你自己的 liffId
-    const liffId = "2007537903-r3pknwbl";
-    function isLiff() {
-        return navigator.userAgent.includes("Line");
-    }
-
-    (async function () {
-        if (isLiff()) {
-            await liff.init({ liffId });
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
-            // ===== 取得 LINE Profile，帶進表單、顯示大頭貼、名稱歡迎詞 =====
-            try {
-                const profile = await liff.getProfile();
-                // 填進隱藏欄位
-                if (document.getElementById('lineUserId')) document.getElementById('lineUserId').value = profile.userId;
-                if (document.getElementById('lineDisplayName')) document.getElementById('lineDisplayName').value = profile.displayName;
-                if (document.getElementById('linePictureUrl')) document.getElementById('linePictureUrl').value = profile.pictureUrl;
-                // 顯示歡迎詞
-                if (document.getElementById('helloLineUser')) document.getElementById('helloLineUser').innerText = `歡迎回來，${profile.displayName}！`;
-                // 顯示大頭貼
-                if (document.getElementById('linePictureImg') && profile.pictureUrl) {
-                    document.getElementById('linePictureImg').src = profile.pictureUrl;
-                }
-                // 顯示整個用戶區塊
-                document.getElementById('lineUserSection').style.display = '';
-            } catch (err) {
-                alert('取得 LINE 資料失敗，請重試。' + (err.message || err));
-            }
-        }
-    })();
-</script>
-<script>
-<!--// GlobalDebug：全站解析並顯示 mode 與 token-->
-class GlobalDebug {
-    static show() {
-        const params = new URLSearchParams(window.location.search);
-        const mode = params.get('mode');
-        const token = params.get('token');
-        const debugDiv = document.getElementById('globalDebugInfo');
-        if (mode || token) {
-            debugDiv.style.display = 'block';
-            debugDiv.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
-        }
-    }
-}
-document.addEventListener('DOMContentLoaded', () => GlobalDebug.show());
-</script>
-
-<script>
-    // class 寫法
-    class DebugBar {
-        static show() {
-            const params = new URLSearchParams(window.location.search);
-            document.getElementById('showMode').innerText = params.get('mode') || '';
-            document.getElementById('showToken').innerText = params.get('token') || '';
-        }
-    }
-    DebugBar.show();
-</script>
-<script>
-    // 顯示當前網址的 mode 與 token
-    document.addEventListener('DOMContentLoaded', () => {
-        const params = new URLSearchParams(window.location.search);
-        document.getElementById('showMode').innerText = params.get('mode') || '';
-        document.getElementById('showToken').innerText = params.get('token') || '';
-    });
-</script>
-
-}
-
-<!-- 全局除錯顯示區塊 -->
-<div id="globalDebugInfo" style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;"></div>
+    <!-- 全局除錯顯示區塊 -->
+    <div id="globalDebugInfo" style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;"></div>
 </body>
 </html>
 

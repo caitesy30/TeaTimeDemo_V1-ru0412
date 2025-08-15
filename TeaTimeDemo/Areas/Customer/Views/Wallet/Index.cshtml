@@ -1,8 +1,12 @@
 ﻿@model TeaTimeDemo.Models.ViewModels.WalletViewModel
+@using System.Security.Claims
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 @{
     ViewData["Title"] = "我的錢包";
     var token = Context.Request.Query["token"].ToString();
+    var hasLineLogin = User.Claims.Any(c => c.Type == "urn:line:userid" && !string.IsNullOrEmpty(c.Value)); // ✅ 是否為 LINE 登入
+    var afTokens = Antiforgery.GetAndStoreTokens(Context);  // ✅ Anti-forgery token（給自動補發用）
 }
 
 @* <div id="tokenBar" style="position:fixed;top:0;right:0;background:#ffd;padding:6px 12px;z-index:9999;font-size:1.2rem">
@@ -105,7 +109,8 @@
     </div>
 </div>
 
-
+<!-- ✅ Anti-forgery（給下面 AJAX 使用） -->
+<input type="hidden" id="__RequestVerificationToken" value="@afTokens.RequestToken" />
 
 @section Scripts {
 
@@ -120,11 +125,34 @@
             }
         }
         // --------- end token自動導流 ---------
-    </script>xqxsj
+    </script>
 
 
     <!-- jQuery (確保先載入) -->
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+
+    <!-- ✅ 新增：LINE 使用者自動補發（僅 LINE 登入、且網址無 token 時） -->
+    <script>
+        $(function () {
+            const isLineLogin = @hasLineLogin.ToString().ToLower(); // true/false
+            const hasTokenInUrl = new URLSearchParams(window.location.search).has('token');
+            if (isLineLogin && !hasTokenInUrl) {
+                $.ajax({
+                    url: '/Customer/Wallet/AutoClaimPendingByLine', // 後端請在此 Action 內呼叫 ClaimPendingCoinsIfAny(lineUserId)
+                    type: 'POST',
+                    headers: { 'RequestVerificationToken': $('#__RequestVerificationToken').val() },
+                    dataType: 'json'
+                }).done(function (res) {
+                    // 可選：若有補發成功可提示或刷新資料
+                     if (res && res.claimedCount > 0) location.reload();
+                }).fail(function () {
+                    // 靜默失敗即可，避免干擾使用者
+                });
+            }
+        });
+    </script>
+
+
     <!-- DataTables JS -->
     <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
     <script>
