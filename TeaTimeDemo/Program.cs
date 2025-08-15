@@ -157,46 +157,54 @@ builder.Services
       options.CallbackPath = "/signin-line";
 
       // 要求 openid/profile/email 權限
-      options.Scope.Add("openid");
+      options.Scope.Clear();
       options.Scope.Add("profile");
-      options.Scope.Add("email");
+      options.Scope.Add("openid");        // 要 id_token 時才需要；否則可拿掉
+      // options.Scope.Add("email");      // ← 只有你的 Channel 已核准 Email address permission 才打開
 
-      options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+
+      //options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
       options.SaveTokens = true;
 
-      // ★關鍵：把 LINE 授權網址中的 redirect_uri 參數，強制換成 https + 外部 Host
-      options.Events.OnRedirectToAuthorizationEndpoint = context =>
+      // 強制把 redirect_uri 換成外部 https 網域（拿掉 :443/:80）
+      options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
       {
-          var req = context.Request;
-
-          // 1) 取外部 Host（優先 X-Forwarded-Host）
+          var req = ctx.Request;
           var forwardedHost = req.Headers["X-Forwarded-Host"].ToString();
           var host = string.IsNullOrWhiteSpace(forwardedHost) ? req.Host.Value : forwardedHost;
-          var finalCallback = $"https://{host}{options.CallbackPath}"; // 一律 https
 
-          // 2) 解析授權網址，改寫 redirect_uri
-          var uri = new Uri(context.RedirectUri);
-          var parsed = QueryHelpers.ParseQuery(uri.Query);
-          if (parsed.ContainsKey("redirect_uri"))
+          // 去掉預設埠號，避免和後台不一致
+          var colon = host.IndexOf(':');
+          if (colon > 0)
           {
-              var dict = parsed.ToDictionary(k => k.Key, v => v.Value.ToString());
-              dict["redirect_uri"] = finalCallback;
-
-              var newQuery = string.Join("&", dict.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
-              var authBase = $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? "" : ":" + uri.Port)}{uri.AbsolutePath}";
-              var finalAuthUrl = $"{authBase}?{newQuery}";
-
-              // （可選）記錄實際導向網址，方便偵錯
-              Console.WriteLine("LINE OAuth URL (final): " + finalAuthUrl);
-
-              context.Response.Redirect(finalAuthUrl);
+              var port = host[(colon + 1)..];
+              if (port == "443" || port == "80") host = host[..colon];
           }
-          else
+
+          var finalCallback = $"https://{host}{options.CallbackPath}";
+
+          // 重組授權網址，只換 redirect_uri，其他參數保留
+          var ub = new UriBuilder(ctx.RedirectUri);
+          var parsed = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(ub.Query);
+          var pairs = new List<KeyValuePair<string, string>>();
+          foreach (var kv in parsed)
           {
-              // 守備：如果沒有 redirect_uri 參數，原樣導向
-              Console.WriteLine("LINE OAuth URL (as-is): " + context.RedirectUri);
-              context.Response.Redirect(context.RedirectUri);
+              if (kv.Key.Equals("redirect_uri", StringComparison.OrdinalIgnoreCase))
+              {
+                  pairs.Add(new("redirect_uri", finalCallback));
+              }
+              else
+              {
+                  foreach (var v in kv.Value) pairs.Add(new(kv.Key, v));
+              }
           }
+          ub.Query = string.Join("&", pairs.Select(kv =>
+              $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+
+          // 方便對照：把最後送出去的 authorize URL 打到 log
+          Console.WriteLine("[LINE authorize] " + ub.Uri);
+
+          ctx.Response.Redirect(ub.Uri.ToString());
           return Task.CompletedTask;
       };
   });

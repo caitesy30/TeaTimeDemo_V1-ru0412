@@ -399,121 +399,163 @@
 
  <!-- ✅ 只在這裡載一次 LIFF SDK -->
     @* <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js" id="liff-sdk"></script> *@
-    <script>
+  <script>
+    // =======================
+  // LIFF 全域保護與初始化（修正版）
+  // 重點：偵測是否在 LINE App，而不是檢查 host=liff.line.me
+  // =======================
+  const IN_LINE_APP = /Line/i.test(navigator.userAgent);
 
-          // 友善轉字串：把 Event 物件轉成可讀訊息
-       function describeError(e) {
-         if (!e) return '未知錯誤';
-          if (e.message) return e.message;
-          if (e.type && e.target && e.target.src) return `SDK載入失敗：${e.type} ${e.target.src}`;
-          return String(e);
-         }
+  function describeError(e) {
+    if (!e) return '未知錯誤';
+    if (e.message) return e.message;
+    if (e.type && e.target && e.target.src) return `SDK載入失敗：${e.type} ${e.target.src}`;
+    return String(e);
+  }
 
-        // ---- LIFF SDK 候選來源（先 pinned 版，失敗再退回 major 版）----
-        const LIFF_SDK_CANDIDATES = [
-            'https://static.line-scdn.net/liff/edge/2.27.1/sdk.js',
-            'https://static.line-scdn.net/liff/edge/2.1/sdk.js'
-        ];
+  const LIFF_SDK_CANDIDATES = [
+    'https://static.line-scdn.net/liff/edge/2.27.1/sdk.js',
+    'https://static.line-scdn.net/liff/edge/2/sdk.js'
+  ];
 
+  function loadScript(src, timeoutMs = 8000) {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      let done = false;
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true; el.remove();
+        reject(new Error(`SDK載入逾時：${src}`));
+      }, timeoutMs);
+      el.async = true;
+      el.src = src;
+      el.onload = () => { if (done) return; done = true; clearTimeout(timer); resolve(); };
+      el.onerror = (ev) => { if (done) return; done = true; clearTimeout(timer); reject(new Error(describeError(ev))); };
+      document.head.appendChild(el);
+    });
+  }
 
-      // ---- 動態載 script，含逾時 ----
-        function loadScript(src, timeoutMs = 8000) {
-            return new Promise((resolve, reject) => {
-                const el = document.createElement('script');
-                let done = false;
-                const timer = setTimeout(() => {
-                    if (done) return;
-                    done = true; el.remove();
-                    reject(new Error(`SDK載入逾時：${src}`));
-                }, timeoutMs);
-                el.async = true;
-                el.src = src;
-                el.onload = () => { if (done) return; done = true; clearTimeout(timer); resolve(); };
-                el.onerror = (ev) => { if (done) return; done = true; clearTimeout(timer); reject(new Error(describeError(ev))); };
-                document.head.appendChild(el);
-            });
+  // ---- 全域 ensureLiff：在 LINE 內回傳 liff，LINE 外回傳 null（不再是 undefined）----
+  window.ensureLiff = (() => {
+    if (!IN_LINE_APP) {
+      // 不在 LINE App：回傳 null，避免 "is not a function"
+      return async () => null;
+    }
+    let initedId = null;
+    return async (liffId) => {
+      if (typeof window.liff === 'undefined') {
+        let lastErr;
+        for (const url of LIFF_SDK_CANDIDATES) {
+          try { await loadScript(url); break; }
+          catch (e) { lastErr = e; console.warn(e?.message || e); }
         }
+        if (typeof window.liff === 'undefined') {
+          throw lastErr || new Error('LIFF SDK 無法載入，可能被網路或 CSP 擋下。');
+        }
+      }
+      if (!initedId || initedId !== liffId) {
+        await window.liff.init({ liffId });
+        initedId = liffId;
+      }
+      return window.liff;
+    };
+  })();
 
-        // ---- 全域 LIFF 初始化（支援多 LIFF ID + 來源 fallback）----
-        window.ensureLiff = (() => {
-            let initedId = null;
-            return async (liffId) => {
-                // 若頁面上有舊的 <script id="liff-sdk">，先移除避免影響
-                (function(){ var s=document.getElementById('liff-sdk'); if(s) s.remove(); })();
+  // 是否在 LINE App WebView（供其它程式用）
+  window.isInLineApp = () => IN_LINE_APP;
 
-                if (typeof window.liff === 'undefined') {
-                    let lastErr;
-                    for (const url of LIFF_SDK_CANDIDATES) {
-                        try { await loadScript(url); break; }
-                        catch (e) { lastErr = e; console.warn(e?.message || e); }
-                    }
-                    if (typeof window.liff === 'undefined') {
-                        throw lastErr || new Error('LIFF SDK 無法載入，可能被網路或 CSP 擋下。');
-                    }
-                }
+  // =======================
+  // 預設：若在 LINE 內、且已登入 → 取 profile 自動填欄位
+  // 不自動 login（避免無謂的重導）
+  // =======================
+  (async function () {
+    const DEFAULT_LIFF_ID = "2007537903-r3pknwbl";
+    if (!IN_LINE_APP) return;
 
-                if (!initedId || initedId !== liffId) {
-                    await window.liff.init({ liffId });
-                    initedId = liffId;
-                }
-                return window.liff;
-            };
-        })();
+    try {
+      const liff = await ensureLiff(DEFAULT_LIFF_ID);
+      if (!liff) return;              // 非 LINE 內保險
+      if (!liff.isLoggedIn()) return; // 不自動 login
 
-        // ---- 是否在 LINE App WebView ----
-        window.isInLineApp = () => /Line/i.test(navigator.userAgent);
-        function isLiff(){ return window.isInLineApp(); }
+      const profile = await liff.getProfile();
+      const $id   = document.getElementById('lineUserId');
+      const $name = document.getElementById('lineDisplayName');
+      const $pic  = document.getElementById('linePictureUrl');
 
-        // ---- 預設：若在 LINE 內，嘗試取得個人資料並填到隱藏欄位 + 頁首 ----
-        (async function () {
-            const DEFAULT_LIFF_ID = "2007537903-r3pknwbl"; // ← 需要時改成你的 LIFF ID
-            if (!isLiff()) return;
+      if ($id)   $id.value   = profile.userId;
+      if ($name) $name.value = profile.displayName;
+      if ($pic)  $pic.value  = profile.pictureUrl || '';
 
-            try {
-                const liff = await ensureLiff(DEFAULT_LIFF_ID);
+      const hello = document.getElementById('helloLineUser');
+      if (hello) hello.innerText = `歡迎回來，${profile.displayName}！`;
+      if (profile.pictureUrl) {
+        const img = document.getElementById('linePictureImg');
+        if (img) img.src = profile.pictureUrl;
+      }
+      const sec = document.getElementById('lineUserSection');
+      if (sec) sec.style.display = '';
+    } catch (err) {
+      console.warn('LIFF 初始化或取用戶資料失敗：', describeError(err));
+    }
+  })();
 
-                if (!liff.isLoggedIn()) {
-                    // 使用目前頁面做回跳，避免登入後停在空白頁
-                    liff.login({ redirectUri: window.location.href });
-                    return;
-                }
+  // =======================
+  // 共用：分享到 LINE（在 LINE 內用 LIFF；LINE 外自動退回 Web Share / 連結）
+  // 呼叫方式：shareToLine({ text: '...', url: '...' })
+  // =======================
+  (function () {
+    function webFallbackShare(text, url) {
+      const msg = [text, url || location.href].filter(Boolean).join(' ');
+      const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
+      if (navigator.share) {
+        navigator.share({ title: document.title, text: text || '', url: url || location.href })
+          .catch(() => window.open(lineUrl, '_blank'));
+      } else {
+        window.open(lineUrl, '_blank');
+      }
+    }
 
-                const profile = await liff.getProfile();
-                const $id = document.getElementById('lineUserId');
-                const $name = document.getElementById('lineDisplayName');
-                const $pic = document.getElementById('linePictureUrl');
+    window.shareToLine = async function ({ liffId = "2007537903-r3pknwbl", text = '', url = '' } = {}) {
+      try {
+        const liff = await ensureLiff(liffId); // 可能回 null（LINE 外）
+        if (liff) {
+          if (!liff.isLoggedIn()) {
+            // 只在 LINE 內才會執行到這裡 → 可選：需要時才登入
+            await liff.login(); 
+            return; // 登入後會重進頁面
+          }
+          const payloadText = [text, url].filter(Boolean).join('\n');
 
-                if ($id)   $id.value = profile.userId;
-                if ($name) $name.value = profile.displayName;
-                if ($pic)  $pic.value = profile.pictureUrl || '';
+          if (liff.isApiAvailable('shareTargetPicker')) {
+            await liff.shareTargetPicker([{ type: 'text', text: payloadText }]);
+          } else {
+            await liff.sendMessages([{ type: 'text', text: payloadText }]);
+          }
+          return true;
+        }
+      } catch (e) {
+        console.warn('LIFF 分享失敗，改用 Web 分享：', describeError(e));
+      }
+      webFallbackShare(text, url);
+      return false;
+    };
+  })();
 
-                const hello = document.getElementById('helloLineUser');
-                if (hello) hello.innerText = `歡迎回來，${profile.displayName}！`;
-                if (profile.pictureUrl) {
-                    const img = document.getElementById('linePictureImg');
-                    if (img) img.src = profile.pictureUrl;
-                }
-                const sec = document.getElementById('lineUserSection');
-                if (sec) sec.style.display = '';
-            } catch (err) {
-                console.warn('LIFF 初始化或取用戶資料失敗：', describeError(err));
-            }
-        })();
+  // 全域除錯浮窗（帶 mode / token 時顯示）
+  (function () {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    const token = params.get('token');
+    if (mode || token) {
+      const d = document.getElementById('globalDebugInfo');
+      if (d) {
+        d.style.display = 'block';
+        d.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
+      }
+    }
+  })();
+</script>
 
-        // ---- 全域除錯浮窗（帶 mode / token 時顯示）----
-        (function () {
-            const params = new URLSearchParams(location.search);
-            const mode = params.get('mode');
-            const token = params.get('token');
-            if (mode || token) {
-                const d = document.getElementById('globalDebugInfo');
-                if (d) {
-                    d.style.display = 'block';
-                    d.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
-                }
-            }
-        })();
-    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 
