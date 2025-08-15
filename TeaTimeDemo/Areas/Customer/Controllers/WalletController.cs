@@ -123,10 +123,17 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
                     ViewBag.LiffMode = mode;
                 }
 
-                if (!isLiff)
+                //if (!isLiff)
+                //{
+                //    return RedirectToAction("Login", "Account");
+                //}
+
+                if (!User.Identity.IsAuthenticated)
                 {
-                    return RedirectToAction("Login", "Account");
+                    var returnUrl = Url.Action(nameof(Index), "Wallet", new { area = "Customer" })!;
+                    return Redirect($"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
                 }
+
             }
 
             else

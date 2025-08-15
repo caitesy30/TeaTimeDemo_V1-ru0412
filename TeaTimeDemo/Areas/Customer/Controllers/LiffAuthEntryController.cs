@@ -1,6 +1,6 @@
 ﻿// ==========================
 // 檔名：LiffAuthEntryController.cs
-// 功能：LIFF 登入入口，保留 redirect (含 query) 原封不動轉回
+// 功能：LIFF 登入入口，保留 redirect (含 query) 原封不動轉回（含回跳清洗）
 // ==========================
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -14,44 +14,38 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
     [Route("Customer/[controller]/[action]")]
     public class LiffAuthEntryController : Controller
     {
+        // 白名單：只允許站內路徑；黑名單：避免回登出與 signin 類路徑
+        private static string SanitizeReturnUrl(string? returnUrl)
+        {
+            var safeDefault = "/Customer/Wallet/Index";
+
+            if (string.IsNullOrWhiteSpace(returnUrl)) return safeDefault;
+            if (!returnUrl.StartsWith("/")) return safeDefault;
+
+            var lower = returnUrl.ToLowerInvariant();
+            if (lower.StartsWith("/signin-")) return safeDefault;
+            if (lower.Equals("/identity/account/logout")) return safeDefault;
+
+            // 視需要可再擴充黑名單
+            return returnUrl;
+        }
+
         /// <summary>
         /// 統一觸發外部登入（LINE）入口。
-        /// 特色：
-        ///  - 我們不在這裡做任何商務，只負責「送你去登入，然後回 returnUrl」
-        ///  - RedirectUri 會在 Program.cs 的 LINE OAuth 設定中，強制用 https + 正確 Host
+        /// 不處理商務，只負責：送去登入 → 回安全的 returnUrl
         /// </summary>
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login(string returnUrl = "/")
         {
-            // 安全：限制回跳到站內路徑
-            if (string.IsNullOrEmpty(returnUrl) || !returnUrl.StartsWith("/"))
-                returnUrl = "/";
+            var safeReturn = SanitizeReturnUrl(returnUrl);
 
             var properties = new AuthenticationProperties
             {
-                RedirectUri = returnUrl
+                RedirectUri = safeReturn
             };
 
-            // 直接 Challenge LINE（AspNet.Security.OAuth.Line）
             return Challenge(properties, AspNet.Security.OAuth.Line.LineAuthenticationDefaults.AuthenticationScheme);
         }
-
-
-        // GET: /Customer/LiffAuthEntry?redirect=/Customer/Wallet/LiffEntry?mode=gift&token=abc123
-        //public IActionResult Index(string redirect = null)
-        //{
-        //    // 預設回去錢包（保底）
-        //    var safeRedirect = string.IsNullOrWhiteSpace(redirect) ? "/Customer/Wallet" : redirect;
-
-        //    if (User?.Identity?.IsAuthenticated == true)
-        //    {
-        //        // ✅ 已登入：立刻原封不動導回（query 參數不會掉）
-        //        return Redirect(safeRedirect);
-        //    }
-
-        //    // ❗未登入：交給 View 的 JS 去叫出 LINE Login（或顯示一顆「登入」按鈕）
-        //    ViewBag.Redirect = safeRedirect;
-        //    return View();
-        //}
     }
 }

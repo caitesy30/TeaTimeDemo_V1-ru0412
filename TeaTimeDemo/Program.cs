@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Caching.Memory;
-//using Microsoft.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.WebUtilities;       // QueryHelpers
@@ -31,14 +30,8 @@ using TeaTimeDemo.Utility;
 using TeaTimeDemo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-// ── 新增：讓應用程式在 HTTP 80 端口也能接收請求（對應 cloudflared 預設的 ingress 轉送）
-//builder.WebHost.UseUrls("http://0.0.0.0:80");
 
-
-//── 一、服務註冊 ─────────────────────────────────────────//
-
-
-// --- (A) Forwarded Headers：信任代理，把 X-Forwarded-* 還原為 Request 的原始資訊 ---
+// (A) Forwarded Headers
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedFor;
@@ -65,12 +58,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(opts =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
 {
     opts.SignIn.RequireConfirmedAccount = true;
-    opts.User.RequireUniqueEmail = false;      // 允許多帳號無 email 或 email 重複
-
-    // ✅ 加上這行：放寬 UserName 可接受的格式（Email 與 LINE ID 都能用）
+    opts.User.RequireUniqueEmail = false;
     opts.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-
-
     opts.Password.RequiredLength = 6;
     opts.Password.RequireDigit = false;
     opts.Password.RequireLowercase = false;
@@ -80,46 +69,68 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// 自訂 Identity Cookie 路徑
+// 自訂 Identity Cookie
 builder.Services.ConfigureApplicationCookie(opts =>
 {
     opts.LoginPath = "/Identity/Account/Login";
     opts.LogoutPath = "/Identity/Account/Logout";
     opts.AccessDeniedPath = "/Identity/Account/AccessDenied";
-    opts.Cookie.SameSite = SameSiteMode.None; // <— 第三方跳轉必須 None
+    opts.Cookie.SameSite = SameSiteMode.None;
     opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    opts.Cookie.HttpOnly = true; // 防止 JavaScript 存取 Cookie
+    opts.Cookie.HttpOnly = true;
+
+    // ★★★ 這裡是關鍵：未登入統一導到我們的登入入口（再由入口去 Challenge LINE）
     opts.Events = new CookieAuthenticationEvents
     {
-        // 可依需要處理 OnRedirectToLogin 等事件
+        OnRedirectToLogin = ctx =>
+        {
+            var path = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value! : "/") + ctx.Request.QueryString.Value;
+            // 避免把 /signin-xxx 或 /Identity/Account/Logout 再丟回去造成循環
+            if (ctx.Request.Path.HasValue &&
+                (ctx.Request.Path.Value!.StartsWith("/signin-", StringComparison.OrdinalIgnoreCase) ||
+                 ctx.Request.Path.Value!.Equals("/Identity/Account/Logout", StringComparison.OrdinalIgnoreCase)))
+            {
+                path = "/Customer/Wallet/Index";
+            }
+            var url = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(path)}";
+            ctx.Response.Redirect(url);
+            return Task.CompletedTask;
+        },
+        OnRedirectToAccessDenied = ctx =>
+        {
+            var path = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value! : "/") + ctx.Request.QueryString.Value;
+            var url = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(path)}";
+            ctx.Response.Redirect(url);
+            return Task.CompletedTask;
+        }
     };
+
+    // 若你真的同時會使用 www 與裸網域，才打開下面這行（否則請留著註解即可）
+    // opts.Cookie.Domain = ".caitesy.com";
 });
 
-// 你若有其他 Cookie（TempData/Antiforgery）也要設 None+Secure
+// 其他 Cookie（Antiforgery）
 builder.Services.AddAntiforgery(o =>
 {
     o.Cookie.SameSite = SameSiteMode.None;
     o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
-
-
 // (5) CORS
 builder.Services.AddCors(o => o.AddPolicy("AllowAll",
     p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-// (6) DI — Repository、Service
+// (6) DI
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
-// 加入我們的 Intent 服務
 builder.Services.AddScoped<RedemptionIntentService>();
 builder.Services.AddScoped<WalletCreditService>();
 builder.Services.AddScoped<ChannelUserLinkService>();
 
-// (7) 其他：HttpClient、MemoryCache、SignalR、RazorPages、AutoMapper
+// (7) 其他服務
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
@@ -140,40 +151,36 @@ builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization()
     .AddViewLocalization();
 
-// (9) LINE OAuth 設定（重點：強制 https + 正確 Host）
+// (9) ★ 認證：把 DefaultChallengeScheme 改回 Cookies（不要全域自動丟 LINE）
 builder.Services
   .AddAuthentication(options =>
   {
       options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-      options.DefaultChallengeScheme = LineAuthenticationDefaults.AuthenticationScheme;
+      options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
   })
   .AddCookie()
   .AddLine(LineAuthenticationDefaults.AuthenticationScheme, "LINE 帳號登入", options =>
   {
       options.ClientId = builder.Configuration["LineLogin:ChannelId"];
       options.ClientSecret = builder.Configuration["LineLogin:ChannelSecret"];
-
-      // 固定 CallbackPath，等等會把 redirect_uri 改寫成 https://{外部Host}{CallbackPath}
       options.CallbackPath = "/signin-line";
 
-      // 要求 openid/profile/email 權限
       options.Scope.Clear();
       options.Scope.Add("profile");
-      options.Scope.Add("openid");        // 要 id_token 時才需要；否則可拿掉
-      // options.Scope.Add("email");      // ← 只有你的 Channel 已核准 Email address permission 才打開
+      options.Scope.Add("openid");
+      // 若你的 Channel 有開 email 權限才加
+      // options.Scope.Add("email");
+      // options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
 
-
-      //options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
       options.SaveTokens = true;
 
-      // 強制把 redirect_uri 換成外部 https 網域（拿掉 :443/:80）
+      // 強制把 redirect_uri 換成 https + 正確 Host（去掉 :443/:80）
       options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
       {
           var req = ctx.Request;
           var forwardedHost = req.Headers["X-Forwarded-Host"].ToString();
           var host = string.IsNullOrWhiteSpace(forwardedHost) ? req.Host.Value : forwardedHost;
 
-          // 去掉預設埠號，避免和後台不一致
           var colon = host.IndexOf(':');
           if (colon > 0)
           {
@@ -183,7 +190,6 @@ builder.Services
 
           var finalCallback = $"https://{host}{options.CallbackPath}";
 
-          // 重組授權網址，只換 redirect_uri，其他參數保留
           var ub = new UriBuilder(ctx.RedirectUri);
           var parsed = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(ub.Query);
           var pairs = new List<KeyValuePair<string, string>>();
@@ -201,9 +207,7 @@ builder.Services
           ub.Query = string.Join("&", pairs.Select(kv =>
               $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
-          // 方便對照：把最後送出去的 authorize URL 打到 log
           Console.WriteLine("[LINE authorize] " + ub.Uri);
-
           ctx.Response.Redirect(ub.Uri.ToString());
           return Task.CompletedTask;
       };
@@ -229,27 +233,29 @@ app.UseCookiePolicy(new CookiePolicyOptions
     Secure = CookieSecurePolicy.Always
 });
 
-// 1. Forwarded Headers：處理 Cloudflare / 反向 Proxy
+// 1. Forwarded Headers
 app.UseForwardedHeaders();
 
-// 強制 Https Redirection（配合代理）
+// 強制 https（配合代理）
 app.Use(async (ctx, next) =>
 {
-    // 若是代理端已還原 https，但 ASP.NET 覺得是 http，就改成 https
     if (ctx.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto) && proto == "https")
     {
         ctx.Request.Scheme = "https";
     }
+
+    // （可選）主機名正規化：把 www 301 到裸網域，避免 cookie 掉在不同 host
+    if (ctx.Request.Host.HasValue && ctx.Request.Host.Value.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+    {
+        var target = $"https://{ctx.Request.Host.Value.Substring(4)}{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
+        ctx.Response.Redirect(target, permanent: true);
+        return;
+    }
+
     await next();
 });
 
-
-            
-//── 二、中介軟體順序 ───────────────────────────────────────//
-
-
-
-// 2. 強制 HTTPS
+// 2. HTTPS
 app.UseHttpsRedirection();
 
 // 3. 本地化
@@ -270,7 +276,7 @@ app.UseRouting();
 // 6. CORS
 app.UseCors("AllowAll");
 
-// 7. Authentication & Authorization
+// 7. Auth
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -286,23 +292,31 @@ app.MapControllerRoute(
     name: "areaRoute",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-// 短網址
 app.MapControllerRoute(
     name: "claimShortcut",
     pattern: "Wallet/Claim",
     defaults: new { area = "Customer", controller = "Wallet", action = "Claim" });
 
-
-
 app.MapRazorPages();
+
+app.MapGet("/Account/Login", async ctx =>
+{
+    var returnUrl = ctx.Request.Query["ReturnUrl"].ToString();
+    var safe = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+    var url = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(safe)}";
+    ctx.Response.Redirect(url);
+});
+
+
+
 app.MapControllers();
 
-// 10. Database Seed
+// 10. Database Seed/Migrate
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<IDbInitializer>().Initialize();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    // 如無資料庫則自動建立；如有則套用尚未執行的 migration
     db.Database.Migrate();
 }
+
 app.Run();
