@@ -18,11 +18,11 @@ namespace TeaTimeDemo.Areas.Customer.Controllers
 {
     [Area("Customer")]
     [Authorize]// 確保只有登入的使用者能夠存取
-    public class PrintController : Controller
+    public class ProductsController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        public PrintController(IUnitOfWork unitOfWork)
+        public ProductsController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }

@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "藍圖（分頁版入口）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container my-3">
+    <h3 class="mb-2"><i class="bi bi-diagram-3"></i> 藍圖（V1 / V2 / V3 分頁切換）</h3>
+    <div class="text-secondary mb-2">V1：MVP｜V2：AI 中心｜V3：影響力經濟（愛心幣 × 時間銀行 × 社區小程序）</div>
+    <div id="bp-tabs-app"></div>
+</div>
+
+@section Scripts {
+    <!-- 匯出工具（PNG / PDF） -->
+    <script src="~/js/blueprint/ExportKit.js" asp-append-version="true"></script>
+
+    <!-- V1 / V2 / V3 / V4 -->
+    <script src="~/js/blueprint/CommerceBlueprint.js" asp-append-version="true"></script>
+    <script src="~/js/blueprint/CommerceBlueprint.v2.js" asp-append-version="true"></script>
+    <script src="~/js/blueprint/CommerceBlueprint.v3.js" asp-append-version="true"></script>
+    <script src="~/js/blueprint/CommerceBlueprint.v4.js" asp-append-version="true"></script>
+    <script src="~/js/blueprint/CBHoverLink.js" asp-append-version="true"></script>
+
+    <!-- 分頁控制（已支援 V1~V4） -->
+    <script src="~/js/blueprint/BlueprintTabs.js" asp-append-version="true"></script>
+    <script> BlueprintTabs.mount("bp-tabs-app"); </script>
+}

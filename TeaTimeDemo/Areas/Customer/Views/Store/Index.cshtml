@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "商城首頁";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container my-3">
+    <div id="store-home-app"></div>
+</div>
+@section Scripts {
+    <script src="~/js/blueprint/StoreHome.js" asp-append-version="true"></script>
+    <script>
+        StoreHome.render("store-home-app", {
+            coinBalance: 1280, // TODO: 之後從後端帶入
+            username: "@User.Identity?.Name"
+        });
+    </script>
+}

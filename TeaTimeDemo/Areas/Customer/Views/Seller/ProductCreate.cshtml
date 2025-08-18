@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Seller Center - 商品上架";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container my-3">
+    <h3 class="mb-3"><i class="bi bi-box-seam"></i> 商品上架</h3>
+    <div id="seller-create-app"></div>
+</div>
+@section Scripts {
+    <script src="~/js/blueprint/SellerProductCreate.js" asp-append-version="true"></script>
+    <script>
+        SellerProductCreate.render("seller-create-app", {
+            // TODO: 後端載入分類清單、幣種等
+            categories: ["3C","居家","美妝","服飾","玩具","戶外"]
+        });
+    </script>
+}
