@@ -15,7 +15,7 @@
 const LINKMAP_V2 = {
     "流量引擎": "/Live",
     "轉化引擎": "/Checkout",
-    "供給引擎": "https://localhost:7021/Customer/Seller/ProductCreate",
+    "供給引擎": "/Customer/Seller/Center?from=v2-supply",
     "風控與合規": "/Admin/Risk",
     "多語/跨境": "/I18n",
     "幣與結算": "/Wallet"

@@ -2,7 +2,7 @@
 // CommerceBlueprint.js  (Aug 2025 Extended, interactive)
 // 功能：用 JS 生成八張規劃圖（前三張原有 + 五張新圖）+ TODO 清單
 // 規則：Class + static；所有 HTML 以 JS 產出；SVG 清晰字大留白足
-// 互動：所有方塊 hover 放大＋陰影＋漸層（JS 套用）；僅 Seller Center（後台）可點擊跳轉
+// 互動：所有方塊 hover 放大＋陰影＋漸層（JS 套用）；可點方塊（bp-click）使用不同 hover 色
 // ==============================
 
 class SvgKit {
@@ -120,48 +120,69 @@ class CommerceBlueprint {
     }
 
     // ================ helpers ================
-    // 為每張 SVG 注入「唯一」漸層 id，並回傳 id
+    // 相容舊呼叫：建立「一般漸層」
     static _injectGradient(svg) {
         if (svg.dataset.gradId) return svg.dataset.gradId;
         const id = 'bpGrad-' + Math.random().toString(36).slice(2, 8);
         const defs = SvgKit.el('defs', {});
         const lg = SvgKit.el('linearGradient', { id, x1: '0%', y1: '0%', x2: '100%', y2: '100%' });
-        lg.appendChild(SvgKit.el('stop', { offset: '0%', 'stop-color': '#6366f1' }));
-        lg.appendChild(SvgKit.el('stop', { offset: '50%', 'stop-color': '#22d3ee' }));
-        lg.appendChild(SvgKit.el('stop', { offset: '100%', 'stop-color': '#f472b6' }));
+        lg.appendChild(SvgKit.el('stop', { offset: '0%', 'stop-color': '#6366f1' })); // indigo
+        lg.appendChild(SvgKit.el('stop', { offset: '50%', 'stop-color': '#22d3ee' })); // cyan
+        lg.appendChild(SvgKit.el('stop', { offset: '100%', 'stop-color': '#f472b6' })); // pink
         defs.appendChild(lg);
         svg.appendChild(defs);
         svg.dataset.gradId = id;
         return id;
     }
 
-    // 對單一方塊加上 hover 漸層與動畫（用屬性，效力高於 CSS）
+    // ★ 新增：同時確保「一般漸層」與「連結漸層」
+    static _injectGradients(svg) {
+        const normal = this._injectGradient(svg); // 建立一般漸層
+        if (!svg.dataset.gradLinkId) {
+            const id = 'bpGradLink-' + Math.random().toString(36).slice(2, 8);
+            let defs = svg.querySelector('defs');
+            if (!defs) { defs = SvgKit.el('defs', {}); svg.appendChild(defs); }
+            const lg = SvgKit.el('linearGradient', { id, x1: '0%', y1: '0%', x2: '100%', y2: '100%' });
+            // 連結漸層：綠 → 綠 → 橘（更醒目）
+            lg.appendChild(SvgKit.el('stop', { offset: '0%', 'stop-color': '#10b981' })); // emerald
+            lg.appendChild(SvgKit.el('stop', { offset: '55%', 'stop-color': '#34d399' })); // green
+            lg.appendChild(SvgKit.el('stop', { offset: '100%', 'stop-color': '#f59e0b' })); // amber
+            defs.appendChild(lg);
+            svg.dataset.gradLinkId = id;
+        }
+        return { normal, link: svg.dataset.gradLinkId };
+    }
+
+    // hover：可點（bp-click）→ 用連結漸層；否則用一般漸層
     static _enableBoxHover(svg, rect) {
-        const gid = this._injectGradient(svg);
+        const { normal, link } = this._injectGradients(svg);
+        const gid = rect.classList.contains('bp-click') ? link : normal;
+
         rect.style.pointerEvents = 'all';
         rect.addEventListener('mouseenter', () => {
             rect.style.transform = 'scale(1.04)';
             rect.style.filter = 'drop-shadow(0 10px 24px rgba(0,0,0,.18))';
-            rect.setAttribute('data-oldfill', rect.getAttribute('fill') || '');
-            rect.setAttribute('fill', `url(#${gid})`);
+            // 存原本 inline fill 值
+            rect.setAttribute('data-old-inline-fill', rect.style.fill || '');
+            // 用 inline style + !important，避免被 class 的 fill 蓋掉
+            rect.style.setProperty('fill', `url(#${gid})`, 'important');
             rect.setAttribute('stroke-opacity', '0');
         });
         rect.addEventListener('mouseleave', () => {
             rect.style.transform = '';
             rect.style.filter = '';
-            const old = rect.getAttribute('data-oldfill');
-            if (old) rect.setAttribute('fill', old); else rect.removeAttribute('fill');
+            const oldInline = rect.getAttribute('data-old-inline-fill') || '';
+            if (oldInline) rect.style.setProperty('fill', oldInline, 'important');
+            else rect.style.removeProperty('fill');
             rect.removeAttribute('stroke-opacity');
         });
     }
 
-    // 套用到該 SVG 內所有 box
     static _decorateAllBoxes(svg) {
         svg.querySelectorAll('rect.bp-box, rect.bp-box-strong')
             .forEach(r => this._enableBoxHover(svg, r));
     }
 
-    // 卡片容器
     static _card(title, contentNode) {
         const div = document.createElement("div");
         div.className = "bp-card";
@@ -198,7 +219,7 @@ class CommerceBlueprint {
         svg.appendChild(f2Rect);
         f2Rect.addEventListener("click", () => {
             const ok = confirm("前往 Seller Center（後台）→「商品上架」頁面？");
-            if (ok) location.href = "https://localhost:7021/Customer/Seller/ProductCreate";
+            if (ok) location.href = "/Customer/Seller/Center?from=v1-seller-center";
         });
         f2Rect.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") { e.preventDefault(); f2Rect.click(); }
@@ -393,17 +414,28 @@ class CommerceBlueprint {
         const grid = new GridLayout(340, 140, 30, 16, 24, 40);
 
         const p1 = grid.pos(0, 0), p2 = grid.pos(1, 0), p3 = grid.pos(2, 0);
-        svg.appendChild(SvgKit.rect(p1.x, p1.y, p1.w, p1.h, 16, "bp-box-strong"));
+
+        // ★ 可點：Stage 1
+        const p1Rect = SvgKit.rect(p1.x, p1.y, p1.w, p1.h, 16, "bp-box-strong");
+        p1Rect.classList.add("bp-click");
+        svg.appendChild(p1Rect);
         svg.appendChild(SvgKit.text(p1.x + 16, p1.y + 32, "Stage 1：MVP（存活期）", "start", 15, "bold"));
         svg.appendChild(SvgKit.text(p1.x + 16, p1.y + 58, "上架 / 車 / 幣支付 / Escrow", "start", 13));
         svg.appendChild(SvgKit.text(p1.x + 16, p1.y + 78, "AI 入門導師、社交裂變、首購返幣", "start", 13));
+        p1Rect.style.cursor = "pointer";
+        p1Rect.addEventListener("click", () => {
+            const ok = confirm("前往 Seller Center（後台）— MVP 交易及上架助手？");
+            if (ok) location.href = "/Customer/Seller/Center?stage=mvp&from=v1-roadmap";
+        });
 
-        svg.appendChild(SvgKit.rect(p2.x, p2.y, p2.w, p2.h, 16, "bp-box-strong"));
+        const p2Rect = SvgKit.rect(p2.x, p2.y, p2.w, p2.h, 16, "bp-box-strong");
+        svg.appendChild(p2Rect);
         svg.appendChild(SvgKit.text(p2.x + 16, p2.y + 32, "Stage 2：成長期（跨國）", "start", 15, "bold"));
         svg.appendChild(SvgKit.text(p2.x + 16, p2.y + 58, "直播即時購物（多語翻譯）", "start", 13));
         svg.appendChild(SvgKit.text(p2.x + 16, p2.y + 78, "教育培訓、短影音、跨境物流支付", "start", 13));
 
-        svg.appendChild(SvgKit.rect(p3.x, p3.y, p3.w, p3.h, 16, "bp-box-strong"));
+        const p3Rect = SvgKit.rect(p3.x, p3.y, p3.w, p3.h, 16, "bp-box-strong");
+        svg.appendChild(p3Rect);
         svg.appendChild(SvgKit.text(p3.x + 16, p3.y + 32, "Stage 3：宇宙村（元宇宙）", "start", 15, "bold"));
         svg.appendChild(SvgKit.text(p3.x + 16, p3.y + 58, "Unity 3D 商場 / VR / AR", "start", 13));
         svg.appendChild(SvgKit.text(p3.x + 16, p3.y + 78, "AI 分身、Web3 去中心化交易", "start", 13));
@@ -492,9 +524,21 @@ class CommerceBlueprint {
             { x: 780, y: 310, w: 220, h: 70, t1: "價格/庫存策略", t2: "動態定價/促銷建議" },
         ];
         nodes.forEach(n => {
-            svg.appendChild(SvgKit.rect(n.x, n.y, n.w, n.h, 14));
+            const rect = SvgKit.rect(n.x, n.y, n.w, n.h, 14);
+            svg.appendChild(rect);
             svg.appendChild(SvgKit.text(n.x + n.w / 2, n.y + 30, n.t1, "middle", 14, "bold"));
             svg.appendChild(SvgKit.text(n.x + n.w / 2, n.y + 52, n.t2, "middle", 12, "normal", "#64748b"));
+
+            // ★ 若為「上架助手」，可點至 Seller Center 頁，並標記 bp-click（hover 用連結漸層）
+            if (n.t1 === "上架助手") {
+                rect.classList.add("bp-click");
+                rect.style.cursor = "pointer";
+                rect.addEventListener("click", () => {
+                    const ok = confirm("前往 Seller Center（後台）— MVP 交易及上架助手？");
+                    if (ok) location.href = "/Customer/Seller/Center?stage=assistant&from=v1-aicore";
+                });
+            }
+
             const tx = n.x + n.w / 2, ty = n.y + n.h / 2;
             svg.appendChild(SvgKit.curveArrow(tx, ty, 600 - (tx - 600) * 0.1, 240 - (ty - 240) * 0.1, 0.55));
         });

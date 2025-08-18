@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Seller Center（後台）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var stage = (ViewBag.Stage as string) ?? "mvp";
+}
+<div class="container my-3">
+    <h3 class="mb-2"><i class="bi bi-shop"></i> Seller Center（MVP 交易及上架助手）</h3>
+    <div id="seller-center-app"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/seller/SellerCenterApp.js" asp-append-version="true"></script>
+    <script src="~/js/blueprint/SellerProductCreate.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+          SellerCenterApp.render("seller-center-app", { stage: "@stage" });
+        });
+    </script>
+}
