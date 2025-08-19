@@ -157,7 +157,7 @@ class CommerceBlueprintV3 {
         const tabs = [
             { name: "影響力經濟總覽", render: () => CBV3Pages.page_Overview() },
             { name: "募與公益資金流", render: () => CBV3Pages.page_FundFlow() },
-            { name: "善時點數（時間銀行）", render: () => CBV3Pages.page_TimeBank() },
+            { name: "時間點數", render: () => CBV3Pages.page_TimeBank() },
             { name: "模組化拼裝架構", render: () => CBV3Pages.page_Modular() },
             { name: "教會管理套件", render: () => CBV3Pages.page_ChurchSuite() },
         ];
@@ -303,7 +303,7 @@ class CBV3Pages {
         // 會員層
         const a1 = box(120, 100, 240, 80, "發佈任務", "賞點 / 截止 / 地點");
         const a2 = box(460, 100, 240, 80, "接單與完成", "拍照/簽到/回報");
-        const a3 = box(800, 100, 240, 80, "審核入賬", "善時點數 + 評價");
+        const a3 = box(800, 100, 240, 80, "審核入賬", "時間點數 + 評價");
         svg.appendChild(CBV3Svg.curveArrow2(a1.cx + 20, a1.cy, a2.cx - 20, a2.cy, { lift: -60 }));
         svg.appendChild(CBV3Svg.curveArrow2(a2.cx + 20, a2.cy, a3.cx - 20, a3.cy, { lift: -60 }));
 
@@ -322,10 +322,10 @@ class CBV3Pages {
         svg.appendChild(CBV3Svg.curveArrow2(c2.cx + 20, c2.cy, c3.cx - 20, c3.cy, { lift: +40 }));
 
         // 備註
-        const note = "公式示例：善時點數 = 任務時數 × 權重（難度/稀缺） × 評價係數；可跨幣種兌換與公益聯動。";
+        const note = "公式示例：時間點數 = 任務時數 × 權重（難度/稀缺） × 評價係數；可跨幣種兌換與公益聯動。";
         svg.appendChild(CBV3Svg.wrapText(svg, { x: 24, y: 700, text: note, maxWidth: W - 48, size: 12, color: "#64748b" }));
 
-        wrap.appendChild(CBV3Layout.card("善時點數（時間銀行）", (() => { const h = document.createElement("div"); h.appendChild(svg); return h; })()));
+        wrap.appendChild(CBV3Layout.card("時間點數", (() => { const h = document.createElement("div"); h.appendChild(svg); return h; })()));
         return wrap;
     }
 
@@ -338,7 +338,7 @@ class CBV3Pages {
         const grid = [
             ["商城核心", "商品/車/訂單/支付（Coins+Escrow）"],
             ["公益模組", "專案/受益者/餐券/捐贈/透明帳"],
-            ["時間銀行", "任務池/驗收/善時點數/治理"],
+            ["時間銀行", "任務池/驗收/時間點數/治理"],
             ["幣中心", "居希恩幣/冠名幣/發行/交易"],
             ["二手市集", "C2C/需求牆/議價/履約"],
             ["教會套件", "週報/會計/團契/活動"],
