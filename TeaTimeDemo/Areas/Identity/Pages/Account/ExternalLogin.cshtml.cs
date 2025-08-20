@@ -120,8 +120,21 @@ namespace TeaTimeDemo.Areas.Identity.Pages.Account
 
             var signInResult = await _signInManager.ExternalLoginSignInAsync(
                 info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
             if (signInResult.Succeeded)
+            {
+                // 如果系統裡的使用者 Email 還是空的，嘗試用這次的 Claim 補上
+                var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+                var emailFromClaim = info.Principal.FindFirstValue(ClaimTypes.Email);
+                if (user != null && string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(emailFromClaim))
+                {
+                    user.Email = emailFromClaim;
+                    user.UserName = string.IsNullOrEmpty(user.UserName) ? emailFromClaim : user.UserName;
+                    await _userManager.UpdateAsync(user);
+                }
                 return LocalRedirect(ReturnUrl);
+            }
+
 
             // 這裡是關鍵：先取出 LINE 傳來的 Email
             var emailClaim = info.Principal.FindFirstValue(ClaimTypes.Email);

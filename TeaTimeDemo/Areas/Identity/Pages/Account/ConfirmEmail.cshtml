@@ -1,8 +1,275 @@
 ﻿@page
 @model ConfirmEmailModel
 @{
-    ViewData["Title"] = "Confirm email";
+    ViewData["Title"] = "Email 驗證結果";
 }
 
-<h1>@ViewData["Title"]</h1>
-<partial name="_StatusMessage" model="Model.StatusMessage" />
+<!-- 根容器，資料交給 JS，HTML 由 JS 動態生成 -->
+<div id="confirm-root"
+     data-success="@Model.IsSuccess"
+     data-already="@Model.AlreadyConfirmed"
+     data-email="@Model.Email"
+     data-message="@Model.StatusMessage">
+</div>
+
+<noscript>
+    <div class="container my-4">
+        <div class="alert alert-info">
+            您的瀏覽器未啟用 JavaScript。請啟用後重新整理本頁。
+        </div>
+        <p class="mb-0">@Model.StatusMessage</p>
+    </div>
+</noscript>
+
+@section Styles {
+    <style>
+        .ce-wrap {
+            max-width: 760px;
+            margin: 32px auto;
+            padding: 0 16px;
+            font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", Arial, sans-serif;
+        }
+
+        .ce-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 6px 24px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        .ce-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px;
+            color: #fff;
+        }
+
+            .ce-head.success {
+                background: linear-gradient(135deg,#22c55e,#16a34a);
+            }
+
+            .ce-head.warn {
+                background: linear-gradient(135deg,#f59e0b,#d97706);
+            }
+
+            .ce-head.error {
+                background: linear-gradient(135deg,#ef4444,#dc2626);
+            }
+
+        .ce-emoji {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .ce-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .ce-body {
+            padding: 20px;
+            color: #374151;
+        }
+
+        .ce-p {
+            margin: 0 0 10px 0;
+        }
+
+        .ce-note {
+            background: #f9fafb;
+            border: 1px dashed #e5e7eb;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            color: #4b5563;
+        }
+
+        .ce-cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .ce-btn {
+            border: 0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: .2s;
+        }
+
+        .ce-btn-primary {
+            background: #16a34a;
+            color: #fff;
+        }
+
+            .ce-btn-primary:hover {
+                filter: brightness(.95);
+            }
+
+        .ce-btn-ghost {
+            background: #f3f4f6;
+            color: #111827;
+        }
+
+            .ce-btn-ghost:hover {
+                background: #e5e7eb;
+            }
+
+        .ce-footer {
+            padding: 14px 20px;
+            background: #fafafa;
+            border-top: 1px solid #eee;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .ce-link {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+            .ce-link:hover {
+                text-decoration: underline;
+            }
+        /* Razor 內要用 @@ 才能輸出 media */
+        @@media (max-width:480px) {
+            .ce-title
+
+        {
+            font-size: 18px;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        class ConfirmEmailView {
+          static boot(){
+            const root = document.getElementById('confirm-root');
+            if(!root) return;
+
+            const success = (root.dataset.success || '').toString().toLowerCase() === 'true';
+            const already = (root.dataset.already || '').toString().toLowerCase() === 'true';
+            const email   = root.dataset.email || '';
+            const msg     = root.dataset.message || '';
+
+            let html = '';
+            if (success && already){
+              html = this.#tpl('warn', '📫', 'Email 已完成驗證',
+                [
+                  `您的 Email（${this.#escape(email) || '未提供'}）早已完成驗證，感謝您！`,
+                  this.#smallTips()
+                ],
+                this.#buttonsAfterSuccess());
+            } else if (success){
+              html = this.#tpl('success', '🎉', '驗證成功',
+                [
+                  `太棒了！您的 Email（${this.#escape(email) || '未提供'}）已完成驗證！`,
+                  this.#smallTips()
+                ],
+                this.#buttonsAfterSuccess(true));
+            } else {
+              html = this.#tpl('error', '⚠️', '驗證失敗',
+                [
+                  this.#escape(msg || '驗證失敗，請稍後再試或重新索取驗證信。'),
+                  `<div class="ce-note">
+                     <div style="font-weight:700;margin-bottom:6px;">可能的原因</div>
+                     <ul style="margin:0;padding-left:18px;">
+                       <li>驗證連結已過期或格式不正確</li>
+                       <li>您已完成驗證（可直接登入試試）</li>
+                       <li>開啟連結時跳轉造成 state 不一致（請回系統重新發送驗證信）</li>
+                     </ul>
+                   </div>`
+                ],
+                this.#buttonsForError());
+            }
+
+            root.innerHTML = html;
+
+            // 綁定事件
+            this.#bind('btn-wallet', ()=> this.#goWallet());  // ⭐ 直接進入我的錢包（LINE Challenge → 回錢包）
+            this.#bind('btn-login',  ()=> location.href = '/Identity/Account/Login');
+            this.#bind('btn-home',   ()=> location.href = '/');
+            this.#bind('btn-gmail',  ()=> window.open('https://mail.google.com/', '_blank'));
+            this.#bind('btn-yahoo',  ()=> window.open('https://mail.yahoo.com/', '_blank'));
+            this.#bind('btn-outlook',()=> window.open('https://outlook.live.com/mail/', '_blank'));
+
+            // （可選）若連結帶 ?go=wallet，驗證成功就自動導過去
+            const go = new URLSearchParams(location.search).get('go');
+            if (success && go === 'wallet') setTimeout(()=> this.#goWallet(), 500);
+          }
+
+          static #tpl(kind, emoji, title, paragraphs, ctas){
+            const headClass = kind === 'success' ? 'ce-head success' : (kind === 'warn' ? 'ce-head warn' : 'ce-head error');
+            const body = (paragraphs || []).map(p => `<p class="ce-p">${p}</p>`).join('');
+            return `
+              <div class="ce-wrap">
+                <div class="ce-card">
+                  <div class="${headClass}">
+                    <div class="ce-emoji">${emoji}</div>
+                    <h1 class="ce-title">${title}</h1>
+                  </div>
+                  <div class="ce-body">
+                    ${body}
+                    <div class="ce-cta">${ctas}</div>
+                  </div>
+                  <div class="ce-footer">
+                    若您有任何問題，歡迎回到 <a class="ce-link" href="/">首頁</a> 或至 <a class="ce-link" href="/Identity/Account/Login">登入頁</a>。
+                  </div>
+                </div>
+              </div>`;
+          }
+
+          static #smallTips(){
+            return `<div class="ce-note">
+              <div style="font-weight:700;margin-bottom:6px;">小提醒</div>
+              <ul style="margin:0;padding-left:18px;">
+                <li>若先前沒收到信，請檢查垃圾信匣或促銷匣</li>
+                <li>將系統寄件者加入通訊錄，避免被誤判為垃圾信</li>
+              </ul>
+            </div>`;
+          }
+
+          static #buttonsAfterSuccess(){
+            return `
+              <button id="btn-wallet" class="ce-btn ce-btn-primary">直接進入我的錢包</button>
+              <button id="btn-login"  class="ce-btn ce-btn-ghost">前往登入</button>
+              <button id="btn-home"   class="ce-btn ce-btn-ghost">回首頁</button>
+              <button id="btn-gmail"  class="ce-btn ce-btn-ghost">開 Gmail</button>
+              <button id="btn-yahoo"  class="ce-btn ce-btn-ghost">開 Yahoo</button>
+              <button id="btn-outlook"class="ce-btn ce-btn-ghost">開 Outlook</button>`;
+          }
+
+          static #buttonsForError(){
+            return `
+              <button id="btn-home"   class="ce-btn ce-btn-primary">回首頁重新嘗試</button>
+              <button id="btn-login"  class="ce-btn ce-btn-ghost">前往登入</button>
+              <button id="btn-gmail"  class="ce-btn ce-btn-ghost">開 Gmail</button>
+              <button id="btn-yahoo"  class="ce-btn ce-btn-ghost">開 Yahoo</button>
+              <button id="btn-outlook"class="ce-btn ce-btn-ghost">開 Outlook</button>`;
+          }
+
+          static #bind(id, fn){ const el = document.getElementById(id); if (el) el.addEventListener('click', fn); }
+          static #escape(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m])); }
+
+          // ⭐ 主角：導去 LINE Challenge，回到錢包
+          static #goWallet(){
+            // 回跳到錢包首頁（可自行改成其他頁）
+            const url = '/Customer/LiffAuthEntry/Login?returnUrl=%2FCustomer%2FWallet%2FIndex';
+            location.href = url;
+          }
+        }
+        document.addEventListener('DOMContentLoaded', ()=> ConfirmEmailView.boot());
+    </script>
+}

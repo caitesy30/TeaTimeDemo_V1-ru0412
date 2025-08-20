@@ -10,12 +10,13 @@ using Microsoft.AspNetCore.HttpOverrides;      // Forwarded Headers
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.WebUtilities;       // QueryHelpers
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.WebUtilities;       // QueryHelpers
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Shared;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
@@ -26,8 +27,8 @@ using TeaTimeDemo.DataAccess.Repository;
 using TeaTimeDemo.DataAccess.Repository.IRepository;
 using TeaTimeDemo.Mapping;
 using TeaTimeDemo.Models;
-using TeaTimeDemo.Utility;
 using TeaTimeDemo.Services;
+using TeaTimeDemo.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,19 +80,30 @@ builder.Services.ConfigureApplicationCookie(opts =>
     opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     opts.Cookie.HttpOnly = true;
 
+    // 若你同時要 www 與裸網域共用 Cookie，可開啟下行（建議仍以方案A為主，不一定要開這個）
+    //opts.Cookie.Domain = ".caitesy.com";
+
     // ★★★ 這裡是關鍵：未登入統一導到我們的登入入口（再由入口去 Challenge LINE）
     opts.Events = new CookieAuthenticationEvents
     {
         OnRedirectToLogin = ctx =>
         {
-            var path = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value! : "/") + ctx.Request.QueryString.Value;
-            // 避免把 /signin-xxx 或 /Identity/Account/Logout 再丟回去造成循環
-            if (ctx.Request.Path.HasValue &&
-                (ctx.Request.Path.Value!.StartsWith("/signin-", StringComparison.OrdinalIgnoreCase) ||
-                 ctx.Request.Path.Value!.Equals("/Identity/Account/Logout", StringComparison.OrdinalIgnoreCase)))
+            var lower = (ctx.Request.Path.Value ?? "").ToLowerInvariant();
+            // ✅ OAuth 回呼不可再次重導，否則會形成 authorize 迴圈
+            if (lower.StartsWith("/signin-"))
             {
-                path = "/Customer/Wallet/Index";
+                ctx.Response.StatusCode = 401;
+                return Task.CompletedTask;
             }
+
+            // 原始請求完整路徑 + Query
+            var path = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value! : "/") + ctx.Request.QueryString.Value;
+
+            // 避免回登出頁
+            if (lower == "/identity/account/logout")
+                path = "/Customer/Wallet/Index";
+
+            // ✅ 改成導到我們的入口（保留 returnUrl/rid）
             var url = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(path)}";
             ctx.Response.Redirect(url);
             return Task.CompletedTask;
@@ -104,9 +116,6 @@ builder.Services.ConfigureApplicationCookie(opts =>
             return Task.CompletedTask;
         }
     };
-
-    // 若你真的同時會使用 www 與裸網域，才打開下面這行（否則請留著註解即可）
-    // opts.Cookie.Domain = ".caitesy.com";
 });
 
 // 其他 Cookie（Antiforgery）
@@ -156,6 +165,7 @@ builder.Services
   .AddAuthentication(options =>
   {
       options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+      // ✅ 保持 DefaultChallengeScheme = Cookies（讓我們自行導去 LINE）
       options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
   })
   .AddCookie()
@@ -169,8 +179,8 @@ builder.Services
       options.Scope.Add("profile");
       options.Scope.Add("openid");
       // 若你的 Channel 有開 email 權限才加
-       options.Scope.Add("email");
-       options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+      options.Scope.Add("email");
+      options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
 
       options.SaveTokens = true;
 
@@ -178,6 +188,7 @@ builder.Services
       options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
       {
           var req = ctx.Request;
+
           var forwardedHost = req.Headers["X-Forwarded-Host"].ToString();
           var host = string.IsNullOrWhiteSpace(forwardedHost) ? req.Host.Value : forwardedHost;
 
@@ -188,22 +199,38 @@ builder.Services
               if (port == "443" || port == "80") host = host[..colon];
           }
 
+          // ⭐ 若是 www.，換成裸網域，避免 301 造成 state 對不上
+          if (host.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+          {
+              host = host.Substring(4);
+          }
+
           var finalCallback = $"https://{host}{options.CallbackPath}";
 
+          // 解析目前 RedirectUri 並替換 redirect_uri 參數
           var ub = new UriBuilder(ctx.RedirectUri);
           var parsed = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(ub.Query);
           var pairs = new List<KeyValuePair<string, string>>();
           foreach (var kv in parsed)
           {
-              if (kv.Key.Equals("redirect_uri", StringComparison.OrdinalIgnoreCase))
-              {
-                  pairs.Add(new("redirect_uri", finalCallback));
-              }
-              else
-              {
-                  foreach (var v in kv.Value) pairs.Add(new(kv.Key, v));
-              }
+              // 固定改 redirect_uri；同時忽略原本的 prompt
+              if (kv.Key.Equals("redirect_uri", StringComparison.OrdinalIgnoreCase)) continue;
+              if (kv.Key.Equals("prompt", StringComparison.OrdinalIgnoreCase)) continue;
+              foreach (var v in kv.Value) pairs.Add(new(kv.Key, v));
           }
+          pairs.Add(new("redirect_uri", finalCallback));
+
+          // 支援 ?forceEmail=1：強制同意畫面（補抓 Email）
+          var forceEmail = req.Query.TryGetValue("forceEmail", out var qv) && string.Equals(qv, "1", StringComparison.OrdinalIgnoreCase);
+          if (ctx.Properties?.Items?.TryGetValue("force_email", out var flag) == true && flag == "1") forceEmail = true;
+          if (forceEmail)
+          {
+              pairs.RemoveAll(p => p.Key.Equals("prompt", StringComparison.OrdinalIgnoreCase));
+              pairs.Add(new("prompt", "consent"));
+              pairs.RemoveAll(p => p.Key.Equals("ui_locales", StringComparison.OrdinalIgnoreCase));
+              pairs.Add(new("ui_locales", "zh-TW"));
+          }
+
           ub.Query = string.Join("&", pairs.Select(kv =>
               $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
@@ -244,8 +271,14 @@ app.Use(async (ctx, next) =>
         ctx.Request.Scheme = "https";
     }
 
+    // ⭐ 回呼路徑 /signin-* 不要做 301 正規化（避免丟 code/state）
+    var pathLower = ctx.Request.Path.Value?.ToLowerInvariant() ?? "";
+    var isOAuthCallback = pathLower.StartsWith("/signin-");
+
     // （可選）主機名正規化：把 www 301 到裸網域，避免 cookie 掉在不同 host
-    if (ctx.Request.Host.HasValue && ctx.Request.Host.Value.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+    if (!isOAuthCallback &&
+        ctx.Request.Host.HasValue &&
+        ctx.Request.Host.Value.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
     {
         var target = $"https://{ctx.Request.Host.Value.Substring(4)}{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
         ctx.Response.Redirect(target, permanent: true);
@@ -299,6 +332,7 @@ app.MapControllerRoute(
 
 app.MapRazorPages();
 
+// 讓任何誤打 /Account/Login 的地方，也一致導到入口（保留 ReturnUrl）
 app.MapGet("/Account/Login", async ctx =>
 {
     var returnUrl = ctx.Request.Query["ReturnUrl"].ToString();
@@ -306,8 +340,6 @@ app.MapGet("/Account/Login", async ctx =>
     var url = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(safe)}";
     ctx.Response.Redirect(url);
 });
-
-
 
 app.MapControllers();
 

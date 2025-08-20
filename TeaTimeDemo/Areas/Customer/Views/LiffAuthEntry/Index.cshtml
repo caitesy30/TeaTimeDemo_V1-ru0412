@@ -58,7 +58,9 @@
                 //    做一個你自己的入口：/Auth/Line/Login?returnUrl=...
                 // return `/Auth/Line/Login?returnUrl=${encodeURIComponent(this.targetRedirect)}`;
                        
-                return `/Customer/LiffAuthEntry/Login?returnUrl=${encodeURIComponent(this.targetRedirect)}`;
+                // return `/Customer/LiffAuthEntry/Login?returnUrl=${encodeURIComponent(this.targetRedirect)}`;
+
+                 return `/Identity/Account/ExternalLogin?handler=Challenge&provider=Line&returnUrl=${encodeURIComponent(this.targetRedirect)}`;
 
             }
 

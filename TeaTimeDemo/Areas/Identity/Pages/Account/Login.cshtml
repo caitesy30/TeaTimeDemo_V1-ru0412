@@ -1,41 +1,54 @@
 ﻿@page
+@using System
 @model LoginModel
-
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = "登入";
+
+    // 優先吃 Model.ReturnUrl，其次讀 querystring；最後預設回錢包首頁
+    var returnUrl = !string.IsNullOrWhiteSpace(Model.ReturnUrl)
+        ? Model.ReturnUrl
+        : Request.Query["returnUrl"].ToString();   // ← 這裡改用 Request（或用 ViewContext.HttpContext.Request）
+
+    if (string.IsNullOrWhiteSpace(returnUrl))
+    {
+        returnUrl = "/Customer/Wallet/Index";
+    }
+
+    var bLoginUrl = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}";
 }
 
-<h1>@ViewData["Title"]</h1>
+<div class="container my-4" style="max-width:560px">
+    <div class="alert alert-info mb-3">
+        正在連線 LINE，請稍候…
+    </div>
 
-<!-- 新增除錯顯示區塊 -->
-<div id="debugInfo" class="alert alert-info" style="display:none;"></div>
+    <!-- 主動引導使用者走 B 入口（會保留 returnUrl/rid） -->
+    <a class="btn btn-success w-100" href="@bLoginUrl">
+        使用 LINE 登入
+    </a>
 
+    <p class="text-muted mt-2 mb-0" style="font-size:13px">
+        若未自動導向，請點上方按鈕再試一次。
+    </p>
 
-<div class="row">
-    <!-- 左側：本地帳號登入 -->
-    <div class="col-md-4">
-        <section>
+    <details class="mt-3">
+        <summary class="text-muted">改用本地帳號登入（除錯/後台用）</summary>
+        <div class="mt-3">
             <form id="account" method="post">
-                <h2>使用本地帳號登入</h2>
-                <hr />
-                <!-- 驗證錯誤顯示 -->
                 <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
 
-                <!-- Email 輸入 -->
                 <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
                     <label asp-for="Input.Email" class="form-label">Email</label>
                     <span asp-validation-for="Input.Email" class="text-danger"></span>
                 </div>
 
-                <!-- Password 輸入 -->
                 <div class="form-floating mb-3">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">Password</label>
+                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" placeholder="password" />
+                    <label asp-for="Input.Password" class="form-label">密碼</label>
                     <span asp-validation-for="Input.Password" class="text-danger"></span>
                 </div>
 
-                <!-- 記住我選項 -->
                 <div class="checkbox mb-3">
                     <label asp-for="Input.RememberMe" class="form-label">
                         <input class="form-check-input" asp-for="Input.RememberMe" />
@@ -43,80 +56,27 @@
                     </label>
                 </div>
 
-                <!-- 登入按鈕 -->
-                <div>
-                    <button id="login-submit" type="submit"　asp-area="Identity" class="w-100 btn btn-lg btn-primary mb-2">登入</button>
-                </div>
+                <button id="login-submit" type="submit" class="w-100 btn btn-outline-primary">以本地帳號登入</button>
 
-
-
-                <!-- 忘記密碼、註冊新帳號、重新發送確認郵件的連結 -->
-                <div>
-                    <p>
-                        <a id="forgot-password" asp-page="./ForgotPassword">忘記密碼？</a>
-                    </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">註冊新帳號</a>
-                    </p>
-                    <p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">重新發送確認信</a>
-                    </p>
+                <div class="mt-3">
+                    <p><a asp-page="./ForgotPassword">忘記密碼？</a></p>
+                    <p><a asp-page="./Register" asp-route-returnUrl="@returnUrl">註冊新帳號</a></p>
+                    <p><a asp-page="./ResendEmailConfirmation">重新發送確認信</a></p>
                 </div>
             </form>
-        </section>
-    </div>
-
-
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>使用第三方帳號登入</h3>
-            <hr />
-            @if ((Model.ExternalLogins?.Count ?? 0) == 0)
-            {
-                <div class="text-muted">目前尚未設定外部登入服務。</div>
-            }
-            else
-            {
-                <!-- 外部登入按鈕列表 -->
-                <form id="external-account"
-                      asp-page="./ExternalLogin"
-                      asp-route-returnUrl="@Model.ReturnUrl"
-                      method="post"
-                      class="d-grid gap-2">
-                    @foreach (var provider in Model.ExternalLogins)
-                    {
-                        <button type="submit"
-                                class="btn btn-success btn-lg"
-                                name="provider"
-                                value="@provider.Name">
-                            <i class="bi bi-line"></i> 使用 @provider.DisplayName
-                        </button>
-                    }
-                </form>
-            }
-        </section>
-    </div>
+        </div>
+    </details>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // DebugHelper：解析 query string 並顯示 mode 與 token
-        class DebugHelper {
-            static showParams() {
-                const params = new URLSearchParams(window.location.search);
-                const mode = params.get('mode');
-                const token = params.get('token');
-                const debugDiv = document.getElementById('debugInfo');
-                if (mode || token) {
-                    debugDiv.style.display = 'block';
-                    debugDiv.innerHTML = `偵測到參數 → mode: <strong>${mode || '無'}</strong>, token: <strong>${token || '無'}</strong>`;
-                }
-            }
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            DebugHelper.showParams();
+        // ✅ 自動嘗試一次真正的 LINE 授權入口（保留 returnUrl/rid）
+        window.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                // 用 Html.Raw 避免 & 被變成 &amp; 影響導轉
+                location.replace('@Html.Raw(bLoginUrl)');
+            }, 300);
         });
     </script>
 }
-　
