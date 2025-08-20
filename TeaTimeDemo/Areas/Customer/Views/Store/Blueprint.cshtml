@@ -3,8 +3,12 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <div class="container my-3">
-    <h3 class="mb-2"><i class="bi bi-diagram-3"></i> 藍圖（V1 / V2 / V3 分頁切換）</h3>
-    <div class="text-secondary mb-2">V1：MVP｜V2：AI 中心｜V3：影響力經濟（愛心幣 × 時間銀行 × 社區小程序）</div>
+    <h3 class="mb-2"><i class="bi bi-diagram-3"></i> 藍圖（V1 / V2 / V3 / V4 / V5 分頁切換）</h3>
+    <div class="text-secondary mb-2">
+        V1：MVP｜V2：AI 中心｜V3：影響力經濟（愛心幣 × 時間銀行 × 社區小程序）
+        ｜V4：樂高模組（食衣住行育樂）
+        ｜<b>V5：食衣住行育樂 × 協會（橘）／居希恩（淡藍紫） × 三階段（可編輯+存檔）</b>
+    </div>
     <div id="bp-tabs-app"></div>
 </div>
 
@@ -12,11 +16,16 @@
     <!-- 匯出工具（PNG / PDF） -->
     <script src="~/js/blueprint/ExportKit.js" asp-append-version="true"></script>
 
+    <!-- TinyMCE（使用你的 api_key） -->
+    <script src="https://cdn.tiny.cloud/1/bd4kr41e6ze0pbf2aykxdz4hsbpnedbrhpjj227b6za85wou/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+
     <!-- V1 / V2 / V3 / V4 -->
     <script src="~/js/blueprint/CommerceBlueprint.js" asp-append-version="true"></script>
     <script src="~/js/blueprint/CommerceBlueprint.v2.js" asp-append-version="true"></script>
     <script src="~/js/blueprint/CommerceBlueprint.v3.js" asp-append-version="true"></script>
     <script src="~/js/blueprint/CommerceBlueprint.v4.js" asp-append-version="true"></script>
+    <script src="~/js/blueprint/CommerceBlueprint.v5.js" asp-append-version="true"></script>
     <script src="~/js/blueprint/CBHoverLink.js" asp-append-version="true"></script>
 
     <!-- 分頁控制（已支援 V1~V4） -->

@@ -1,0 +1,136 @@
+﻿@* CurrencyAuditController.cs的index *@
+@{
+    ViewData["Title"] = "幣種對帳";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/lib/DataTables/datatables.min.css" asp-append-version="true" />
+    <style>
+        #auditTable th, #auditTable td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        #usersTable th, #usersTable td, #allHoldingsTable th, #allHoldingsTable td {
+            vertical-align: middle;
+        }
+
+        .text-end {
+            text-align: right !important;
+        }
+
+        #allHoldingsTable th, #allHoldingsTable td {
+            white-space: nowrap;
+        }
+
+        .modal .dataTables_scrollHeadInner, .modal .dataTables_scrollHeadInner > table {
+            width: 100% !important;
+        }
+
+        #allHoldingsTable {
+            width: 100%;
+        }
+    </style>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h3 class="mb-0">幣種對帳</h3>
+    <div class="btn-group">
+        <button class="btn btn-outline-secondary" id="btnFixRemainAll">
+            <i class="bi bi-magic"></i> 一鍵修正全部剩餘
+        </button>
+        <button class="btn btn-outline-primary" id="btnAllHoldings">
+            <i class="bi bi-people"></i> 所有人持幣總表
+        </button>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table id="auditTable" class="table table-bordered table-striped w-100">
+        <thead>
+            <tr>
+                <th>幣種</th>
+                <th>發行數量</th>
+                <th>剩餘數量</th>
+                <th>已發出</th>
+                <th>使用者持有總和</th>
+                <th>差異(持有-已發出)</th>
+                <th>動作</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- 單幣種：持有人列表 + 補正 -->
+<div class="modal fade" id="usersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 id="usersModalTitle" class="modal-title">持有人列表</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div><span class="fw-semibold">使用者持有總和：</span><span id="usersTotal" class="h5 mb-0">0</span></div>
+                    <small class="text-muted">人數：<span id="usersCount">0</span></small>
+                </div>
+                <div class="table-responsive">
+                    <table id="usersTable" class="table table-sm table-hover table-bordered w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:45%">姓名</th>
+                                <th class="text-end" style="width:20%">目前餘額</th>
+                                <th style="width:35%">補正</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 所有人持幣總表 -->
+<div class="modal fade" id="allHoldingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    所有人持幣總表
+                    <small class="text-muted ms-2">(人數：<span id="allUsersCount">0</span>，合計：<span id="allGrandTotal">0</span>)</small>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="unknownWarn" class="alert alert-warning py-2 px-3 d-none" role="alert">
+                    偵測到 <span id="unknownUsers">0</span> 位使用者持有「不在清單中的幣」，共
+                    <span id="unknownCount">0</span> 筆紀錄。你可以按下
+                    <strong>清除不在表內的幣</strong> 來移除這些異常紀錄（不可復原，請先備份）。
+                </div>
+                <div class="table-responsive">
+                    <table id="allHoldingsTable" class="table table-striped table-bordered w-100">
+                        <thead></thead>
+                        <tbody></tbody>
+                        <tfoot></tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnPurgeUnknown" type="button" class="btn btn-outline-danger me-auto">清除不在表內的幣</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
+    <script src="~/js/currency-audit.js" asp-append-version="true"></script>
+}

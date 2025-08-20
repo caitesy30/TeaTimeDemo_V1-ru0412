@@ -13,6 +13,9 @@ using ClosedXML.Excel;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using TeaTimeDemo.DataAccess.Data;
+using System;
+using System.Linq;
+using System.Transactions;
 
 namespace TeaTimeDemo.Areas.Admin.Controllers
 {
@@ -347,20 +350,72 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(string? id)
         {
-            var userToBeDeleted = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.Id == id, includeProperties: "Store");
-            if (userToBeDeleted == null)
-            {
-                return Json(new { success = false, message = "刪除失敗，找不到該使用者。" });
-            }
+            if (string.IsNullOrWhiteSpace(id))
+                return Json(new { success = false, message = "刪除失敗，參數錯誤。" });
 
-            var result = await _userManager.DeleteAsync(userToBeDeleted);
-            if (result.Succeeded)
+            var user = _unitOfWork.ApplicationUser.GetFirstOrDefault(u => u.Id == id, includeProperties: "Store");
+            if (user == null)
+                return Json(new { success = false, message = "刪除失敗，找不到該使用者。" });
+
+            // 用 TransactionScope 確保「回收幣 + 寫紀錄 + 刪除帳號」要嘛一起成功、要嘛一起失敗
+            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                return Json(new { success = true, message = "刪除成功！" });
-            }
-            else
-            {
-                return Json(new { success = false, message = "刪除失敗，請稍後再試。" });
+                try
+                {
+                    // 1) 撈出該使用者各幣別持有量
+                    var userLogs = _unitOfWork.UserCurrencyLog.GetAll(x => x.UserId == id).ToList();
+                    var balances = userLogs
+                        .GroupBy(l => l.CurrencyTypeId)
+                        .Select(g => new
+                        {
+                            CurrencyTypeId = g.Key,
+                            Balance = g.Sum(z => z.Quantity),
+                            LastAfter = g.OrderByDescending(z => z.CreatedAt).FirstOrDefault()?.BalanceAfter ?? g.Sum(z => z.Quantity)
+                        })
+                        .Where(x => x.Balance > 0)
+                        .ToList();
+
+                    // 2) 回收處理（寫負數 log + 補回幣種庫存）
+                    foreach (var b in balances)
+                    {
+                        var coin = _unitOfWork.CurrencyType.GetById(b.CurrencyTypeId);
+                        if (coin == null) continue;
+
+                        _unitOfWork.UserCurrencyLog.Add(new UserCurrencyLog
+                        {
+                            UserId = id,
+                            CurrencyTypeId = b.CurrencyTypeId,
+                            Quantity = -b.Balance,
+                            BalanceAfter = b.LastAfter - b.Balance,
+                            Action = "刪除帳號退幣",
+                            Memo = "系統回收至庫存",
+                            CreatedAt = DateTime.Now,
+                            IdempotencyKey = $"userdelete:{id}:{b.CurrencyTypeId}"
+                        });
+
+                        coin.RemainQuantity += b.Balance;
+                        _unitOfWork.CurrencyType.Update(coin);
+                    }
+
+                    // 3) 先落地回收/庫存，再刪使用者
+                    await _unitOfWork.SaveAsync();
+
+                    var result = await _userManager.DeleteAsync(user);
+                    if (!result.Succeeded)
+                    {
+                        var err = string.Join("；", result.Errors.Select(e => e.Description));
+                        return Json(new { success = false, message = "刪除失敗：" + err });
+                    }
+
+                    await _unitOfWork.SaveAsync();
+                    scope.Complete();
+
+                    return Json(new { success = true, message = (balances.Count > 0 ? "刪除成功，已回收餘幣並完成紀錄！" : "刪除成功（無餘幣可回收）。") });
+                }
+                catch (Exception ex)
+                {
+                    return Json(new { success = false, message = "刪除失敗：" + ex.Message });
+                }
             }
         }
 

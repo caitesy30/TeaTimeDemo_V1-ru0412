@@ -7,8 +7,9 @@
     const BOX_SELECTORS = [
         "rect.cbv2-box", "rect.cbv2-box-strong",
         "rect.v3-box", "rect.v3-box-strong",
-        "rect.v4-box", "rect.v4-box-strong"
+        "rect.v4-box", "rect.v4-box-strong",  
     ].join(",");
+
 
     function injectGradient(svg) {
         if (svg.__cbGradId) return svg.__cbGradId;

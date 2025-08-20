@@ -1,5 +1,6 @@
 ﻿// =======================================================
-// BlueprintTabs.js — V1/V2/V3/V4 分頁控制（含 V1 PNG/PDF 注入）
+// BlueprintTabs.js — V1/V2/V3/V4/V5 分頁控制（含 V1 PNG/PDF 注入）
+// 變更點：.bp-tabs-body 增加 overflow:visible，避免 TinyMCE 工具列被裁切
 // =======================================================
 class BlueprintTabs {
     static mount(containerId) {
@@ -17,7 +18,7 @@ class BlueprintTabs {
         .bp-tabs-head{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid #e5e7eb}
         .bp-tab{border:1px solid #e5e7eb;border-radius:999px;padding:8px 14px;background:#fff;cursor:pointer}
         .bp-tab.active{background:#111827;color:#fff;border-color:#111827}
-        .bp-tabs-body{padding:12px}
+        .bp-tabs-body{padding:12px; overflow:visible} /* ★ 重要：避免 TinyMCE 工具列被裁切 */
         .bp-pane{display:none}
         .bp-pane.active{display:block}
         .bp-export{display:flex;gap:8px;align-items:center}
@@ -38,10 +39,11 @@ class BlueprintTabs {
             { key: "v2", title: "V2｜AI 中心（分頁）", render: () => this._ensureV2(body) },
             { key: "v3", title: "V3｜影響力經濟", render: () => this._ensureV3(body) },
             { key: "v4", title: "V4｜樂高模組（食衣住行育樂）", render: () => this._ensureV4(body) },
+            { key: "v5", title: "V5｜統整 × 子分頁 × 編輯", render: () => this._ensureV5(body) },
         ];
 
         const urlTab = (new URLSearchParams(location.search)).get("tab");
-        let activeKey = (urlTab && ["v1", "v2", "v3", "v4"].includes(urlTab)) ? urlTab : "v1";
+        let activeKey = (urlTab && ["v1", "v2", "v3", "v4", "v5"].includes(urlTab)) ? urlTab : "v1";
 
         const buttons = [];
         tabs.forEach(t => {
@@ -53,11 +55,12 @@ class BlueprintTabs {
         });
 
         body.innerHTML = `
-      <div id="bp-pane-v1" class="bp-pane"></div>
-      <div id="bp-pane-v2" class="bp-pane"></div>
-      <div id="bp-pane-v3" class="bp-pane"></div>
-      <div id="bp-pane-v4" class="bp-pane"></div>
-    `;
+  <div id="bp-pane-v1" class="bp-pane"></div>
+  <div id="bp-pane-v2" class="bp-pane"></div>
+  <div id="bp-pane-v3" class="bp-pane"></div>
+  <div id="bp-pane-v4" class="bp-pane"></div>
+  <div id="bp-pane-v5" class="bp-pane"></div>
+`;
 
         const switchTo = (key) => {
             activeKey = key;
@@ -166,6 +169,22 @@ class BlueprintTabs {
         } catch (err) {
             console.error(err);
             pane.innerHTML = `<div class="text-danger">渲染 V4 失敗：${err?.message || err}</div>`;
+        }
+    }
+
+    // ========== V5 ==========
+    static _ensureV5(body) {
+        const pane = body.querySelector("#bp-pane-v5");
+        pane.innerHTML = `<div id="bp-v5-root"></div>`;
+        try {
+            if (typeof CommerceBlueprintV5 !== "undefined") {
+                CommerceBlueprintV5.render("bp-v5-root");
+            } else {
+                pane.innerHTML = `<div class="text-danger">找不到 CommerceBlueprint.v5.js</div>`;
+            }
+        } catch (err) {
+            console.error(err);
+            pane.innerHTML = `<div class="text-danger">渲染 V5 失敗：${err?.message || err}</div>`;
         }
     }
 }

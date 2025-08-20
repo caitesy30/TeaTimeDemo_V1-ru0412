@@ -304,7 +304,7 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
         // 目的：管理員發幣給會員，寫一筆 UserCurrencyLog
         // ==========================
 
-   
+
 
         // 發幣時檢查剩餘
         [HttpPost]
@@ -341,11 +341,21 @@ namespace TeaTimeDemo.Areas.Admin.Controllers
             });
 
             currency.RemainQuantity -= quantity;
+            currency.UpdatedAt = DateTime.Now;
             _unitOfWork.CurrencyType.Update(currency);
 
             _unitOfWork.Save();
-            return Json(new { success = true });
+
+            // 👉 回傳最新剩餘數量，前端可立即更新表格
+            return Json(new
+            {
+                success = true,
+                currencyTypeId = currencyTypeId,
+                newRemain = currency.RemainQuantity,
+                message = $"已發出 {quantity} 給 {member.Name}；「{currency.Name}」剩餘 {currency.RemainQuantity}"
+            });
         }
+
 
     }
 }

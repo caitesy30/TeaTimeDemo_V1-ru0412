@@ -202,11 +202,29 @@
                 memo
             },
             success: function (resp) {
-                if (resp.success) {
+                if (resp && resp.success) {
+                    // 關掉 modal
                     $('#dynamicSendCurrencyModal').modal('hide');
-                    Swal.fire('發幣成功', '', 'success');
+
+                    // 取得這次發幣的幣種ID
+                    const cid = $('#dynamicCurrencySelect').val();
+
+                    // 找到對應列（那顆「發幣」按鈕在的那列）
+                    const $row = $(`#currencyTable button.send-currency-btn[data-currencyid="${cid}"]`).closest('tr');
+
+                    // 用 DataTables API 更新「剩餘數量」欄位（第 5 欄，index 從 0 起算→4）
+                    // 若 table 變數在外層已宣告： var table = $('#currencyTable').DataTable({...});
+                    if (typeof table !== 'undefined') {
+                        table.cell($row, 4).data(resp.newRemain).draw(false);
+                    } else {
+                        // 萬一沒用到 DataTables API，就直接改 DOM（保險用）
+                        $row.find('td').eq(4).text(resp.newRemain);
+                    }
+
+                    // 成功提示
+                    Swal.fire('發幣成功', resp.message || '', 'success');
                 } else {
-                    $('#dynamicSendCurrencyError').text(resp.message || '發幣失敗');
+                    $('#dynamicSendCurrencyError').text(resp?.message || '發幣失敗');
                 }
             },
             error: function () {

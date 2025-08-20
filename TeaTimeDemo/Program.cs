@@ -169,8 +169,8 @@ builder.Services
       options.Scope.Add("profile");
       options.Scope.Add("openid");
       // 若你的 Channel 有開 email 權限才加
-      // options.Scope.Add("email");
-      // options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+       options.Scope.Add("email");
+       options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
 
       options.SaveTokens = true;
 
