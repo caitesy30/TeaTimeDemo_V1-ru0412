@@ -1,82 +1,98 @@
 ﻿@page
-@using System
 @model LoginModel
+@using System
 @{
     ViewData["Title"] = "登入";
 
-    // 優先吃 Model.ReturnUrl，其次讀 querystring；最後預設回錢包首頁
+    // 1) 決定回跳網址
     var returnUrl = !string.IsNullOrWhiteSpace(Model.ReturnUrl)
         ? Model.ReturnUrl
-        : Request.Query["returnUrl"].ToString();   // ← 這裡改用 Request（或用 ViewContext.HttpContext.Request）
+        : Request.Query["returnUrl"].ToString();
 
     if (string.IsNullOrWhiteSpace(returnUrl))
     {
         returnUrl = "/Customer/Wallet/Index";
     }
 
-    var bLoginUrl = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}";
+    // 2) 第三方 LINE 登入入口（建議用你專案的 B 入口，會保留 returnUrl）
+    var lineLoginUrl = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+    // 若想用 Identity 內建 ExternalLogin（擇一），請改用下行：
+    // var lineLoginUrl = $"/Identity/Account/ExternalLogin?handler=Challenge&provider=Line&returnUrl={Uri.EscapeDataString(returnUrl)}";
 }
 
-<div class="container my-4" style="max-width:560px">
-    <div class="alert alert-info mb-3">
-        正在連線 LINE，請稍候…
-    </div>
+<div class="container my-5" style="max-width:720px">
+    <h1 class="mb-4 text-center">登入</h1>
 
-    <!-- 主動引導使用者走 B 入口（會保留 returnUrl/rid） -->
-    <a class="btn btn-success w-100" href="@bLoginUrl">
-        使用 LINE 登入
-    </a>
+    <div class="row g-4">
+        <!-- 左：本地帳號登入 -->
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3">以帳號密碼登入</h5>
 
-    <p class="text-muted mt-2 mb-0" style="font-size:13px">
-        若未自動導向，請點上方按鈕再試一次。
-    </p>
+                    <form id="account" method="post">
+                        <input type="hidden" name="ReturnUrl" value="@returnUrl" />
 
-    <details class="mt-3">
-        <summary class="text-muted">改用本地帳號登入（除錯/後台用）</summary>
-        <div class="mt-3">
-            <form id="account" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-2" role="alert"></div>
 
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
-                    <label asp-for="Input.Email" class="form-label">Email</label>
-                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
+                            <label asp-for="Input.Email">Email</label>
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" placeholder="password" />
+                            <label asp-for="Input.Password">密碼</label>
+                            <span asp-validation-for="Input.Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" asp-for="Input.RememberMe" />
+                            <label class="form-check-label" asp-for="Input.RememberMe">
+                                記住我
+                            </label>
+                        </div>
+
+                        <button id="login-submit" type="submit" class="btn btn-primary w-100">
+                            以本地帳號登入
+                        </button>
+
+                        <div class="mt-3 small">
+                            <p class="mb-1"><a asp-page="./ForgotPassword">忘記密碼？</a></p>
+                            <p class="mb-1"><a asp-page="./Register" asp-route-returnUrl="@returnUrl">註冊新帳號</a></p>
+                            <p class="mb-0"><a asp-page="./ResendEmailConfirmation">重新發送確認信</a></p>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">密碼</label>
-                    <span asp-validation-for="Input.Password" class="text-danger"></span>
-                </div>
-
-                <div class="checkbox mb-3">
-                    <label asp-for="Input.RememberMe" class="form-label">
-                        <input class="form-check-input" asp-for="Input.RememberMe" />
-                        @Html.DisplayNameFor(m => m.Input.RememberMe)
-                    </label>
-                </div>
-
-                <button id="login-submit" type="submit" class="w-100 btn btn-outline-primary">以本地帳號登入</button>
-
-                <div class="mt-3">
-                    <p><a asp-page="./ForgotPassword">忘記密碼？</a></p>
-                    <p><a asp-page="./Register" asp-route-returnUrl="@returnUrl">註冊新帳號</a></p>
-                    <p><a asp-page="./ResendEmailConfirmation">重新發送確認信</a></p>
-                </div>
-            </form>
+            </div>
         </div>
-    </details>
+
+        <!-- 右：LINE 第三方登入 -->
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="card-title mb-3">使用 LINE 登入</h5>
+
+                    <p class="text-muted small">
+                        由 LINE 進行身分驗證，完成後將帶您回到原頁面。
+                    </p>
+
+                    <a class="btn btn-success btn-lg w-100 mt-auto" href="@lineLoginUrl">
+                        <i class="bi bi-chat-dots me-1"></i> 使用 LINE 登入
+                    </a>
+
+                    <div class="text-center text-muted small mt-3">
+                        完成授權後將回到：<br />
+                        <code class="text-wrap d-inline-block" style="max-width:100%">@returnUrl</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        // ✅ 自動嘗試一次真正的 LINE 授權入口（保留 returnUrl/rid）
-        window.addEventListener('DOMContentLoaded', function () {
-            setTimeout(function () {
-                // 用 Html.Raw 避免 & 被變成 &amp; 影響導轉
-                location.replace('@Html.Raw(bLoginUrl)');
-            }, 300);
-        });
-    </script>
 }

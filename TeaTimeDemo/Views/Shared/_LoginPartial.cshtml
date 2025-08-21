@@ -1,23 +1,96 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using TeaTimeDemo.Models 
-
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
+    <!-- 保留：Hello 使用者 -->
     <li class="nav-item">
-        <a id="manage" class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @UserManager.GetUserName(User)!</a>
+        <a id="manage" class="nav-link text-dark"
+           asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">
+            Hello @UserManager.GetUserName(User)!
+        </a>
     </li>
-    <li class="nav-item">
-        <form id="logoutForm" class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button id="logout" type="submit" class="nav-link btn btn-link text-dark border-0">Logout</button>
+
+    <!-- 新增：最小掛點（JS 會在這裡生成「GET 登出」按鈕，手機/LIFF 最穩） -->
+    <li class="nav-item" id="logout-slot"></li>
+
+    <!-- 保留：原本的 POST 登出表單（桌機與 JS 失效時可用） -->
+    <li class="nav-item" id="logout-form-li">
+        <form id="logoutForm" class="form-inline"
+              asp-area="Identity" asp-page="/Account/Logout"
+              asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+            <button id="logout" type="submit" class="nav-link btn btn-link text-dark border-0">
+                Logout
+            </button>
         </form>
     </li>
+
+    <!-- 新增：智慧切換邏輯（JS 生成 GET 連結；在手機/LIFF 隱藏 POST 表單） -->
+    <script>
+      (function () {
+        // 判斷是否為手機或 LIFF（粗略但實用）
+        function isMobileOrLiff() {
+          const ua = navigator.userAgent || '';
+          const isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+          const isLine = /Line/i.test(ua) || (typeof window.liff !== 'undefined');
+          const isSmall = window.innerWidth <= 768;
+          return isCoarse || isLine || isSmall;
+        }
+
+        // 目前頁（含 querystring），做為 returnUrl
+        const currentUrl = (window.LogoutUI && typeof window.LogoutUI.currentUrl === 'function')
+          ? window.LogoutUI.currentUrl()
+          : (window.location.pathname + window.location.search);
+
+        // 嘗試使用全站的 LogoutUI（若已在 _Layout.cshtml 載入 ~/js/auth/LogoutUI.js）
+        function tryRenderWithLogoutUI() {
+          try {
+            if (window.LogoutUI && typeof window.LogoutUI.render === 'function') {
+              window.LogoutUI.render('#logout-slot', '安全登出', currentUrl);
+              return true;
+            }
+          } catch { /* 忽略錯誤，改走 fallback */ }
+          return false;
+        }
+
+        // fallback：即使未載入 LogoutUI.js，也能動態產生 GET 連結
+        function renderFallbackGetLink() {
+          const slot = document.getElementById('logout-slot');
+          if (!slot) return false;
+
+          const a = document.createElement('a');
+          a.href = '/Identity/Account/Logout?returnUrl=' + encodeURIComponent(currentUrl);
+          a.textContent = '安全登出';
+          a.className = 'nav-link btn btn-link text-dark border-0';
+
+          // 用 <li> 包一下，符合 Bootstrap 導覽列語意
+          const li = document.createElement('li');
+          li.className = 'nav-item';
+          li.appendChild(a);
+
+          // 用新建的 li 取代掛點（避免殘留空 li）
+          slot.replaceWith(li);
+          return true;
+        }
+
+        // 主流程：先試用 LogoutUI.js，失敗就用 fallback
+        document.addEventListener('DOMContentLoaded', function () {
+          const rendered = tryRenderWithLogoutUI() || renderFallbackGetLink();
+
+          // 若在手機/LIFF，或已成功生成 GET 連結，則把 POST 表單那列隱藏，避免重複顯示
+          if (rendered || isMobileOrLiff()) {
+            document.getElementById('logout-form-li')?.classList.add('d-none');
+          }
+        });
+      })();
+    </script>
 }
 else
 {
+    <!-- 保留：未登入的連結 -->
     <li class="nav-item">
         <a class="nav-link text-dark" id="register" asp-area="Identity" asp-page="/Account/Register">Register</a>
     </li>
