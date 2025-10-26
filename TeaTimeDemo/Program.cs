@@ -5,18 +5,18 @@ using Line.Messaging;                         // LINE Messaging API
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.HttpOverrides;      // Forwarded Headers
+using Microsoft.AspNetCore.HttpOverrides;     // Forwarded Headers
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.WebUtilities;       // QueryHelpers
+using Microsoft.AspNetCore.WebUtilities;      // QueryHelpers
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Shared;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
@@ -32,12 +32,22 @@ using TeaTimeDemo.Utility;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// (A) Forwarded Headers
+// (A) Forwarded Headers（反向代理必備）
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedFor;
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost |
+        ForwardedHeaders.XForwardedFor;
+    // 若在 Cloudflare/Nginx 前面，可清空已知清單，避免被限制
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
+  
+});
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.SignIn.RequireConfirmedEmail = true;
 });
 
 // (1) 本地化
@@ -52,15 +62,22 @@ builder.Services.Configure<FormOptions>(opts => opts.MultipartBodyLengthLimit = 
 var defaultConn = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(opts =>
     opts.UseSqlServer(defaultConn)
-        .EnableSensitiveDataLogging()
-        .UseLazyLoadingProxies());
+       .EnableSensitiveDataLogging()
+       .UseLazyLoadingProxies());
 
-// (4) Identity 設定
+// (4) Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
 {
+    // 需確認帳號（外部登入建立時你可選擇直接標記 EmailConfirmed=true）
     opts.SignIn.RequireConfirmedAccount = true;
+
+    // 允許沒有 Email 或重複（你原設定）
     opts.User.RequireUniqueEmail = false;
+
+    // 放寬 UserName 字元集（支援 Email / LINE ID）
     opts.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+
+    // 密碼策略（保留你原設定）
     opts.Password.RequiredLength = 6;
     opts.Password.RequireDigit = false;
     opts.Password.RequireLowercase = false;
@@ -76,34 +93,32 @@ builder.Services.ConfigureApplicationCookie(opts =>
     opts.LoginPath = "/Identity/Account/Login";
     opts.LogoutPath = "/Identity/Account/Logout";
     opts.AccessDeniedPath = "/Identity/Account/AccessDenied";
+
+    // 手機/跨域安全
     opts.Cookie.SameSite = SameSiteMode.None;
     opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     opts.Cookie.HttpOnly = true;
 
-    // 若你同時要 www 與裸網域共用 Cookie，可開啟下行（建議仍以方案A為主，不一定要開這個）
-    //opts.Cookie.Domain = ".caitesy.com";
-
-    // ★★★ 這裡是關鍵：未登入統一導到我們的登入入口（再由入口去 Challenge LINE）
+    // ★★★ 核心：把未登入/未授權的導向，交給我們的入口（避免自動打到 LINE）
     opts.Events = new CookieAuthenticationEvents
     {
         OnRedirectToLogin = ctx =>
         {
-            var lower = (ctx.Request.Path.Value ?? "").ToLowerInvariant();
-            // ✅ OAuth 回呼不可再次重導，否則會形成 authorize 迴圈
+            var path = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value! : "/") + ctx.Request.QueryString.Value;
+            var lower = path.ToLowerInvariant();
+
+            // 回呼路徑 /signin-* 一律不要再重導，否則授權迴圈
             if (lower.StartsWith("/signin-"))
             {
-                ctx.Response.StatusCode = 401;
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
             }
 
-            // 原始請求完整路徑 + Query
-            var path = (ctx.Request.Path.HasValue ? ctx.Request.Path.Value! : "/") + ctx.Request.QueryString.Value;
-
-            // 避免回登出頁
-            if (lower == "/identity/account/logout")
+            // 避免 return 到登出頁
+            if (lower.Equals("/identity/account/logout"))
                 path = "/Customer/Wallet/Index";
 
-            // ✅ 改成導到我們的入口（保留 returnUrl/rid）
+            // 統一導去我們的入口（Login Action 會決定是否真的去 LINE）
             var url = $"/Customer/LiffAuthEntry/Login?returnUrl={Uri.EscapeDataString(path)}";
             ctx.Response.Redirect(url);
             return Task.CompletedTask;
@@ -118,7 +133,7 @@ builder.Services.ConfigureApplicationCookie(opts =>
     };
 });
 
-// 其他 Cookie（Antiforgery）
+// Antiforgery Cookie（跨域安全一致）
 builder.Services.AddAntiforgery(o =>
 {
     o.Cookie.SameSite = SameSiteMode.None;
@@ -146,7 +161,7 @@ builder.Services.AddSignalR();
 builder.Services.AddRazorPages();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-// 背景服務
+// 背景服務（保留你原本）
 builder.Services.AddHostedService<PendingRefundWorker>();
 builder.Services.AddHostedService<OutboxDispatcher>();
 
@@ -160,13 +175,12 @@ builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization()
     .AddViewLocalization();
 
-// (9) ★ 認證：把 DefaultChallengeScheme 改回 Cookies（不要全域自動丟 LINE）
+// (9) 認證：預設用 Cookie，只有在我們的入口才去 Challenge LINE
 builder.Services
   .AddAuthentication(options =>
   {
       options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-      // ✅ 保持 DefaultChallengeScheme = Cookies（讓我們自行導去 LINE）
-      options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+      options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme; // 關鍵
   })
   .AddCookie()
   .AddLine(LineAuthenticationDefaults.AuthenticationScheme, "LINE 帳號登入", options =>
@@ -175,23 +189,29 @@ builder.Services
       options.ClientSecret = builder.Configuration["LineLogin:ChannelSecret"];
       options.CallbackPath = "/signin-line";
 
+      // 要求的 scope
       options.Scope.Clear();
-      options.Scope.Add("profile");
       options.Scope.Add("openid");
-      // 若你的 Channel 有開 email 權限才加
-      options.Scope.Add("email");
+      options.Scope.Add("profile");
+      options.Scope.Add("email"); // 若你的 Channel 已開通 email
+
+      // Claim 對應（領幣/綁定需要）
       options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+      options.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");           // 若 LINE 回來有 name
+      options.ClaimActions.MapJsonKey("urn:line:userid", "sub");          // 重要：LINE userId
 
       options.SaveTokens = true;
 
-      // 強制把 redirect_uri 換成 https + 正確 Host（去掉 :443/:80）
+      // 修正 redirect_uri（代理/多網域）
       options.Events.OnRedirectToAuthorizationEndpoint = ctx =>
       {
           var req = ctx.Request;
 
+          // 以 X-Forwarded-* 優先
           var forwardedHost = req.Headers["X-Forwarded-Host"].ToString();
           var host = string.IsNullOrWhiteSpace(forwardedHost) ? req.Host.Value : forwardedHost;
 
+          // 去掉標準 port
           var colon = host.IndexOf(':');
           if (colon > 0)
           {
@@ -199,28 +219,26 @@ builder.Services
               if (port == "443" || port == "80") host = host[..colon];
           }
 
-          // ⭐ 若是 www.，換成裸網域，避免 301 造成 state 對不上
+          // www → 裸網域（避免 301 造成 state 不符）
           if (host.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
-          {
-              host = host.Substring(4);
-          }
+              host = host[4..];
 
+          // 以 https + 正確 host 組出 callback
           var finalCallback = $"https://{host}{options.CallbackPath}";
 
-          // 解析目前 RedirectUri 並替換 redirect_uri 參數
+          // 重組 Query：換掉 redirect_uri，拿掉 prompt，視需要再加
           var ub = new UriBuilder(ctx.RedirectUri);
-          var parsed = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(ub.Query);
+          var parsed = QueryHelpers.ParseQuery(ub.Query);
           var pairs = new List<KeyValuePair<string, string>>();
           foreach (var kv in parsed)
           {
-              // 固定改 redirect_uri；同時忽略原本的 prompt
               if (kv.Key.Equals("redirect_uri", StringComparison.OrdinalIgnoreCase)) continue;
               if (kv.Key.Equals("prompt", StringComparison.OrdinalIgnoreCase)) continue;
               foreach (var v in kv.Value) pairs.Add(new(kv.Key, v));
           }
           pairs.Add(new("redirect_uri", finalCallback));
 
-          // 支援 ?forceEmail=1：強制同意畫面（補抓 Email）
+          // 支援 forceEmail：需要時強制彈出同意（把 Items["force_email"]="1" 或 ?forceEmail=1）
           var forceEmail = req.Query.TryGetValue("forceEmail", out var qv) && string.Equals(qv, "1", StringComparison.OrdinalIgnoreCase);
           if (ctx.Properties?.Items?.TryGetValue("force_email", out var flag) == true && flag == "1") forceEmail = true;
           if (forceEmail)
@@ -231,8 +249,7 @@ builder.Services
               pairs.Add(new("ui_locales", "zh-TW"));
           }
 
-          ub.Query = string.Join("&", pairs.Select(kv =>
-              $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+          ub.Query = string.Join("&", pairs.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
           Console.WriteLine("[LINE authorize] " + ub.Uri);
           ctx.Response.Redirect(ub.Uri.ToString());
@@ -254,33 +271,35 @@ builder.Services.AddSession(opts =>
 
 var app = builder.Build();
 
+// CookiePolicy（搭配 SameSite=None）
 app.UseCookiePolicy(new CookiePolicyOptions
 {
     MinimumSameSitePolicy = SameSiteMode.None,
     Secure = CookieSecurePolicy.Always
 });
 
-// 1. Forwarded Headers
+// 1) Forwarded Headers
 app.UseForwardedHeaders();
 
-// 強制 https（配合代理）
+// 1.5) 正規化中介軟體（避免回呼被 301 或被改協議）
 app.Use(async (ctx, next) =>
 {
-    if (ctx.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto) && proto == "https")
+    // 若代理告知 https，就把 Scheme 設為 https（影響組 URL）
+    if (ctx.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto)
+        && string.Equals(proto, "https", StringComparison.OrdinalIgnoreCase))
     {
         ctx.Request.Scheme = "https";
     }
 
-    // ⭐ 回呼路徑 /signin-* 不要做 301 正規化（避免丟 code/state）
+    // 回呼 /signin-* 不做 www→裸網域的 301，以免丟失 code/state
     var pathLower = ctx.Request.Path.Value?.ToLowerInvariant() ?? "";
     var isOAuthCallback = pathLower.StartsWith("/signin-");
 
-    // （可選）主機名正規化：把 www 301 到裸網域，避免 cookie 掉在不同 host
     if (!isOAuthCallback &&
         ctx.Request.Host.HasValue &&
         ctx.Request.Host.Value.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
     {
-        var target = $"https://{ctx.Request.Host.Value.Substring(4)}{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
+        var target = $"https://{ctx.Request.Host.Value[4..]}{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
         ctx.Response.Redirect(target, permanent: true);
         return;
     }
@@ -288,10 +307,10 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-// 2. HTTPS
+// 2) HTTPS 重導
 app.UseHttpsRedirection();
 
-// 3. 本地化
+// 3) 本地化
 var supportedCultures = new[] { "en-us", "zh-tw", "th-th" };
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
@@ -300,23 +319,23 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     SupportedUICultures = supportedCultures.Select(c => new CultureInfo(c)).ToList()
 });
 
-// 4. 靜態檔
+// 4) 靜態檔
 app.UseStaticFiles();
 
-// 5. Routing
+// 5) Routing
 app.UseRouting();
 
-// 6. CORS
+// 6) CORS
 app.UseCors("AllowAll");
 
-// 7. Auth
+// 7) Auth
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 8. Session
+// 8) Session
 app.UseSession();
 
-// 9. 路由
+// 9) 路由
 app.MapControllerRoute(
     name: "default",
     pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
@@ -332,7 +351,7 @@ app.MapControllerRoute(
 
 app.MapRazorPages();
 
-// 讓任何誤打 /Account/Login 的地方，也一致導到入口（保留 ReturnUrl）
+// 把任何 /Account/Login 都導到我們的入口（保留 ReturnUrl）
 app.MapGet("/Account/Login", async ctx =>
 {
     var returnUrl = ctx.Request.Query["ReturnUrl"].ToString();
@@ -343,7 +362,7 @@ app.MapGet("/Account/Login", async ctx =>
 
 app.MapControllers();
 
-// 10. Database Seed/Migrate
+// 10) DB 初始化/遷移
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<IDbInitializer>().Initialize();

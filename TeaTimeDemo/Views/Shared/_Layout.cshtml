@@ -1,4 +1,3 @@
-
 @using TeaTimeDemo.Resources
 @using Microsoft.AspNetCore.Identity
 @using TeaTimeDemo.Models
@@ -13,47 +12,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - 居希恩共享</title>
 
-    <!-- Bootstrap and site CSS -->
+    <!-- 樣式（保留你的設定） -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TeaTimeDemo.styles.css" asp-append-version="true" />
-
-    <!-- Icons -->
     <link rel="stylesheet" href="~/lib/bootstrap-icons-1.11.3/font/bootstrap-icons.css" asp-append-version="true" />
-
-    <!-- Toastr CSS -->
     <link rel="stylesheet" href="~/lib/build/toastr.min.css" asp-append-version="true" />
-
-    <!-- DataTables and SweetAlert CSS -->
     <link rel="stylesheet" href="~/lib/DataTables/datatables.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/package/dist/sweetalert2.min.css" asp-append-version="true" />
-
-    <!--Select2 下拉式選單-->
     <link rel="stylesheet" href="~/lib/select2/select2.css" asp-append-version="true" />
 
-       <!-- 建議加速：對 LINE CDN 預連線 -->
+    <!-- 建議加速：對 LINE CDN 預連線 -->
     <link rel="preconnect" href="https://static.line-scdn.net">
 
-    <!-- i18next (註解掉) -->
-    @* 
-    <link rel="stylesheet" href="~/lib/i18next/i18next.js" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/i18next/i18nextBrowserLanguageDetector.js" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/i18next/jquery-i18next.js" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true" />
-     *@
+    <style>
+        #functionWindow {
+            width: 150px;
+            height: auto;
+            cursor: move;
+            z-index: 1050;
+        }
 
-     <style>
-        /* 功能視窗樣式 */
-        #functionWindow { width:150px; height:auto; cursor:move; z-index:1050; }
-        #mainEditor { margin-bottom:20px; }
-        #functionWindow button { width:100%; }
+        #mainEditor {
+            margin-bottom: 20px;
+        }
 
-        /* Google Translate (可選) */
-        .goog-te-gadget { color: transparent; }
-        .goog-te-gadget .goog-te-menu-value span { color:#000; }
+        #functionWindow button {
+            width: 100%;
+        }
+
+        .goog-te-gadget {
+            color: transparent;
+        }
+
+            .goog-te-gadget .goog-te-menu-value span {
+                color: #000;
+            }
     </style>
 
-    <!-- Google Translate 小工具的初始化腳本 -->
+    <!-- Google Translate（維持你的動態載入策略） -->
     <script type="text/javascript">
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
@@ -62,275 +59,117 @@
                 layout: google.translate.TranslateElement.InlineLayout.SIMPLE
             }, 'google_translate_element');
         }
-  
         (async function () {
             try {
-                // 嘗試向 Google Translate 發出 HEAD / no-cors 請求
-                let response = await fetch('https://translate.google.com/translate_a/element.js', {
-                    method: 'HEAD',
-                    mode: 'no-cors'
-                });
-
-                // 如果成功(沒有拋出錯誤)，表示可能連得到外網 → 動態載入外部 Script
+                await fetch('https://translate.google.com/translate_a/element.js', { method: 'HEAD', mode: 'no-cors' });
                 let script = document.createElement('script');
                 script.type = 'text/javascript';
-                // 這裡改用 'https://'，以避免部分瀏覽器報 Mixed Content
                 script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
                 document.head.appendChild(script);
             } catch (error) {
-                // 無法連線到 google（或被擋）就會進入 catch，不載入外部資源，避免卡住
                 console.warn("偵測到無法連線到 Google Translate，已略過外部翻譯資源。");
             }
         })();
     </script>
 
-    <!-- *** 新增：讓各頁可 inject 自訂 CSS *** -->
-    @* @RenderSection("Styles", required: false) *@
-
-    <!-- 頁尾 script（必要時可保留） -->
-    @* @RenderSection("Scripts", required: false) *@
-
     @await RenderSectionAsync("Styles", required: false)
-
-
 </head>
 
-@* <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
-<script>
-    // 💡 你的LIFF ID（根據頁面換成對應的）
-    const liffId = "2007537903-r3pknwbl";
-
-    // 判斷是不是在 LIFF 內
-    function isLiff() {
-        return navigator.userAgent.includes("Line");
-    }
-
-    (async function () {
-        if (isLiff()) {
-            // ====== 1. LIFF SDK 初始化 ======
-            await liff.init({ liffId });
-
-            // ====== 2. 如果沒登入，直接走 LIFF Login 流程 ======
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return; // 等登入回來再繼續
-            }
-
-            // ====== 3. 已登入，取 LINE Profile（這裡就可以做你要的自動填表/自動顯示）======
-            try {
-                const profile = await liff.getProfile();
-
-                // 取到資料可以直接印出來
-                // console.log(profile);
-
-                // ==== 你可以自動把資料填到表單隱藏欄位 ====
-                // 假設你有這些欄位 <input type="hidden" id="lineUserId" name="lineUserId">
-                if (document.getElementById('lineUserId')) {
-                    document.getElementById('lineUserId').value = profile.userId;
-                }
-                if (document.getElementById('lineDisplayName')) {
-                    document.getElementById('lineDisplayName').value = profile.displayName;
-                }
-                if (document.getElementById('linePictureUrl')) {
-                    document.getElementById('linePictureUrl').value = profile.pictureUrl;
-                }
-
-                // ==== 也可以顯示在畫面上，例如打招呼 ====
-                if (document.getElementById('helloLineUser')) {
-                    document.getElementById('helloLineUser').innerText =
-                        `歡迎回來，${profile.displayName}！`;
-                }
-
-                // 這裡想做什麼都可以自由加！例如自動送出表單/取得會員資料/改UI…
-            } catch (err) {
-                alert('取得 LINE 資料失敗，請重試。' + (err.message || err));
-            }
-
-        } else {
-            // 非 LINE LIFF 內，視情境處理（一般站內帳號登入流程）
-            // window.location.href = '/Identity/Account/Login';
-        }
-    })();
-</script> *@
-
-<!-- 除錯用：顯示網址參數 -->
-
-
 <body>
-    <header class="no-print">   
-        <!-- 導覽列開始 -->
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">       
-
+    <header class="no-print">
+        <!-- ====== 導覽列（保留你的內容） ====== -->
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">點數管理</a>
 
-                    <!-- ====================== LINE LIFF 用戶資料區塊 ======================= -->
-@* <div id="lineUserSection" class="text-center mb-4" style="display:none;">
-    <!-- 大頭貼圖片 -->
-    <img id="linePictureImg" src="" alt="LINE頭像" width="64" height="64" class="rounded-circle mb-2" style="object-fit:cover;border:2px solid #6cf;" />
-    <!-- 歡迎詞 -->
-    <div id="helloLineUser" class="mb-2" style="font-weight:bold;font-size:1.15rem;color:#1a936f;"></div>
-</div> *@
-
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <!-- 導覽項目容器 -->
+
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <!-- 左側導覽連結 -->
-                    <ul class="navbar-nav flex-grow-1 ">
-                            <!-- 填寫問卷連結 -->
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="Index" data-i18n="填寫問卷">填寫問卷</a>
-                        </li> *@
-                        <!-- 首頁連結 -->
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Home" asp-action="Index" data-i18n="首頁">首頁</a>
-                        </li>
-                        <!-- Notes管理連結 -->
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Admin" asp-controller="Order" asp-action="Index" data-i18n="Notes管理">Notes管理</a>
-                        </li>
-                        <!-- 填寫問卷連結 -->
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="Index" data-i18n="填寫問卷">填寫問卷</a>
-                        </li>
-                        <!-- Notes空白表單編輯分類連結 -->
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="PageGroup" asp-action="Index" data-i18n="Notes空白表單編輯分類">Notes空白表單編輯分類</a>
-                        </li>
-                        <!-- 查看已填問卷連結 -->
-                        <li class="nav-item">
-                          <a class="nav-link text-dark" asp-area="Customer" asp-controller="Answer" asp-action="AnsweredSurveyList" data-i18n="查看已填問卷">查看已填問卷</a>                         
-                        </li>  *@
-                        <!-- 管理員或經理員的內容管理下拉選單 -->
+                    <ul class="navbar-nav flex-grow-1">
+                        @* 內容管理下拉（保留你的原樣） *@
                         @if (User.IsInRole(SD.Role_Admin) || User.IsInRole(SD.Role_Manager) || User.IsInRole(SD.Role_Customer))
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" data-i18n="內容管理">內容管理</a>
-
+                                <a class="nav-link dropdown-toggle text-dark" data-bs-toggle="dropdown" href="#" role="button"
+                                   aria-haspopup="true" aria-expanded="false" data-i18n="內容管理">內容管理</a>
                                 <div class="dropdown-menu">
-                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Wallet" asp-action="Index"><i class="bi bi-wallet2 me-2"></i>我的錢包</a>
-                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PointLog" asp-action="Index"><i class="bi bi-journal-text me-2"></i>點數記錄</a>
-                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Store" asp-action="Blueprint"><i class="bi bi-diagram-3 me-2"></i>商城藍圖</a>
-                                   <!-- ★ 新增：商城首頁 -->
-                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Store" asp-action="Index"><i class="bi bi-shop-window me-2"></i>商城首頁</a>
-                                   <!-- ★ 新增：Seller Center - 上架商品 -->
-                                <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Seller" asp-action="ProductCreate"><i class="bi bi-box-seam me-2"></i>上架商品</a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Wallet" asp-action="Index">
+                                        <i class="bi bi-wallet2 me-2"></i>我的錢包
+                                    </a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PointLog" asp-action="Index">
+                                        <i class="bi bi-journal-text me-2"></i>點數記錄
+                                    </a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Store" asp-action="Blueprint">
+                                        <i class="bi bi-diagram-3 me-2"></i>商城藍圖
+                                    </a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Store" asp-action="Index">
+                                        <i class="bi bi-shop-window me-2"></i>商城首頁
+                                    </a>
+                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="Seller" asp-action="ProductCreate">
+                                        <i class="bi bi-box-seam me-2"></i>上架商品
+                                    </a>
 
-                                    @* <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Category" asp-action="Index" data-i18n="類別">類別</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Product" asp-action="Index" data-i18n="產品">產品</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Store" asp-action="Index" data-i18n="分公司">分公司</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Station" asp-action="Index" data-i18n="站別">站別</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Survey" asp-action="Index" data-i18n="問卷">問卷</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="AdminAnswer" asp-action="Index" data-i18n="問卷管理">問卷管理</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="Question" asp-action="Index" data-i18n="問題管理">問題管理</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionOption" asp-action="Index" data-i18n="選項管理">選項管理</a>
-
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="FillInBlank" asp-action="Index">填空題管理</a>
-
-                                    <!-- 內容管理下的圖片管理 -->
-
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="QuestionImage" asp-action="Index" data-i18n="圖片管理">圖片管理</a>
-                                  
-
-                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="Index">問卷編輯-測試R5</a>
-                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyAns" asp-action="Index">問卷編輯-填寫畫面-測試</a>
-                                   
-
-                                    <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="SurveyEdit" asp-action="TinyMCE">問卷編輯-編輯器</a>
-                                    <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="BlankSurvey" asp-action="index">公版編輯</a> *@
-                                                              
-
-                                    @* 只給 Admin 顯示：幣種/點數管理 *@
                                     @if (User.IsInRole(SD.Role_Admin))
                                     {
                                         <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="User" asp-action="Index" data-i18n="使用者管理">使用者管理</a>
-                                       
-                                       
-
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item text-danger" asp-area="Admin" asp-controller="CurrencyType" asp-action="Index">
                                             <i class="bi bi-currency-exchange"></i> 幣種/點數管理
                                         </a>
-
-                                        <!-- ★ 新增：幣種對帳 -->
                                         <a class="dropdown-item text-dark" asp-area="Admin" asp-controller="CurrencyAudit" asp-action="Index">
                                             <i class="bi bi-clipboard2-data me-2"></i> 幣種對帳
                                         </a>
-
-                                         <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PointLog" asp-action="All" class="btn btn-outline-secondary">
-                                           查看全部紀錄（管理）
+                                        <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PointLog" asp-action="All">
+                                            查看全部紀錄（管理）
                                         </a>
-
                                         <a class="dropdown-item text-dark" asp-area="Customer" asp-controller="PendingCoin" asp-action="Index">
                                             <i class="bi bi-hourglass-split me-2"></i>待領幣管理
                                         </a>
-
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register" data-i18n="建立使用者">建立使用者</a>                                   
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Register" data-i18n="建立使用者">建立使用者</a>
                                     }
-
                                 </div>
-
                             </li>
                         }
-                        <!-- 購物車連結，包含圖示和文字 -->
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="Customer" asp-controller="Cart" asp-action="Index">
-                                <i class="bi bi-cart"></i> &nbsp;
-                            </a>
-                        </li>                        *@
                     </ul>
 
                     <ul class="navbar-nav">
-                        <li class="nav-item dropdown " style="display:none">
-                            <a class="nav-link dropdown-toggle"  href="#" id="navbarDropdown" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">
+                        <li class="nav-item dropdown" style="display:none">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" data-bs-toggle="dropdown" role="button"
+                               aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">
                                 <i class="bi bi-globe-americas"></i>
                                 <span id="current-language" data-i18n="語言切換"> </span>
                             </a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item language-option"  data-lang="en"  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
-                                <a class="dropdown-item language-option"  data-lang="zh"  asp-controller="LangBase" asp-action="ChangeLanguage"asp-route-lang="ch-tw">繁體中文</a>
-                                <a class="dropdown-item language-option"  data-lang="th"  asp-controller="LangBase" asp-action="ChangeLanguage"asp-route-lang="th-th">ไทย</a>
-                               @* <a asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
-                                <a  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
-                                <a  asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>*@
+                                <a class="dropdown-item language-option" data-lang="en" asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="en-us">English</a>
+                                <a class="dropdown-item language-option" data-lang="zh" asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="ch-tw">繁體中文</a>
+                                <a class="dropdown-item language-option" data-lang="th" asp-controller="LangBase" asp-action="ChangeLanguage" asp-route-lang="th-th">ไทย</a>
                             </div>
                         </li>
-
-                        <!-- Google Translate 小工具容器 -->
                         <li class="nav-item">
                             <div id="google_translate_element" style="margin-top:8px; margin-left:10px;"></div>
                         </li>
-                    </ul>                    
-                    
-                    <!-- 右側用戶相關選單 -->
+                    </ul>
+
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            <!-- 用戶已登入時顯示的下拉選單 -->
                             <li class="nav-item dropdown">
-                                <!-- 用戶名稱作為下拉選單的觸發器 -->
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="userDropdown" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
                                     @UserManager.GetUserName(User)
                                 </a>
-                                <!-- 下拉選單內容，右對齊 -->
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                    <!-- 更改密碼連結 -->
-                                    <li>
-                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/ChangePassword">更改密碼</a>
-                                    </li>
-                                    <!-- 帳戶設定連結 -->
-                                    <li>
-                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">帳戶設定</a>
-                                    </li>
+                                    <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/ChangePassword">更改密碼</a></li>
+                                    <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">帳戶設定</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <!-- 登出表單 -->
                                     <li>
-                                        <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" id="logoutForm" class="d-inline">
+                                        <form method="post" asp-area="Identity" asp-page="/Account/Logout"
+                                              asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })"
+                                              id="logoutForm" class="d-inline">
                                             <button type="submit" class="dropdown-item">登出</button>
                                         </form>
                                     </li>
@@ -339,14 +178,8 @@
                         }
                         else
                         {
-                            <!-- 用戶未登入時顯示的登入連結 -->
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">登入</a>
-                            </li>
-                            <!-- 用戶未登入時顯示的註冊連結 -->
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">註冊</a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">登入</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">註冊</a></li>
                         }
                     </ul>
                 </div>
@@ -354,225 +187,194 @@
         </nav>
     </header>
 
+    <!-- LIFF 自動填值（隱藏欄位，保留你的表單互通） -->
+    <input type="hidden" id="lineUserId" name="lineUserId" />
+    <input type="hidden" id="lineDisplayName" name="lineDisplayName" />
+    <input type="hidden" id="linePictureUrl" name="linePictureUrl" />
 
-
-<!-- LIFF自動填值的隱藏欄位 -->
-<input type="hidden" id="lineUserId" name="lineUserId" />
-<input type="hidden" id="lineDisplayName" name="lineDisplayName" />
-<input type="hidden" id="linePictureUrl" name="linePictureUrl" />
-
+    <!-- 可顯示 LINE 大頭貼區塊（預設隱藏，僅展示）-->
+    <div id="lineUserSection" class="text-center mb-4" style="display:none;">
+        <img id="linePictureImg" src="" alt="LINE頭像" width="64" height="64"
+             class="rounded-circle mb-2" style="object-fit:cover;border:2px solid #6cf;" />
+        <div id="helloLineUser" class="mb-2" style="font-weight:bold;font-size:1.15rem;color:#1a936f;"></div>
+    </div>
 
     <div class="container">
-        <main role="main" class="pb-3">    
-
-            <!-- 顯示通知訊息 -->
-            <partial name="_Notification"/>
+        <main role="main" class="pb-3">
+            <partial name="_Notification" />
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted no-print" >
+    <footer class="border-top footer text-muted no-print">
         <div class="container">
-            &copy; 2025 - GCN-Demo <i class="bi bi-1-circle"></i><i class="bi bi-check2-square"></i>- <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2025 - GCN-Demo <i class="bi bi-1-circle"></i><i class="bi bi-check2-square"></i> -
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
-    <!-- jQuery and Bootstrap JS -->   
-    @* <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>    *@
-    
+    <!-- ======= JS（保留你的載入） ======= -->
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
     <script src="~/lib/popper/popper.min.js" asp-append-version="true"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
-
-    <!-- Site JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <!-- DataTables and SweetAlert JS -->
     <script src="~/lib/DataTables/datatables.min.js" asp-append-version="true"></script>
     <script src="~/lib/package/dist/sweetalert2.min.js" asp-append-version="true"></script>
-
-    <!-- Toastr JS (correctly referenced) -->
     <script src="~/lib/build/toastr.min.js" asp-append-version="true"></script>
     <script src="~/js/querySelection.js" asp-append-version="true"></script>
-      <!-- 🟡 新增：全站提供「登出按鈕生成」 -->
     <script src="~/js/auth/LogoutUI.js" asp-append-version="true"></script>
 
-  
-
-    <!--i18next-->
-     @* 
-    <script src="~/lib/i18next/i18next.js" asp-append-version="true"></script>
-    <script src="~/lib/i18next/i18nextBrowserLanguageDetector.js" asp-append-version="true"></script>
-    <script src="~/lib/i18next/i18nextHttpBackend.js" asp-append-version="true"></script>
-    <script src="~/lib/i18next/jquery-i18next.js" asp-append-version="true"></script>
-    <script src="~/js/i18n/i18n.js" asp-append-version="true"></script>
-    *@
-
- <!-- ✅ 只在這裡載一次 LIFF SDK -->
-    @* <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js" id="liff-sdk"></script> *@
-  <script>
-    // =======================
-  // LIFF 全域保護與初始化（修正版）
-  // 重點：偵測是否在 LINE App，而不是檢查 host=liff.line.me
-  // =======================
-  const IN_LINE_APP = /Line/i.test(navigator.userAgent);
-
-  function describeError(e) {
-    if (!e) return '未知錯誤';
-    if (e.message) return e.message;
-    if (e.type && e.target && e.target.src) return `SDK載入失敗：${e.type} ${e.target.src}`;
-    return String(e);
-  }
-
-  const LIFF_SDK_CANDIDATES = [
-    'https://static.line-scdn.net/liff/edge/2.27.1/sdk.js',
-    'https://static.line-scdn.net/liff/edge/2/sdk.js'
-  ];
-
-  function loadScript(src, timeoutMs = 8000) {
-    return new Promise((resolve, reject) => {
-      const el = document.createElement('script');
-      let done = false;
-      const timer = setTimeout(() => {
-        if (done) return;
-        done = true; el.remove();
-        reject(new Error(`SDK載入逾時：${src}`));
-      }, timeoutMs);
-      el.async = true;
-      el.src = src;
-      el.onload = () => { if (done) return; done = true; clearTimeout(timer); resolve(); };
-      el.onerror = (ev) => { if (done) return; done = true; clearTimeout(timer); reject(new Error(describeError(ev))); };
-      document.head.appendChild(el);
-    });
-  }
-
-  // ---- 全域 ensureLiff：在 LINE 內回傳 liff，LINE 外回傳 null（不再是 undefined）----
-  window.ensureLiff = (() => {
-    if (!IN_LINE_APP) {
-      // 不在 LINE App：回傳 null，避免 "is not a function"
-      return async () => null;
-    }
-    let initedId = null;
-    return async (liffId) => {
-      if (typeof window.liff === 'undefined') {
-        let lastErr;
-        for (const url of LIFF_SDK_CANDIDATES) {
-          try { await loadScript(url); break; }
-          catch (e) { lastErr = e; console.warn(e?.message || e); }
+    <!-- ✅ LIFF 輔助：不主動 login；僅在 LINE 內展示資料 -->
+    <script>
+        // ====== Class 1：全域登出防護（noop，但提供旗標給其他腳本參考）======
+        class LogoutGuard {
+            static NO_AUTO_LOGIN = new URLSearchParams(location.search).get('nologin') === '1';
+            static mark() { window.NO_AUTO_LOGIN = this.NO_AUTO_LOGIN; }
         }
-        if (typeof window.liff === 'undefined') {
-          throw lastErr || new Error('LIFF SDK 無法載入，可能被網路或 CSP 擋下。');
+        LogoutGuard.mark();
+
+        // ====== Class 2：LIFF 載入與 Profile 展示（不自動登入）======
+        class LiffBoot {
+            static IN_LINE_APP = /Line/i.test(navigator.userAgent);
+            static _sdkLoaded = false;
+            static _initedId = null;
+
+            static async ensure(liffId) {
+                if (!this.IN_LINE_APP) return null;                 // 不在 LINE 內就不載
+                if (!(window).liff) {                               // 動態載 SDK
+                    await this._loadSdk();
+                }
+                if (!this._initedId || this._initedId !== liffId) {
+                    await (window).liff.init({ liffId });
+                    this._initedId = liffId;
+                }
+                return (window).liff;
+            }
+
+            static _loadSdk() {
+                if (this._sdkLoaded) return Promise.resolve();
+                return new Promise((resolve, reject) => {
+                    const url = 'https://static.line-scdn.net/liff/edge/2.27.1/sdk.js';
+                    const s = document.createElement('script');
+                    s.src = url; s.async = true;
+                    s.onload = () => { this._sdkLoaded = true; resolve(); };
+                    s.onerror = () => reject(new Error('LIFF SDK 載入失敗'));
+                    document.head.appendChild(s);
+                });
+            }
+
+            static async initProfileIfAvailable(liffId = "2007537903-r3pknwbl") {
+                if (!this.IN_LINE_APP) return;
+                try {
+                    const liff = await this.ensure(liffId);
+                    if (!liff) return;
+                    if (!liff.isLoggedIn()) return;                 // ❗不自動 login
+                    const profile = await liff.getProfile();
+
+                    // 寫入隱藏欄位
+                    const $id = document.getElementById('lineUserId');
+                    const $nm = document.getElementById('lineDisplayName');
+                    const $pic = document.getElementById('linePictureUrl');
+                    if ($id)  $id.value  = profile.userId;
+                    if ($nm)  $nm.value  = profile.displayName;
+                    if ($pic) $pic.value = profile.pictureUrl || '';
+
+                    // 顯示歡迎與頭像（僅展示）
+                    const sec = document.getElementById('lineUserSection');
+                    const hello = document.getElementById('helloLineUser');
+                    const img = document.getElementById('linePictureImg');
+                    if (hello) hello.innerText = `歡迎回來，${profile.displayName}！`;
+                    if (img && profile.pictureUrl) img.src = profile.pictureUrl;
+                    if (sec) sec.style.display = '';
+                } catch (e) {
+                    console.warn('LIFF 初始化或取用戶資料失敗：', e?.message || e);
+                }
+            }
         }
-      }
-      if (!initedId || initedId !== liffId) {
-        await window.liff.init({ liffId });
-        initedId = liffId;
-      }
-      return window.liff;
-    };
-  })();
 
-  // 是否在 LINE App WebView（供其它程式用）
-  window.isInLineApp = () => IN_LINE_APP;
-
-  // =======================
-  // 預設：若在 LINE 內、且已登入 → 取 profile 自動填欄位
-  // 不自動 login（避免無謂的重導）
-  // =======================
-  (async function () {
-    const DEFAULT_LIFF_ID = "2007537903-r3pknwbl";
-    if (!IN_LINE_APP) return;
-
-    try {
-      const liff = await ensureLiff(DEFAULT_LIFF_ID);
-      if (!liff) return;              // 非 LINE 內保險
-      if (!liff.isLoggedIn()) return; // 不自動 login
-
-      const profile = await liff.getProfile();
-      const $id   = document.getElementById('lineUserId');
-      const $name = document.getElementById('lineDisplayName');
-      const $pic  = document.getElementById('linePictureUrl');
-
-      if ($id)   $id.value   = profile.userId;
-      if ($name) $name.value = profile.displayName;
-      if ($pic)  $pic.value  = profile.pictureUrl || '';
-
-      const hello = document.getElementById('helloLineUser');
-      if (hello) hello.innerText = `歡迎回來，${profile.displayName}！`;
-      if (profile.pictureUrl) {
-        const img = document.getElementById('linePictureImg');
-        if (img) img.src = profile.pictureUrl;
-      }
-      const sec = document.getElementById('lineUserSection');
-      if (sec) sec.style.display = '';
-    } catch (err) {
-      console.warn('LIFF 初始化或取用戶資料失敗：', describeError(err));
-    }
-  })();
-
-  // =======================
-  // 共用：分享到 LINE（在 LINE 內用 LIFF；LINE 外自動退回 Web Share / 連結）
-  // 呼叫方式：shareToLine({ text: '...', url: '...' })
-  // =======================
-  (function () {
-    function webFallbackShare(text, url) {
-      const msg = [text, url || location.href].filter(Boolean).join(' ');
-      const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
-      if (navigator.share) {
-        navigator.share({ title: document.title, text: text || '', url: url || location.href })
-          .catch(() => window.open(lineUrl, '_blank'));
-      } else {
-        window.open(lineUrl, '_blank');
-      }
-    }
-
-    window.shareToLine = async function ({ liffId = "2007537903-r3pknwbl", text = '', url = '' } = {}) {
-      try {
-        const liff = await ensureLiff(liffId); // 可能回 null（LINE 外）
-        if (liff) {
-          if (!liff.isLoggedIn()) {
-            // 只在 LINE 內才會執行到這裡 → 可選：需要時才登入
-            await liff.login(); 
-            return; // 登入後會重進頁面
-          }
-          const payloadText = [text, url].filter(Boolean).join('\n');
-
-          if (liff.isApiAvailable('shareTargetPicker')) {
-            await liff.shareTargetPicker([{ type: 'text', text: payloadText }]);
-          } else {
-            await liff.sendMessages([{ type: 'text', text: payloadText }]);
-          }
-          return true;
+        // ====== Class 3：分享工具（LINE 內優先，用不到也可共用）======
+        class LineShareUtil {
+            static async share({ text = '', url = '', liffId = "2007537903-r3pknwbl" } = {}) {
+                try {
+                    const liff = await LiffBoot.ensure(liffId);
+                    const payload = [text, url].filter(Boolean).join('\n');
+                    if (liff) {
+                        if (!liff.isLoggedIn()) {
+                            // 只有在 LINE 內才會走到這；必要時才登入
+                            await liff.login();
+                            return;
+                        }
+                        if (liff.isApiAvailable('shareTargetPicker')) {
+                            await liff.shareTargetPicker([{ type: 'text', text: payload }]);
+                        } else {
+                            await liff.sendMessages([{ type: 'text', text: payload }]);
+                        }
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('LIFF 分享失敗，fallback 走 Web：', e?.message || e);
+                }
+                // Web fallback
+                const msg = [text, url || location.href].filter(Boolean).join(' ');
+                const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
+                if (navigator.share) {
+                    try { await navigator.share({ title: document.title, text, url }); }
+                    catch { window.open(lineUrl, '_blank'); }
+                } else {
+                    window.open(lineUrl, '_blank');
+                }
+                return false;
+            }
         }
-      } catch (e) {
-        console.warn('LIFF 分享失敗，改用 Web 分享：', describeError(e));
-      }
-      webFallbackShare(text, url);
-      return false;
-    };
-  })();
+        window.shareToLine = (opts) => LineShareUtil.share(opts);
 
-  // 全域除錯浮窗（帶 mode / token 時顯示）
-  (function () {
-    const params = new URLSearchParams(location.search);
-    const mode = params.get('mode');
-    const token = params.get('token');
-    if (mode || token) {
-      const d = document.getElementById('globalDebugInfo');
-      if (d) {
-        d.style.display = 'block';
-        d.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
-      }
-    }
-  })();
-</script>
+        // ====== Class 4：領幣 token 保留（避免轉址遺失）======
+        class ClaimTokenHelper {
+            static KEY = 'claimToken';
+            static captureFromUrl() {
+                const p = new URLSearchParams(location.search);
+                const token = p.get('token');
+                const mode = p.get('mode');
+                if (mode === 'claim' && token) {
+                    try { localStorage.setItem(this.KEY, token); } catch { }
+                }
+            }
+            static getSaved() {
+                try { return localStorage.getItem(this.KEY) || ''; } catch { return ''; }
+            }
+            static clear() {
+                try { localStorage.removeItem(this.KEY); } catch { }
+            }
+        }
+        ClaimTokenHelper.captureFromUrl();
 
+        // ====== Class 5：全域 Debug bar（顯示 mode/token）======
+        class DebugBar {
+            static show() {
+                const p = new URLSearchParams(location.search);
+                const mode = p.get('mode');
+                const token = p.get('token');
+                const d = document.getElementById('globalDebugInfo');
+                if (!d) return;
+                if (mode || token) {
+                    d.style.display = 'block';
+                    d.innerHTML = `mode: <strong>${mode || '無'}</strong> | token: <strong>${token || '無'}</strong>`;
+                }
+            }
+        }
+
+        // ====== 啟動：僅展示 Profile，不自動登入。Debug 顯示 ======
+        document.addEventListener('DOMContentLoaded', () => {
+            LiffBoot.initProfileIfAvailable(); // 展示用，不login
+            DebugBar.show();
+        });
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 
-    <!-- 全局除錯顯示區塊 -->
-    <div id="globalDebugInfo" style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;"></div>
+    <!-- 全域 debug 浮窗 -->
+    <div id="globalDebugInfo"
+         style="position:fixed;bottom:0;right:0;z-index:9999;background:#eef;padding:5px;border:1px dashed #99f;display:none;font-size:0.9rem;">
+    </div>
 </body>
 </html>
-
-

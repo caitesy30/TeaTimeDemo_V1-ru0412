@@ -6,16 +6,83 @@
 
 <header>
     <h1>@ViewData["Title"]</h1>
+
     @{
         if (User.Identity?.IsAuthenticated ?? false)
         {
-            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/", new { area = "" })" method="post">
-                <button type="submit" class="nav-link btn btn-link text-dark">Click here to Logout</button>
+            <!-- 還在登入中：顯示登出表單 -->
+            <form class="form-inline"
+                  asp-area="Identity"
+                  asp-page="/Account/Logout"
+                  asp-route-returnUrl="@Url.Page("/", new { area = "" })"
+                  method="post">
+                <button type="submit" class="nav-link btn btn-link text-dark">點我登出</button>
             </form>
         }
         else
         {
-            <p>You have successfully logged out of the application.</p>
+            <!-- 已登出：用 JS 產生訊息（此段為無 JS 時的備援文字） -->
+            <p id="logout-fallback">你已成功登出系統。</p>
+            <div id="logout-msg"></div>
         }
     }
 </header>
+
+@section Scripts {
+    <!-- LIFF SDK（用於同步登出 LINE） -->
+    <script src="https://static.line-scdn.net/liff/edge/2.27.1/sdk.js"></script>
+    <script>
+        class LiffSignoutHelper {
+            static isLiffUA() { return navigator.userAgent.includes("Line"); }
+            static async tryLogoutFromLiff() {
+                if (!this.isLiffUA()) return;
+                try {
+                    await liff.init({ liffId: "2007537903-r3pknwbl" });
+                    if (liff.isLoggedIn()) {
+                        // 同步登出 LINE，避免馬上被拉回登入
+                        liff.logout();
+                    }
+                } catch (e) { /* 靜默忽略 */ }
+            }
+        }
+
+        class LogoutUi {
+            static buildMessage() {
+                const container = document.getElementById('logout-msg');
+                if (!container) return;
+
+                // 隱藏備援段落
+                const fallback = document.getElementById('logout-fallback');
+                if (fallback) fallback.style.display = 'none';
+
+                // 用 JS 產生登出完成訊息（依你的喜好用 JS 生成 HTML）
+                const wrap = document.createElement('div');
+                wrap.className = 'alert alert-success mt-3';
+                wrap.innerHTML = `
+                    <strong>已成功登出！</strong><br/>
+                    我們已嘗試同步登出 LINE 帳號（若你在 LINE App 內）。<br/>
+                    3 秒後將自動回到首頁，若未跳轉請<a href="/">點此返回</a>。`;
+                container.appendChild(wrap);
+            }
+
+            static redirectHomeWithFlag() {
+                // 帶上 nologin=1，請在你的自動登入程式看到此旗標時跳過 liff.login()
+                setTimeout(() => {
+                    const url = new URL('/', window.location.origin);
+                    url.searchParams.set('nologin', '1');
+                    window.location.href = url.toString();
+                }, 3000);
+            }
+        }
+
+        // 僅在「已登出狀態」時才做前端處理（頁面 render 時段可從 DOM 判斷）
+        document.addEventListener('DOMContentLoaded', async () => {
+            const alreadyLoggedOut = document.getElementById('logout-msg') !== null;
+            if (!alreadyLoggedOut) return;
+
+            await LiffSignoutHelper.tryLogoutFromLiff();
+            LogoutUi.buildMessage();
+            LogoutUi.redirectHomeWithFlag();
+        });
+    </script>
+}
