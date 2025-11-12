@@ -336,6 +336,9 @@ app.UseAuthorization();
 app.UseSession();
 
 // 9) 路由
+// ★ 健康檢查端點：讓 Cloudflare / 監測工具確認子站是否啟動成功
+app.MapGet("/healthz", () => Results.Ok("OK"));
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
@@ -361,13 +364,20 @@ app.MapGet("/Account/Login", async ctx =>
 });
 
 app.MapControllers();
-
-// 10) DB 初始化/遷移
+// ★ 啟動期的 DB 遷移防護：避免 DB 一卡就 500.30
 using (var scope = app.Services.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<IDbInitializer>().Initialize();
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        scope.ServiceProvider.GetRequiredService<IDbInitializer>().Initialize();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Database.Migrate(); // 若上線階段不想風險，可改 EnsureCreated 或移到背景服務
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"[Startup-Migrate] {ex}"); // 建議改記 Serilog
+        // 不 throw 讓網站先起來；再人工處理 DB
+    }
 }
 
 app.Run();
